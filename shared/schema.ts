@@ -63,10 +63,16 @@ export const providerServices = pgTable("provider_services", {
   id: serial("id").primaryKey(),
   providerId: integer("provider_id").references(() => providers.id).notNull(),
   categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }),
+  name: varchar("name", { length: 255 }),
   description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  minimumPrice: decimal("minimum_price", { precision: 10, scale: 2 }),
+  estimatedDuration: varchar("estimated_duration", { length: 100 }),
+  requirements: text("requirements"),
+  serviceZone: text("service_zone"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Service requests table
