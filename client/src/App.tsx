@@ -12,6 +12,7 @@ import Register from "@/pages/register";
 import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import ProviderProfile from "@/pages/provider-profile";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
+          <Route path="/profile/:id" component={ProviderProfile} />
           <Route component={NotFound} />
         </Switch>
       </main>

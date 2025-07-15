@@ -167,6 +167,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Provider profile endpoint - must be before the generic :id route
+  app.get("/api/provider-profile/:id", async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      
+      // Get provider with user data
+      const providerWithUser = await storage.getAllProviders();
+      const fullProvider = providerWithUser.find(p => p.id === providerId);
+      
+      if (!fullProvider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Ensure response is JSON
+      res.setHeader('Content-Type', 'application/json');
+      res.json(fullProvider);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get provider", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.put("/api/providers/:id", authenticateToken, async (req, res) => {
     try {
       const providerId = parseInt(req.params.id);
@@ -214,6 +235,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(services);
     } catch (error) {
       res.status(500).json({ message: "Failed to get services", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/providers/:id/reviews", async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const reviews = await storage.getReviewsByProvider(providerId);
+      res.json(reviews);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get reviews", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
