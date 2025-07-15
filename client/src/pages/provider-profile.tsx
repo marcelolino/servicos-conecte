@@ -7,8 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { getQueryFn } from "@/lib/queryClient";
 import { User, MapPin, Star, Clock, Award, Phone, Mail, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+// import { format } from "date-fns";
+// import { ptBR } from "date-fns/locale";
 
 interface ProviderProfileData {
   id: number;
@@ -53,7 +53,10 @@ export default function ProviderProfile() {
   const { user } = useAuth();
   const providerId = parseInt(id || "0");
 
-  const { data: provider, isLoading: loadingProvider } = useQuery<ProviderProfileData>({
+  console.log("ProviderProfile - ID from params:", id);
+  console.log("ProviderProfile - Parsed ID:", providerId);
+
+  const { data: provider, isLoading: loadingProvider, error } = useQuery<ProviderProfileData>({
     queryKey: ["/api/provider-profile", providerId],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!providerId,
@@ -71,19 +74,49 @@ export default function ProviderProfile() {
     enabled: !!providerId,
   });
 
+  // Early return for testing
+  if (!id) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Perfil do Prestador</h1>
+          <p className="text-red-500">ID não encontrado na URL</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loadingProvider || loadingServices) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="h-64 bg-muted rounded mb-6"></div>
-              <div className="h-32 bg-muted rounded"></div>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando perfil do prestador #{id}...</h1>
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div className="h-64 bg-muted rounded mb-6"></div>
+                <div className="h-32 bg-muted rounded"></div>
+              </div>
+              <div className="h-96 bg-muted rounded"></div>
             </div>
-            <div className="h-96 bg-muted rounded"></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="text-center py-8">
+            <h2 className="text-2xl font-bold mb-2">Erro ao carregar perfil</h2>
+            <p className="text-muted-foreground">
+              Erro: {error instanceof Error ? error.message : "Erro desconhecido"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -96,6 +129,9 @@ export default function ProviderProfile() {
             <h2 className="text-2xl font-bold mb-2">Prestador não encontrado</h2>
             <p className="text-muted-foreground">
               O prestador que você está procurando não foi encontrado ou não está mais ativo.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              ID pesquisado: {id}
             </p>
           </CardContent>
         </Card>
@@ -248,7 +284,7 @@ export default function ProviderProfile() {
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Membro desde {format(new Date(provider.createdAt), "MMM yyyy", { locale: ptBR })}
+                  Membro desde {new Date(provider.createdAt).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })}
                 </span>
               </div>
             </CardContent>

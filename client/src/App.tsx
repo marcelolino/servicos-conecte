@@ -13,6 +13,7 @@ import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProviderProfile from "@/pages/provider-profile";
+import TestProfile from "@/pages/test-profile";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
