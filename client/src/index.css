@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(142, 76%, 36%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(43, 96%, 56%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(142, 76%, 36%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(43, 96%, 56%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom styles for the application */
+.hero-gradient {
+  background: linear-gradient(135deg, hsl(207, 90%, 54%) 0%, hsl(207, 90%, 44%) 100%);
+}
+
+.provider-gradient {
+  background: linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 76%, 26%) 100%);
+}
+
+.service-card {
+  @apply bg-muted rounded-xl p-6 text-center transition-all duration-300 cursor-pointer;
+}
+
+.service-card:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+  @apply shadow-lg;
+}
+
+.service-icon {
+  @apply w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors;
+}
+
+.provider-card {
+  @apply bg-muted rounded-xl p-6 transition-all duration-300 cursor-pointer;
+}
+
+.provider-card:hover {
+  @apply shadow-lg;
+}
+
+.dashboard-card {
+  @apply bg-card rounded-xl shadow-sm p-6 border;
+}
+
+.stats-card {
+  @apply bg-muted rounded-lg p-6;
+}
+
+.notification-badge {
+  @apply absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center;
+}
+
+.service-status-pending {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+.service-status-accepted {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+}
+
+.service-status-in-progress {
+  @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200;
+}
+
+.service-status-completed {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.service-status-cancelled {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+}
+
+.rating-stars {
+  @apply flex text-yellow-400;
+}
+
+.rating-star {
+  @apply w-4 h-4 fill-current;
+}
+
+.empty-state {
+  @apply text-center py-12 text-muted-foreground;
+}
+
+.loading-skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-gradient {
+    @apply py-16;
+  }
+  
+  .service-card {
+    @apply p-4;
+  }
+  
+  .provider-card {
+    @apply p-4;
+  }
+  
+  .dashboard-card {
+    @apply p-4;
+  }
+}

@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/theme-provider";
+import { useAuth } from "@/hooks/use-auth";
+import { 
+  Moon, 
+  Sun, 
+  Menu, 
+  X, 
+  Wrench, 
+  Bell,
+  User,
+  LogOut
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+
+export default function Header() {
+  const [location] = useLocation();
+  const { theme, setTheme } = useTheme();
+  const { user, logout, isAuthenticated } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = "/";
+  };
+
+  const getDashboardLink = () => {
+    if (!user) return "/";
+    
+    switch (user.userType) {
+      case "client":
+        return "/client-dashboard";
+      case "provider":
+        return "/provider-dashboard";
+      case "admin":
+        return "/admin-dashboard";
+      default:
+        return "/";
+    }
+  };
+
+  return (
+    <header className="bg-background border-b sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <Wrench className="h-8 w-8 text-primary mr-2" />
+              <h1 className="text-2xl font-bold text-foreground">Qserviços</h1>
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            <Link href="/" className="text-foreground hover:text-primary transition-colors">
+              Como funciona
+            </Link>
+            <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
+              Seja um prestador
+            </Link>
+            <Link href="/support" className="text-foreground hover:text-primary transition-colors">
+              Suporte
+            </Link>
+          </nav>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="hover:bg-muted"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+            </Button>
+
+            {isAuthenticated ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative hover:bg-muted"
+                >
+                  <Bell className="h-5 w-5" />
+                  <Badge className="notification-badge">2</Badge>
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2">
+                      <User className="h-5 w-5" />
+                      <span>{user?.name}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={getDashboardLink()}>
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        Perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/login">Entrar</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/register">Cadastrar</Link>
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <div className="flex flex-col space-y-4">
+              <Link href="/" className="text-foreground hover:text-primary transition-colors">
+                Como funciona
+              </Link>
+              <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
+                Seja um prestador
+              </Link>
+              <Link href="/support" className="text-foreground hover:text-primary transition-colors">
+                Suporte
+              </Link>
+              
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleTheme}
+                  className="hover:bg-muted"
+                >
+                  {theme === "light" ? (
+                    <>
+                      <Moon className="h-4 w-4 mr-2" />
+                      Modo Escuro
+                    </>
+                  ) : (
+                    <>
+                      <Sun className="h-4 w-4 mr-2" />
+                      Modo Claro
+                    </>
+                  )}
+                </Button>
+
+                {isAuthenticated ? (
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={getDashboardLink()}>Dashboard</Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleLogout}>
+                      Sair
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href="/login">Entrar</Link>
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href="/register">Cadastrar</Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

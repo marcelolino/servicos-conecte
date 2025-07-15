@@ -1,0 +1,70 @@
+import React, { useState, useEffect, createContext, useContext } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getCurrentUser, getAuthToken, removeAuthToken, setAuthToken } from "@/lib/auth";
+import type { AuthUser } from "@/lib/auth";
+
+interface AuthContextType {
+  user: AuthUser | null;
+  loading: boolean;
+  login: (token: string) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!getAuthToken());
+  const queryClient = useQueryClient();
+
+  const { data: user, isLoading: loading } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: getCurrentUser,
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const login = (token: string) => {
+    setAuthToken(token);
+    setIsAuthenticated(true);
+  };
+
+  const logout = () => {
+    removeAuthToken();
+    setIsAuthenticated(false);
+    queryClient.clear();
+  };
+
+  useEffect(() => {
+    // Update API request headers when authentication changes
+    const token = getAuthToken();
+    if (token) {
+      // This would be handled by the queryClient interceptor
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const value = {
+    user: user || null,
+    loading,
+    login,
+    logout,
+    isAuthenticated,
+  };
+
+  return React.createElement(
+    AuthContext.Provider,
+    { value: value },
+    children
+  );
+};
