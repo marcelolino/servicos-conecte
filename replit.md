@@ -8,6 +8,18 @@ Qserviços is a full-stack service provider platform that connects clients with 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Admin Dashboard Improvements (January 15, 2025)
+- ✓ Implemented complete admin dashboard redesign with sidebar navigation
+- ✓ Added proper provider management with approval/rejection functionality
+- ✓ Fixed issue where providers weren't displaying for approval
+- ✓ Created comprehensive statistics dashboard with real-time data
+- ✓ Added search and filter functionality for provider management
+- ✓ Implemented detailed provider profile modal with action buttons
+- ✓ Fixed rating display errors for providers with null ratings
+- ✓ Added responsive table layout for provider listings
+
 ## System Architecture
 
 ### Frontend Architecture
