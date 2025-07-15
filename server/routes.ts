@@ -502,6 +502,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/services", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceData = insertProviderServiceSchema.parse(req.body);
+      const service = await storage.createProviderService(serviceData);
+      res.json(service);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/services/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const serviceData = req.body;
+      const service = await storage.updateProviderService(serviceId, serviceData);
+      res.json(service);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/services/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      await storage.deleteProviderService(serviceId);
+      res.json({ message: "Service deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Statistics routes
   app.get("/api/stats/provider", authenticateToken, requireProvider, async (req, res) => {
     try {
