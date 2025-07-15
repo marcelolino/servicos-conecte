@@ -68,6 +68,8 @@ export default function AdminDashboard() {
   const [selectedProvider, setSelectedProvider] = useState<(Provider & { user: User }) | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [userFilterType, setUserFilterType] = useState<string>("all");
 
   const form = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema),
@@ -93,6 +95,12 @@ export default function AdminDashboard() {
   // Fetch providers (this would need to be implemented in the backend)
   const { data: providers, isLoading: providersLoading } = useQuery({
     queryKey: ["/api/admin/providers"],
+    enabled: user?.userType === "admin",
+  });
+
+  // Fetch users
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users"],
     enabled: user?.userType === "admin",
   });
 
@@ -189,6 +197,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const getUserTypeText = (userType: string) => {
+    switch (userType) {
+      case "client":
+        return "Cliente";
+      case "provider":
+        return "Prestador";
+      case "admin":
+        return "Administrador";
+      default:
+        return "Cliente";
+    }
+  };
+
+  const getUserTypeBadgeColor = (userType: string) => {
+    switch (userType) {
+      case "admin":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case "provider":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "client":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
+
   const onSubmit = (data: CategoryForm) => {
     createCategoryMutation.mutate(data);
   };
@@ -211,6 +245,14 @@ export default function AdminDashboard() {
                          provider.user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || provider.status === filterStatus;
     return matchesSearch && matchesStatus;
+  }) || [];
+
+  // Filter users based on search and type
+  const filteredUsers = users?.filter((user: User) => {
+    const matchesSearch = user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(userSearchTerm.toLowerCase());
+    const matchesType = userFilterType === "all" || user.userType === userFilterType;
+    return matchesSearch && matchesType;
   }) || [];
 
   const sidebarItems = [
@@ -575,6 +617,217 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderUsers = () => (
+    <div className="space-y-6">
+      {/* Header and Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Gestão de Usuários</h2>
+          <p className="text-muted-foreground">Gerencie todos os usuários da plataforma</p>
+        </div>
+        <div className="flex gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar usuários..."
+              value={userSearchTerm}
+              onChange={(e) => setUserSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+          <Select value={userFilterType} onValueChange={setUserFilterType}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="client">Clientes</SelectItem>
+              <SelectItem value="provider">Prestadores</SelectItem>
+              <SelectItem value="admin">Administradores</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Users Table */}
+      <Card className="dashboard-card">
+        <CardContent className="p-0">
+          {usersLoading ? (
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Cidade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Cadastro</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {userSearchTerm || userFilterType !== "all" 
+                          ? "Nenhum usuário encontrado com os filtros aplicados."
+                          : "Nenhum usuário cadastrado."}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user: User) => (
+                    <TableRow key={user.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="text-sm">
+                              {user.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-foreground">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">ID: {user.id}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge className={getUserTypeBadgeColor(user.userType)}>
+                          {getUserTypeText(user.userType)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {user.phone || "Não informado"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {user.city || "Não informado"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.isActive ? "default" : "secondary"}>
+                          {user.isActive ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(user.createdAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </DropdownMenuItem>
+                            {user.isActive ? (
+                              <DropdownMenuItem className="text-yellow-600">
+                                <UserX className="h-4 w-4 mr-2" />
+                                Desativar
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem className="text-green-600">
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                Ativar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Statistics */}
+      {!usersLoading && filteredUsers.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="dashboard-card">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total de Usuários</p>
+                  <p className="text-2xl font-bold text-foreground">{filteredUsers.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="dashboard-card">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Clientes</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {filteredUsers.filter(u => u.userType === 'client').length}
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="dashboard-card">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Prestadores</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {filteredUsers.filter(u => u.userType === 'provider').length}
+                  </p>
+                </div>
+                <UserCheck className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="dashboard-card">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Administradores</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {filteredUsers.filter(u => u.userType === 'admin').length}
+                  </p>
+                </div>
+                <Shield className="h-8 w-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+
   const renderCategories = () => (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -720,17 +973,7 @@ export default function AdminDashboard() {
       case "categories":
         return renderCategories();
       case "users":
-        return (
-          <div className="text-center py-12">
-            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Gestão de Usuários
-            </h3>
-            <p className="text-muted-foreground">
-              Funcionalidade em desenvolvimento
-            </p>
-          </div>
-        );
+        return renderUsers();
       case "reports":
         return (
           <div className="text-center py-12">
