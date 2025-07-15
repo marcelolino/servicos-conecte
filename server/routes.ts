@@ -409,6 +409,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for managing users and providers
+  app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get users", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/admin/providers", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providers = await storage.getAllProviders();
+      res.json(providers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get providers", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/providers/:id/approve", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const provider = await storage.updateProvider(providerId, { status: "approved" });
+      res.json(provider);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to approve provider", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/providers/:id/reject", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const provider = await storage.updateProvider(providerId, { status: "rejected" });
+      res.json(provider);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to reject provider", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -32,6 +32,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
   deleteUser(id: number): Promise<void>;
+  getAllUsers(): Promise<User[]>;
   
   // Provider management
   getProvider(id: number): Promise<Provider | undefined>;
@@ -39,6 +40,7 @@ export interface IStorage {
   createProvider(provider: InsertProvider): Promise<Provider>;
   updateProvider(id: number, provider: Partial<InsertProvider>): Promise<Provider>;
   getProvidersByCategory(categoryId: number, latitude?: number, longitude?: number, radius?: number): Promise<(Provider & { user: User })[]>;
+  getAllProviders(): Promise<(Provider & { user: User })[]>;
   
   // Service categories
   getServiceCategories(): Promise<ServiceCategory[]>;
@@ -131,6 +133,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
   async getProvider(id: number): Promise<Provider | undefined> {
     const [provider] = await db.select().from(providers).where(eq(providers.id, id));
     return provider || undefined;
@@ -209,6 +215,31 @@ export class DatabaseStorage implements IStorage {
     }
 
     return await query.orderBy(desc(providers.rating));
+  }
+
+  async getAllProviders(): Promise<(Provider & { user: User })[]> {
+    return await db
+      .select({
+        id: providers.id,
+        userId: providers.userId,
+        status: providers.status,
+        serviceRadius: providers.serviceRadius,
+        basePrice: providers.basePrice,
+        description: providers.description,
+        experience: providers.experience,
+        documents: providers.documents,
+        rating: providers.rating,
+        totalReviews: providers.totalReviews,
+        totalServices: providers.totalServices,
+        isTrialActive: providers.isTrialActive,
+        trialEndsAt: providers.trialEndsAt,
+        createdAt: providers.createdAt,
+        updatedAt: providers.updatedAt,
+        user: users,
+      })
+      .from(providers)
+      .innerJoin(users, eq(providers.userId, users.id))
+      .orderBy(desc(providers.createdAt));
   }
 
   async getServiceCategories(): Promise<ServiceCategory[]> {
