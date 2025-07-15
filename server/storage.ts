@@ -375,12 +375,12 @@ export class DatabaseStorage implements IStorage {
 
   async getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
     // Get provider's service categories
-    const providerServices = await db
+    const providerServicesList = await db
       .select({ categoryId: providerServices.categoryId })
       .from(providerServices)
       .where(eq(providerServices.providerId, providerId));
     
-    const categoryIds = providerServices.map(ps => ps.categoryId);
+    const categoryIds = providerServicesList.map(ps => ps.categoryId);
     
     if (categoryIds.length === 0) {
       return [];
