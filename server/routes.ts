@@ -504,14 +504,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/services", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      // Convert price strings to numbers if they exist
-      const processedData = {
-        ...req.body,
-        price: req.body.price ? parseFloat(req.body.price) : null,
-        minimumPrice: req.body.minimumPrice ? parseFloat(req.body.minimumPrice) : null,
+      // Convert and validate the data manually
+      const serviceData = {
+        providerId: parseInt(req.body.providerId),
+        categoryId: parseInt(req.body.categoryId),
+        name: req.body.name || null,
+        description: req.body.description || null,
+        price: req.body.price ? req.body.price.toString() : null,
+        minimumPrice: req.body.minimumPrice ? req.body.minimumPrice.toString() : null,
+        estimatedDuration: req.body.estimatedDuration || null,
+        requirements: req.body.requirements || null,
+        serviceZone: req.body.serviceZone || null,
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       };
       
-      const serviceData = insertProviderServiceSchema.parse(processedData);
       const service = await storage.createProviderService(serviceData);
       res.json(service);
     } catch (error) {
@@ -523,14 +529,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/services/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
-      // Convert price strings to numbers if they exist
-      const processedData = {
-        ...req.body,
-        price: req.body.price ? parseFloat(req.body.price) : null,
-        minimumPrice: req.body.minimumPrice ? parseFloat(req.body.minimumPrice) : null,
+      // Convert and validate the data manually
+      const serviceData = {
+        providerId: req.body.providerId ? parseInt(req.body.providerId) : undefined,
+        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined,
+        name: req.body.name || null,
+        description: req.body.description || null,
+        price: req.body.price ? req.body.price.toString() : null,
+        minimumPrice: req.body.minimumPrice ? req.body.minimumPrice.toString() : null,
+        estimatedDuration: req.body.estimatedDuration || null,
+        requirements: req.body.requirements || null,
+        serviceZone: req.body.serviceZone || null,
+        isActive: req.body.isActive !== undefined ? req.body.isActive : undefined,
       };
       
-      const service = await storage.updateProviderService(serviceId, processedData);
+      // Remove undefined values
+      const cleanedData = Object.fromEntries(
+        Object.entries(serviceData).filter(([_, value]) => value !== undefined)
+      );
+      
+      const service = await storage.updateProviderService(serviceId, cleanedData);
       res.json(service);
     } catch (error) {
       console.error("Error updating service:", error);
