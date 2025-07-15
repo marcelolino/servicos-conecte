@@ -22,7 +22,7 @@ import {
   type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, asc, sql, isNull, count } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -374,6 +374,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
+    // Get provider's service categories
+    const providerServices = await db
+      .select({ categoryId: providerServices.categoryId })
+      .from(providerServices)
+      .where(eq(providerServices.providerId, providerId));
+    
+    const categoryIds = providerServices.map(ps => ps.categoryId);
+    
+    if (categoryIds.length === 0) {
+      return [];
+    }
+    
+    // Get all pending requests in provider's categories OR requests assigned to this provider
     return await db
       .select({
         id: serviceRequests.id,
@@ -401,7 +414,18 @@ export class DatabaseStorage implements IStorage {
       .from(serviceRequests)
       .innerJoin(users, eq(serviceRequests.clientId, users.id))
       .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
-      .where(eq(serviceRequests.providerId, providerId))
+      .where(
+        or(
+          // Show pending requests in provider's service categories
+          and(
+            inArray(serviceRequests.categoryId, categoryIds),
+            eq(serviceRequests.status, "pending"),
+            isNull(serviceRequests.providerId)
+          ),
+          // Show all requests assigned to this provider
+          eq(serviceRequests.providerId, providerId)
+        )
+      )
       .orderBy(desc(serviceRequests.createdAt));
   }
 
