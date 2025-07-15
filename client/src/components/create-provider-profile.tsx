@@ -15,7 +15,7 @@ import { User, Settings, MapPin, DollarSign, FileText } from "lucide-react";
 
 const createProviderSchema = z.object({
   serviceRadius: z.string().min(1, "Raio de atendimento é obrigatório").transform(Number),
-  basePrice: z.string().min(1, "Preço base é obrigatório").transform(Number),
+  basePrice: z.string().min(1, "Preço base é obrigatório"),
   description: z.string().min(20, "Descrição deve ter pelo menos 20 caracteres"),
   experience: z.string().min(10, "Experiência deve ter pelo menos 10 caracteres"),
 });
@@ -46,6 +46,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
       apiRequest("POST", "/api/providers", {
         userId,
         ...data,
+        basePrice: parseFloat(data.basePrice).toFixed(2),
         status: "pending",
       }),
     onSuccess: () => {
