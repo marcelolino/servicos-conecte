@@ -17,6 +17,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import CreateProviderProfile from "@/components/create-provider-profile";
 import { 
   DollarSign, 
   Star, 
@@ -48,6 +49,7 @@ export default function ProviderDashboard() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("requests");
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
 
   const form = useForm<ProviderServiceForm>({
     resolver: zodResolver(providerServiceSchema),
@@ -250,12 +252,13 @@ export default function ProviderDashboard() {
 
   if (!provider) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Perfil de Prestador Não Encontrado</h1>
-          <p className="text-muted-foreground">Você precisa completar seu perfil de prestador primeiro.</p>
-        </div>
-      </div>
+      <CreateProviderProfile
+        userId={user.id}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/providers/me"] });
+          setShowCreateProfile(false);
+        }}
+      />
     );
   }
 

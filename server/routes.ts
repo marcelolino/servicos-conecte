@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/providers/me", authenticateToken, requireProvider, async (req, res) => {
+  app.get("/api/providers/me", authenticateToken, async (req, res) => {
     try {
       const provider = await storage.getProviderByUserId(req.user!.id);
       if (!provider) {
