@@ -31,8 +31,10 @@ import {
   TrendingUp,
   AlertCircle,
   Plus,
-  Settings
+  Settings,
+  Package
 } from "lucide-react";
+import { Link } from "wouter";
 import type { ServiceRequest, ServiceCategory, Provider } from "@shared/schema";
 
 const providerServiceSchema = z.object({
@@ -277,6 +279,12 @@ export default function ProviderDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <Link href="/service-management">
+                <Button className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Gerenciar Serviços
+                </Button>
+              </Link>
               <Badge className={`px-3 py-1 rounded-full text-xs ${getProviderStatusColor(provider.status)}`}>
                 {getProviderStatusText(provider.status)}
               </Badge>

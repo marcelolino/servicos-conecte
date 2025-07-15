@@ -13,6 +13,7 @@ import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProviderProfile from "@/pages/provider-profile";
+import ServiceManagement from "@/pages/service-management";
 import TestProfile from "@/pages/test-profile";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
+          <Route path="/service-management" component={ServiceManagement} />
           <Route path="/profile/:id" component={ProviderProfile} />
           <Route component={NotFound} />
         </Switch>
