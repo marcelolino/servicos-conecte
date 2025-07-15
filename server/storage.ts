@@ -73,6 +73,9 @@ export interface IStorage {
   // Authentication
   validateUser(email: string, password: string): Promise<User | null>;
   
+  // Admin service management
+  getAllServicesForAdmin(): Promise<(ProviderService & { category: ServiceCategory; provider: Provider & { user: User } })[]>;
+
   // Statistics
   getProviderStats(providerId: number): Promise<{
     totalServices: number;
@@ -597,6 +600,48 @@ export class DatabaseStorage implements IStorage {
       totalSpent: Number(totalSpent[0].sum) || 0,
       completedServices: completedServices[0].count,
     };
+  }
+
+  async getAllServicesForAdmin(): Promise<(ProviderService & { category: ServiceCategory; provider: Provider & { user: User } })[]> {
+    return await db
+      .select({
+        id: providerServices.id,
+        providerId: providerServices.providerId,
+        categoryId: providerServices.categoryId,
+        name: providerServices.name,
+        description: providerServices.description,
+        price: providerServices.price,
+        estimatedDuration: providerServices.estimatedDuration,
+        requirements: providerServices.requirements,
+        serviceZone: providerServices.serviceZone,
+        isActive: providerServices.isActive,
+        createdAt: providerServices.createdAt,
+        updatedAt: providerServices.updatedAt,
+        category: serviceCategories,
+        provider: {
+          id: providers.id,
+          userId: providers.userId,
+          status: providers.status,
+          serviceRadius: providers.serviceRadius,
+          basePrice: providers.basePrice,
+          description: providers.description,
+          experience: providers.experience,
+          documents: providers.documents,
+          rating: providers.rating,
+          totalReviews: providers.totalReviews,
+          totalServices: providers.totalServices,
+          isTrialActive: providers.isTrialActive,
+          trialEndsAt: providers.trialEndsAt,
+          createdAt: providers.createdAt,
+          updatedAt: providers.updatedAt,
+          user: users,
+        },
+      })
+      .from(providerServices)
+      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .innerJoin(providers, eq(providerServices.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id))
+      .orderBy(desc(providerServices.createdAt));
   }
 
   async getAdminStats(): Promise<{

@@ -104,6 +104,12 @@ export default function AdminDashboard() {
     enabled: user?.userType === "admin",
   });
 
+  // Fetch all services for admin
+  const { data: allServices, isLoading: allServicesLoading } = useQuery({
+    queryKey: ["/api/admin/services"],
+    enabled: user?.userType === "admin",
+  });
+
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: (data: CategoryForm) => apiRequest("POST", "/api/categories", data),
@@ -270,9 +276,15 @@ export default function AdminDashboard() {
       badge: stats?.pendingApprovals
     },
     {
+      id: "services",
+      label: "Serviços",
+      icon: Settings,
+      description: "Gerenciar serviços"
+    },
+    {
       id: "categories",
       label: "Categorias",
-      icon: Settings,
+      icon: FileText,
       description: "Categorias de serviços"
     },
     {
@@ -284,7 +296,7 @@ export default function AdminDashboard() {
     {
       id: "reports",
       label: "Relatórios",
-      icon: FileText,
+      icon: BarChart3,
       description: "Relatórios e estatísticas"
     }
   ];
@@ -964,12 +976,121 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderServices = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Serviços</h2>
+          <p className="text-muted-foreground">Todos os serviços oferecidos pelos prestadores</p>
+        </div>
+      </div>
+
+      <Card className="dashboard-card">
+        <CardContent className="p-0">
+          {allServicesLoading ? (
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SL</TableHead>
+                  <TableHead>Prestador</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allServices?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Nenhum serviço cadastrado ainda.
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  allServices?.map((service: any, index: number) => (
+                    <TableRow key={service.id}>
+                      <TableCell className="font-medium">{index + 1}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{service.provider?.user?.name}</p>
+                          <p className="text-sm text-muted-foreground">{service.provider?.user?.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{service.category?.name}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <p className="line-clamp-2 max-w-xs">{service.description}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            R$ {Number(service.price || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={service.isActive ? "default" : "secondary"}>
+                          {service.isActive ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Settings className="h-4 w-4 mr-2" />
+                              Editar Status
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
         return renderDashboard();
       case "providers":
         return renderProviders();
+      case "services":
+        return renderServices();
       case "categories":
         return renderCategories();
       case "users":

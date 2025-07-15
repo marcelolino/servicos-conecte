@@ -72,8 +72,25 @@ export default function ServiceManagement() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedService, setSelectedService] = useState<ServiceWithCategory | null>(null);
+  const [editingService, setEditingService] = useState<ServiceWithCategory | null>(null);
+  const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
 
   const form = useForm<ServiceForm>({
+    resolver: zodResolver(serviceSchema),
+    defaultValues: {
+      categoryId: 0,
+      name: "",
+      description: "",
+      price: "",
+      serviceZone: "",
+      minimumPrice: "",
+      estimatedDuration: "",
+      requirements: "",
+      isActive: true,
+    },
+  });
+
+  const editForm = useForm<ServiceForm>({
     resolver: zodResolver(serviceSchema),
     defaultValues: {
       categoryId: 0,
@@ -134,6 +151,9 @@ export default function ServiceManagement() {
       toast({
         title: "Serviço atualizado com sucesso!",
       });
+      setIsEditServiceOpen(false);
+      setEditingService(null);
+      editForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
     },
     onError: (error: any) => {
@@ -147,6 +167,31 @@ export default function ServiceManagement() {
 
   const onSubmit = (data: ServiceForm) => {
     createServiceMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: ServiceForm) => {
+    if (editingService) {
+      updateServiceMutation.mutate({
+        id: editingService.id,
+        data,
+      });
+    }
+  };
+
+  const handleEditService = (service: ServiceWithCategory) => {
+    setEditingService(service);
+    editForm.reset({
+      categoryId: service.categoryId,
+      name: service.description || "",
+      description: service.description || "",
+      price: service.price?.toString() || "",
+      serviceZone: "Em todo o mundo",
+      minimumPrice: service.price?.toString() || "",
+      estimatedDuration: "",
+      requirements: "",
+      isActive: service.isActive || false,
+    });
+    setIsEditServiceOpen(true);
   };
 
   const toggleServiceStatus = (service: ServiceWithCategory) => {
@@ -320,7 +365,7 @@ export default function ServiceManagement() {
                                 <Eye className="h-4 w-4 mr-2" />
                                 Ver Detalhes
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditService(service)}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar
                               </DropdownMenuItem>
@@ -623,6 +668,171 @@ export default function ServiceManagement() {
                 </Button>
                 <Button type="submit" disabled={createServiceMutation.isPending}>
                   {createServiceMutation.isPending ? "Criando..." : "Criar Serviço"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria *</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Escolha a categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories?.map((category: ServiceCategory) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="serviceZone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Zona de Atendimento *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Em todo o mundo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Serviço (Padrão) *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Instalação elétrica" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição Breve (Padrão) *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva o serviço oferecido..."
+                        className="resize-none"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Mínimo de Licitação *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0.00" type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="estimatedDuration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duração Estimada</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: 2-4 horas" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="requirements"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Requisitos</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Requisitos específicos para este serviço..."
+                        className="resize-none"
+                        rows={2}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Serviço Ativo</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        O serviço estará disponível para solicitações
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditServiceOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={updateServiceMutation.isPending}>
+                  {updateServiceMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
             </form>

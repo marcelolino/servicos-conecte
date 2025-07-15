@@ -492,6 +492,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for services
+  app.get("/api/admin/services", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const services = await storage.getAllServicesForAdmin();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get all services", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Statistics routes
   app.get("/api/stats/provider", authenticateToken, requireProvider, async (req, res) => {
     try {
