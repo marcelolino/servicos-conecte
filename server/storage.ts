@@ -194,17 +194,18 @@ export class DatabaseStorage implements IStorage {
 
     // Add distance filter if coordinates provided
     if (latitude && longitude && radius) {
-      query = query.where(
-        sql`(
-          6371 * acos(
-            cos(radians(${latitude})) * 
-            cos(radians(${users.latitude})) * 
-            cos(radians(${users.longitude}) - radians(${longitude})) + 
-            sin(radians(${latitude})) * 
-            sin(radians(${users.latitude}))
-          )
-        ) <= ${radius}`
-      );
+      const distanceFilter = sql`(
+        6371 * acos(
+          cos(radians(${latitude})) * 
+          cos(radians(${users.latitude})) * 
+          cos(radians(${users.longitude}) - radians(${longitude})) + 
+          sin(radians(${latitude})) * 
+          sin(radians(${users.latitude}))
+        )
+      ) <= ${radius}`;
+      
+      const filteredQuery = query.where(distanceFilter);
+      return await filteredQuery.orderBy(desc(providers.rating));
     }
 
     return await query.orderBy(desc(providers.rating));
@@ -306,7 +307,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
       .where(eq(serviceRequests.id, id));
 
-    return request || undefined;
+    return request ? { ...request, provider: request.provider || undefined } : undefined;
   }
 
   async getServiceRequestsByClient(clientId: number): Promise<(ServiceRequest & { provider?: Provider; category: ServiceCategory })[]> {
@@ -430,7 +431,7 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(providers)
       .set({
-        rating: avgRating[0].avg,
+        rating: Number(avgRating[0].avg) || 0,
         totalReviews: totalReviews[0].count,
       })
       .where(eq(providers.id, review.providerId));
