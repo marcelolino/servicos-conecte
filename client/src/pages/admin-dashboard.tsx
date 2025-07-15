@@ -352,12 +352,36 @@ export default function AdminDashboard() {
   };
 
   const onServiceSubmit = (data: ServiceForm) => {
-    createServiceMutation.mutate(data);
+    const serviceData = {
+      name: data.name || "",
+      description: data.description || "",
+      categoryId: data.categoryId,
+      providerId: data.providerId,
+      price: data.price ? data.price : null,
+      minimumPrice: data.minimumPrice ? data.minimumPrice : null,
+      estimatedDuration: data.estimatedDuration || null,
+      requirements: data.requirements || null,
+      serviceZone: data.serviceZone || null,
+      isActive: data.isActive ?? true,
+    };
+    createServiceMutation.mutate(serviceData);
   };
 
   const onEditServiceSubmit = (data: ServiceForm) => {
     if (editingService) {
-      updateServiceMutation.mutate({ id: editingService.id, data });
+      const serviceData = {
+        name: data.name || "",
+        description: data.description || "",
+        categoryId: data.categoryId,
+        providerId: data.providerId,
+        price: data.price ? data.price : null,
+        minimumPrice: data.minimumPrice ? data.minimumPrice : null,
+        estimatedDuration: data.estimatedDuration || null,
+        requirements: data.requirements || null,
+        serviceZone: data.serviceZone || null,
+        isActive: data.isActive ?? true,
+      };
+      updateServiceMutation.mutate({ id: editingService.id, data: serviceData });
     }
   };
 

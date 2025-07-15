@@ -217,6 +217,7 @@ export const insertServiceCategorySchema = createInsertSchema(serviceCategories)
 export const insertProviderServiceSchema = createInsertSchema(providerServices).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertServiceRequestSchema = createInsertSchema(serviceRequests).omit({

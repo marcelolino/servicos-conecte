@@ -504,10 +504,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/services", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      const serviceData = insertProviderServiceSchema.parse(req.body);
+      // Convert price strings to numbers if they exist
+      const processedData = {
+        ...req.body,
+        price: req.body.price ? parseFloat(req.body.price) : null,
+        minimumPrice: req.body.minimumPrice ? parseFloat(req.body.minimumPrice) : null,
+      };
+      
+      const serviceData = insertProviderServiceSchema.parse(processedData);
       const service = await storage.createProviderService(serviceData);
       res.json(service);
     } catch (error) {
+      console.error("Error creating service:", error);
       res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
@@ -515,10 +523,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/services/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
-      const serviceData = req.body;
-      const service = await storage.updateProviderService(serviceId, serviceData);
+      // Convert price strings to numbers if they exist
+      const processedData = {
+        ...req.body,
+        price: req.body.price ? parseFloat(req.body.price) : null,
+        minimumPrice: req.body.minimumPrice ? parseFloat(req.body.minimumPrice) : null,
+      };
+      
+      const service = await storage.updateProviderService(serviceId, processedData);
       res.json(service);
     } catch (error) {
+      console.error("Error updating service:", error);
       res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
