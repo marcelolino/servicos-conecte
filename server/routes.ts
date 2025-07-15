@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema } from "@shared/schema";
 
 // Extend Request type to include user
 declare global {
