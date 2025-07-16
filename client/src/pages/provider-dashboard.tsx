@@ -102,7 +102,6 @@ export default function ProviderDashboard() {
     mutationFn: (requestId: number) => 
       apiRequest("PUT", `/api/service-requests/${requestId}`, {
         status: "accepted",
-        providerId: provider?.id,
       }),
     onSuccess: () => {
       toast({

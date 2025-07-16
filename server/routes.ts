@@ -413,10 +413,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Service request not found" });
       }
       
-      // Check if user is client or provider
-      const canUpdate = request.clientId === req.user!.id || 
-                       (request.provider && request.provider.userId === req.user!.id) ||
-                       req.user!.userType === "admin";
+      // Check if user can update this request
+      let canUpdate = false;
+      
+      // Client can always update their own requests
+      if (request.clientId === req.user!.id) {
+        canUpdate = true;
+      }
+      // Admin can update any request
+      else if (req.user!.userType === "admin") {
+        canUpdate = true;
+      }
+      // Provider can update if they're assigned to the request
+      else if (request.provider && request.provider.userId === req.user!.id) {
+        canUpdate = true;
+      }
+      // Provider can accept pending requests (when providerId is null and they want to accept)
+      else if (req.user!.userType === "provider" && !request.providerId && req.body.status === "accepted") {
+        // Get provider info to set providerId
+        const provider = await storage.getProviderByUserId(req.user!.id);
+        if (provider) {
+          req.body.providerId = provider.id;
+          canUpdate = true;
+        }
+      }
       
       if (!canUpdate) {
         return res.status(403).json({ message: "Access denied" });
