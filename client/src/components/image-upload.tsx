@@ -143,10 +143,15 @@ export default function ImageUpload({
         const formData = new FormData();
         formData.append('image', validFiles[0]);
 
+        const authToken = getAuthToken();
+        if (!authToken) {
+          throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+        }
+
         const response = await fetch(`/api/upload/${category}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${authToken}`
           },
           body: formData
         });
@@ -160,6 +165,9 @@ export default function ImageUpload({
             description: 'Imagem enviada com sucesso.'
           });
         } else {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('Sessão expirada. Faça login novamente.');
+          }
           throw new Error(data.message || 'Erro no upload');
         }
       }

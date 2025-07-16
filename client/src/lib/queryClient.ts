@@ -4,6 +4,26 @@ import { getAuthToken } from "./auth";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // Handle authentication errors
+    if (res.status === 401 || res.status === 403) {
+      // Check if response is JSON and contains message
+      try {
+        const errorData = JSON.parse(text);
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+      } catch (e) {
+        // If not JSON, use original text
+      }
+      
+      if (res.status === 401) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      } else {
+        throw new Error("Acesso negado. Verifique suas permissões.");
+      }
+    }
+    
     throw new Error(`${res.status}: ${text}`);
   }
 }
