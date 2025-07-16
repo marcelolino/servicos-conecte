@@ -1,0 +1,54 @@
+Visão Geral do Sistema: Demandium
+O vídeo apresenta uma plataforma de agendamento de serviços sob demanda que conecta múltiplos usuários através de painéis web e aplicativos móveis. O fluxo envolve quatro personas principais:
+Administrador (Painel Web): Gerencia toda a plataforma, desde configurações financeiras até a gestão de usuários e serviços.
+Cliente (App Móvel): Busca, agenda e paga por serviços.
+Fornecedor (App Móvel): Oferece serviços, gerencia seus trabalhadores e aceita reservas.
+Funcionário/Trabalhador (App Móvel): Recebe as atribuições de serviço e atualiza o status do trabalho.
+1. Fluxo do Painel Administrativo
+O administrador tem controle total sobre a operação.
+Dashboard Principal (0:00 e 7:32): A tela inicial exibe um resumo financeiro com "Ganho de comissão" e "Ganho total". Também mostra métricas importantes como o número de Clientes e Provedores, além de um gráfico de estatísticas de ganhos e as transações recentes.
+Gestão de Serviços (0:01 - 0:16):
+Zonas de Serviço: Permite criar e delimitar as áreas geográficas onde os serviços estarão disponíveis.
+Categorias e Subcategorias: É possível criar categorias (ex: PetShop, Pintor, Limpeza) e subcategorias (ex: Pintura Comercial, Limpeza Residencial) para organizar a oferta de serviços.
+Lista de Serviços: O administrador visualiza e gerencia todos os serviços cadastrados na plataforma.
+Gestão de Promoções (0:17 - 0:27):
+Banners Promocionais: Permite criar banners que aparecem no aplicativo do cliente, direcionando para categorias ou serviços específicos.
+Notificação Push: O administrador pode enviar notificações push para clientes, fornecedores ou trabalhadores, segmentando por zona, se necessário.
+Gestão de Reservas (0:28 - 0:35 e 7:21): O painel centraliza todas as reservas, que podem ser filtradas por status: Solicitações, Aceitas, Em Andamento, Concluídas e Canceladas. É possível visualizar os detalhes de cada reserva, incluindo cliente, valor e data.
+Configurações do Sistema (0:44 - 1:29):
+Configurações do Negócio: Permite editar informações da empresa, fuso horário, moeda (BRL), e logos.
+Gateway de Pagamento: Mostra a integração com múltiplos sistemas de pagamento como Stripe, Paystack, Razorpay, etc., permitindo ativar e configurar as credenciais de cada um.
+Configurações da Página: Permite editar o conteúdo de páginas estáticas como "Sobre Nós", "Política de Privacidade" e "Termos e Condições".
+Configuração da Página de Destino: O administrador pode customizar completamente a landing page do site, alterando textos e imagens que serão exibidos para os visitantes.
+2. Fluxo do Aplicativo do Cliente
+O cliente interage com a plataforma de forma simples e intuitiva.
+Tela Inicial e Busca (1:55): A tela inicial do app exibe banners promocionais, as categorias de serviço disponíveis (PetShop, Pintor, Limpeza, etc.) e serviços populares.
+Agendamento do Serviço (2:00 - 2:19):
+O cliente seleciona uma categoria (ex: Pintor).
+Escolhe um serviço específico (ex: Pintor Residencial).
+Define as opções do serviço (ex: por "dia" ou "m2") e a quantidade.
+Adiciona o serviço ao carrinho.
+Checkout e Pagamento (2:22 - 2:47):
+No carrinho, o cliente revisa o pedido.
+Aplica um cupom de desconto (no vídeo, o cupom "SOFF" é aplicado).
+Avança para a tela de confirmação, onde define a data e hora do serviço.
+Finaliza o pedido e escolhe a forma de pagamento, que pode ser digital (via gateways) ou "Pagar depois" (dinheiro na entrega).
+Uma notificação de "Solicitação de serviço enviado!" confirma o sucesso da operação.
+Acompanhamento (7:01): Na aba "Minhas Reservas", o cliente pode visualizar o histórico de todos os seus pedidos e o status atual de cada um (ex: "Concluído").
+3. Fluxo do Aplicativo do Fornecedor
+O fornecedor gerencia sua equipe e os serviços que presta.
+Dashboard e Gestão de Serviços (2:54 e 3:05 - 3:29): O fornecedor tem um painel com o resumo de seus negócios (ganhos, reservas, etc.). Na aba "Serviços", ele pode visualizar os serviços disponíveis na plataforma e se inscrever para oferecê-los (ex: se inscreve em "Pintura Comercial" e cancela a inscrição em "Grande Porte").
+Gestão de Funcionários (3:38 - 3:47): O fornecedor pode adicionar novos trabalhadores à sua equipe, preenchendo informações como nome, contato e dados de acesso.
+Recebimento e Aceite de Reservas (4:51 - 5:07):
+Uma nova reserva aparece como pendente na aba "Pedidos".
+O fornecedor visualiza os detalhes (cliente, endereço, valor).
+Ele aceita o pedido de reserva.
+Atribuição de Funcionário (5:34 - 5:41): Após aceitar, o fornecedor atribui a tarefa a um de seus funcionários disponíveis (no vídeo, atribui a "Ronan Silva").
+4. Fluxo do Aplicativo do Funcionário
+O trabalhador é a ponta da execução do serviço.
+Recebimento da Tarefa (5:45): O trabalhador recebe uma notificação e visualiza a reserva atribuída a ele em seu painel.
+Atualização de Status (5:54 - 6:43):
+Ao chegar no local, ele pode atualizar o status do serviço para "Em andamento". Uma notificação é enviada ao cliente e ao fornecedor.
+Ao finalizar o trabalho, ele altera o status para "Concluído".
+Uma tela de confirmação aparece para validar o valor recebido do cliente.
+Confirmação Final (6:47): Após a conclusão, o serviço é finalizado e notificações de "Serviço finalizado com sucesso!" são enviadas para o cliente e o fornecedor, completando o ciclo.
