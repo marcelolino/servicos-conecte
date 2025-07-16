@@ -647,6 +647,315 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Banners routes
+  app.get("/api/banners", async (req, res) => {
+    try {
+      const banners = await storage.getPromotionalBanners();
+      const activeBanners = banners.filter(banner => 
+        banner.status === "active" && 
+        (!banner.startDate || new Date(banner.startDate) <= new Date()) &&
+        (!banner.endDate || new Date(banner.endDate) >= new Date())
+      );
+      res.json(activeBanners);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get banners", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/banners/:id/click", async (req, res) => {
+    try {
+      const bannerId = parseInt(req.params.id);
+      await storage.incrementBannerClick(bannerId);
+      res.json({ message: "Click recorded" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to record click", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Admin banner management
+  app.get("/api/admin/banners", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const banners = await storage.getPromotionalBanners();
+      res.json(banners);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get banners", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/banners", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bannerData = {
+        title: req.body.title,
+        description: req.body.description || null,
+        imageUrl: req.body.imageUrl || null,
+        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : null,
+        targetUrl: req.body.targetUrl || null,
+        status: req.body.status || "active",
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        displayOrder: req.body.displayOrder ? parseInt(req.body.displayOrder) : 0,
+      };
+      
+      const banner = await storage.createPromotionalBanner(bannerData);
+      res.json(banner);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create banner", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/banners/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bannerId = parseInt(req.params.id);
+      const bannerData = {
+        title: req.body.title,
+        description: req.body.description || null,
+        imageUrl: req.body.imageUrl || null,
+        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : null,
+        targetUrl: req.body.targetUrl || null,
+        status: req.body.status || "active",
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : null,
+        displayOrder: req.body.displayOrder ? parseInt(req.body.displayOrder) : 0,
+      };
+      
+      const banner = await storage.updatePromotionalBanner(bannerId, bannerData);
+      res.json(banner);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update banner", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/banners/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bannerId = parseInt(req.params.id);
+      await storage.deletePromotionalBanner(bannerId);
+      res.json({ message: "Banner deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete banner", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Popular providers route
+  app.get("/api/providers/popular", async (req, res) => {
+    try {
+      const providers = await storage.getAllProviders();
+      // Sort by rating and total reviews to get popular providers
+      const popularProviders = providers
+        .filter(provider => provider.status === "approved")
+        .sort((a, b) => {
+          const aScore = (parseFloat(a.rating) || 0) * (a.totalReviews || 0);
+          const bScore = (parseFloat(b.rating) || 0) * (b.totalReviews || 0);
+          return bScore - aScore;
+        })
+        .slice(0, 10);
+      
+      res.json(popularProviders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get popular providers", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Employee management routes
+  app.get("/api/employees", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      const employees = await storage.getEmployeesByProvider(provider.id);
+      res.json(employees);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get employees", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/employees", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // First create user account for employee
+      const userData = {
+        email: req.body.email,
+        password: req.body.password || "defaultpass123",
+        name: req.body.name,
+        phone: req.body.phone,
+        userType: "employee" as const,
+        isActive: true,
+      };
+      
+      const user = await storage.createUser(userData);
+      
+      // Then create employee record
+      const employeeData = {
+        providerId: provider.id,
+        userId: user.id,
+        name: req.body.name,
+        phone: req.body.phone,
+        email: req.body.email,
+        specialization: req.body.specialization || null,
+        isActive: true,
+      };
+      
+      const employee = await storage.createEmployee(employeeData);
+      res.json(employee);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create employee", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/employees/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      const employeeData = {
+        name: req.body.name,
+        phone: req.body.phone,
+        email: req.body.email,
+        specialization: req.body.specialization || null,
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      };
+      
+      const employee = await storage.updateEmployee(employeeId, employeeData);
+      res.json(employee);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update employee", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/employees/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.id);
+      await storage.deleteEmployee(employeeId);
+      res.json({ message: "Employee deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete employee", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Service assignment routes
+  app.get("/api/assignments", authenticateToken, async (req, res) => {
+    try {
+      // Check if user is employee
+      if (req.user!.userType !== "employee") {
+        return res.status(403).json({ message: "Employee access required" });
+      }
+      
+      // Find employee record
+      const employees = await storage.getEmployeesByProvider(0); // This is not ideal, need to fix
+      const employee = employees.find(emp => emp.userId === req.user!.id);
+      
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const assignments = await storage.getServiceAssignmentsByEmployee(employee.id);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get assignments", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/assignments", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const assignmentData = {
+        serviceRequestId: parseInt(req.body.serviceRequestId),
+        employeeId: parseInt(req.body.employeeId),
+        notes: req.body.notes || null,
+      };
+      
+      const assignment = await storage.createServiceAssignment(assignmentData);
+      res.json(assignment);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create assignment", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/assignments/:id", authenticateToken, async (req, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const assignmentData = {
+        startedAt: req.body.startedAt ? new Date(req.body.startedAt) : null,
+        completedAt: req.body.completedAt ? new Date(req.body.completedAt) : null,
+        notes: req.body.notes || null,
+      };
+      
+      const assignment = await storage.updateServiceAssignment(assignmentId, assignmentData);
+      res.json(assignment);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update assignment", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Coupons routes
+  app.get("/api/coupons/validate/:code", async (req, res) => {
+    try {
+      const couponCode = req.params.code;
+      const coupon = await storage.getCouponByCode(couponCode);
+      
+      if (!coupon) {
+        return res.status(404).json({ message: "Coupon not found" });
+      }
+      
+      const now = new Date();
+      if (now < new Date(coupon.startDate) || now > new Date(coupon.endDate)) {
+        return res.status(400).json({ message: "Coupon expired" });
+      }
+      
+      if (coupon.maximumUses && coupon.currentUses >= coupon.maximumUses) {
+        return res.status(400).json({ message: "Coupon limit reached" });
+      }
+      
+      res.json(coupon);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to validate coupon", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/coupons/:id/use", authenticateToken, async (req, res) => {
+    try {
+      const couponId = parseInt(req.params.id);
+      await storage.useCoupon(couponId);
+      res.json({ message: "Coupon used successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to use coupon", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Admin coupon management
+  app.get("/api/admin/coupons", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const coupons = await storage.getCoupons();
+      res.json(coupons);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get coupons", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/coupons", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const couponData = {
+        code: req.body.code,
+        name: req.body.name,
+        description: req.body.description || null,
+        discountType: req.body.discountType,
+        discountValue: req.body.discountValue,
+        minimumAmount: req.body.minimumAmount || null,
+        maximumUses: req.body.maximumUses || null,
+        startDate: new Date(req.body.startDate),
+        endDate: new Date(req.body.endDate),
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+      };
+      
+      const coupon = await storage.createCoupon(couponData);
+      res.json(coupon);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create coupon", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

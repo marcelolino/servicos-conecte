@@ -285,6 +285,12 @@ export default function ProviderDashboard() {
                   Gerenciar Serviços
                 </Button>
               </Link>
+              <Link href="/employee-management">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Funcionários
+                </Button>
+              </Link>
               <Badge className={`px-3 py-1 rounded-full text-xs ${getProviderStatusColor(provider.status)}`}>
                 {getProviderStatusText(provider.status)}
               </Badge>

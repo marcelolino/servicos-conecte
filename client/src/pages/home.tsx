@@ -1,268 +1,286 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import ServiceCard from "@/components/service-card";
-import ProviderCard from "@/components/provider-card";
-import { Search, CheckCircle, Handshake, Star } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import type { ServiceCategory } from "@shared/schema";
+import { 
+  Search, 
+  MapPin, 
+  Star, 
+  TrendingUp, 
+  Users, 
+  Clock,
+  ArrowRight,
+  ShieldCheck,
+  Heart,
+  Zap
+} from "lucide-react";
+import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
+
+interface BannerWithCategory extends PromotionalBanner {
+  category?: ServiceCategory;
+}
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [cep, setCep] = useState("");
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { data: banners, isLoading: bannersLoading } = useQuery({
+    queryKey: ['/api/banners'],
+    enabled: true,
+  });
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ["/api/categories"],
+    queryKey: ['/api/categories'],
+    enabled: true,
   });
 
-  const { data: providers, isLoading: providersLoading } = useQuery({
-    queryKey: ["/api/providers/category", selectedCategory],
-    enabled: !!selectedCategory,
+  const { data: popularProviders, isLoading: providersLoading } = useQuery({
+    queryKey: ['/api/providers/popular'],
+    enabled: true,
   });
 
-  const handleServiceSearch = () => {
-    if (!selectedCategory || !cep) {
-      alert("Por favor, selecione um serviço e informe seu CEP");
-      return;
-    }
+  const filteredCategories = categories?.filter((category: ServiceCategory) =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const handleBannerClick = (banner: BannerWithCategory) => {
+    // Increment banner click count
+    fetch(`/api/banners/${banner.id}/click`, { method: 'POST' });
     
-    // TODO: Implement service search with geolocation
-    console.log("Searching for category:", selectedCategory, "CEP:", cep);
+    // Navigate to category or target URL
+    if (banner.targetUrl) {
+      window.open(banner.targetUrl, '_blank');
+    } else if (banner.category) {
+      window.location.href = `/services/${banner.category.id}`;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="hero-gradient text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">
-              Conectamos você aos melhores prestadores de serviços
-            </h2>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Encontre profissionais qualificados para suas necessidades domésticas e comerciais
-            </p>
-            
-            {/* Service Search */}
-            <Card className="max-w-2xl mx-auto shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="service-select" className="block text-sm font-medium text-muted-foreground mb-2">
-                      Que serviço você precisa?
-                    </Label>
-                    <Select onValueChange={(value) => setSelectedCategory(parseInt(value))}>
-                      <SelectTrigger id="service-select">
-                        <SelectValue placeholder="Selecione um serviço" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoriesLoading ? (
-                          <div className="p-2">
-                            <Skeleton className="h-4 w-full" />
-                          </div>
-                        ) : (
-                          categories?.map((category: ServiceCategory) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <Label htmlFor="cep-input" className="block text-sm font-medium text-muted-foreground mb-2">
-                      Seu CEP
-                    </Label>
-                    <Input
-                      id="cep-input"
-                      type="text"
-                      placeholder="00000-000"
-                      value={cep}
-                      onChange={(e) => setCep(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <Button onClick={handleServiceSearch} className="md:mt-7">
-                    <Search className="h-4 w-4 mr-2" />
-                    Buscar Profissionais
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Bem-vindo ao <span className="text-blue-600">Qserviços</span>
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+            Conecte-se com os melhores profissionais da sua região
+          </p>
+          
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto relative">
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <Input
+              placeholder="Buscar serviços (ex: Encanador, Limpeza, Pintor...)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12 text-lg border-2 border-blue-200 focus:border-blue-400 rounded-xl"
+            />
           </div>
         </div>
-      </section>
 
-      {/* Services Categories */}
-      <section className="py-20 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold text-foreground mb-4">Categorias de Serviços</h3>
-            <p className="text-muted-foreground text-lg">Encontre o profissional ideal para cada necessidade</p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {categoriesLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <Card key={index} className="p-6">
-                  <CardContent className="p-0 text-center">
-                    <Skeleton className="w-16 h-16 rounded-full mx-auto mb-4" />
-                    <Skeleton className="h-4 w-20 mx-auto mb-2" />
-                    <Skeleton className="h-3 w-16 mx-auto" />
+        {/* Promotional Banners */}
+        {!bannersLoading && banners && banners.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              Ofertas Especiais
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {banners.slice(0, 3).map((banner: BannerWithCategory) => (
+                <Card 
+                  key={banner.id} 
+                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                  onClick={() => handleBannerClick(banner)}
+                >
+                  <CardHeader className="pb-3">
+                    {banner.imageUrl && (
+                      <div className="w-full h-40 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mb-3 flex items-center justify-center text-white text-2xl font-bold">
+                        {banner.title}
+                      </div>
+                    )}
+                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                      {banner.title}
+                    </CardTitle>
+                    {banner.description && (
+                      <CardDescription>{banner.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      {banner.category && (
+                        <Badge variant="secondary" className="text-xs">
+                          {banner.category.name}
+                        </Badge>
+                      )}
+                      <Button size="sm" variant="ghost" className="p-0 h-auto">
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              categories?.map((category: ServiceCategory) => (
-                <ServiceCard
-                  key={category.id}
-                  category={category}
-                  onClick={() => setSelectedCategory(category.id)}
-                />
-              ))
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* How It Works */}
-      <section className="py-20 bg-muted">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold text-foreground mb-4">Como Funciona</h3>
-            <p className="text-muted-foreground text-lg">Simples, rápido e seguro</p>
-          </div>
+        {/* Service Categories */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Categorias de Serviços
+          </h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">1. Encontre</h4>
-              <p className="text-muted-foreground">
-                Busque pelo serviço que precisa e veja profissionais disponíveis na sua região
-              </p>
+          {categoriesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-lg" />
+              ))}
             </div>
-            
-            <div className="text-center">
-              <div className="bg-secondary w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Handshake className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">2. Contrate</h4>
-              <p className="text-muted-foreground">
-                Solicite orçamento, compare preços e escolha o melhor profissional para você
-              </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCategories.map((category: ServiceCategory) => (
+                <Link key={category.id} to={`/services/${category.id}`}>
+                  <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
+                    <CardHeader className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span className="text-white text-2xl font-bold">
+                          {category.icon || category.name.charAt(0)}
+                        </span>
+                      </div>
+                      <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                        {category.name}
+                      </CardTitle>
+                      {category.description && (
+                        <CardDescription className="text-sm line-clamp-2">
+                          {category.description}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
             </div>
-            
-            <div className="text-center">
-              <div className="bg-accent w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Star className="h-8 w-8 text-white" />
-              </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">3. Avalie</h4>
-              <p className="text-muted-foreground">
-                Após o serviço, avalie o profissional e ajude outros clientes
-              </p>
-            </div>
-          </div>
+          )}
         </div>
-      </section>
 
-      {/* Professional Profiles Preview */}
-      {selectedCategory && (
-        <section className="py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h3 className="text-3xl font-bold text-foreground mb-4">Profissionais Qualificados</h3>
-              <p className="text-muted-foreground text-lg">Conheça alguns dos nossos prestadores de serviços</p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {providersLoading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <Card key={index} className="p-6">
-                    <CardContent className="p-0">
-                      <div className="flex items-start space-x-4">
-                        <Skeleton className="w-16 h-16 rounded-full" />
-                        <div className="flex-1">
-                          <Skeleton className="h-4 w-32 mb-2" />
-                          <Skeleton className="h-3 w-24 mb-2" />
-                          <Skeleton className="h-3 w-full mb-4" />
-                          <Skeleton className="h-8 w-full" />
+        {/* Popular Providers */}
+        {!providersLoading && popularProviders && popularProviders.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              Profissionais Populares
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {popularProviders.slice(0, 6).map((provider: any) => (
+                <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                  <CardHeader>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          {provider.user.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                          {provider.user.name}
+                        </CardTitle>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span>{provider.rating || "5.0"}</span>
+                          <span>({provider.totalReviews || 0} avaliações)</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                providers?.map((provider: any) => (
-                  <ProviderCard
-                    key={provider.id}
-                    provider={provider}
-                    onRequestQuote={() => {
-                      // TODO: Implement quote request
-                      console.log("Request quote for provider:", provider.id);
-                    }}
-                  />
-                ))
-              )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                      {provider.description || "Profissional experiente e qualificado"}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <MapPin className="h-4 w-4" />
+                        <span>{provider.user.city || "Região"}</span>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        Ver Perfil
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Provider CTA */}
-      <section className="py-20 provider-gradient text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl md:text-4xl font-bold mb-6">Seja um Prestador de Serviços</h3>
-          <p className="text-xl mb-8 text-green-100">Aumente sua renda conectando-se com novos clientes</p>
-          
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+        {/* Features Section */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            Por que escolher o Qserviços?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="bg-white bg-opacity-20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">Mais Clientes</h4>
-              <p className="text-green-100">Acesse milhares de clientes procurando por seus serviços</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Profissionais Verificados
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Todos os profissionais passam por verificação e aprovação
+              </p>
             </div>
-            
             <div className="text-center">
-              <div className="bg-white bg-opacity-20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">Flexibilidade</h4>
-              <p className="text-green-100">Trabalhe nos seus horários e defina seu raio de atendimento</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Atendimento Rápido
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Resposta rápida e agendamento facilitado
+              </p>
             </div>
-            
             <div className="text-center">
-              <div className="bg-white bg-opacity-20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">Pagamento Seguro</h4>
-              <p className="text-green-100">Receba seus pagamentos de forma rápida e segura</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Satisfação Garantida
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Sistema de avaliações e qualidade garantida
+              </p>
             </div>
           </div>
-          
-          <Card className="bg-white bg-opacity-10 max-w-md mx-auto mb-8">
-            <CardContent className="p-6">
-              <h4 className="text-2xl font-bold mb-4">7 Dias Grátis</h4>
-              <p className="text-green-100 mb-4">Teste nossa plataforma sem compromisso</p>
-              <p className="text-sm text-green-200">Sem taxas de adesão • Cancele quando quiser</p>
-            </CardContent>
-          </Card>
-          
-          <Button asChild size="lg" className="bg-white text-secondary hover:bg-gray-100">
-            <Link href="/register?type=provider">
-              Quero ser um Prestador
-            </Link>
-          </Button>
         </div>
-      </section>
+
+        {/* Call to Action */}
+        {!user && (
+          <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8">
+            <h3 className="text-2xl font-bold mb-2">
+              Comece agora mesmo!
+            </h3>
+            <p className="text-lg mb-6">
+              Cadastre-se e encontre os melhores profissionais da sua região
+            </p>
+            <div className="space-x-4">
+              <Link to="/register">
+                <Button size="lg" variant="secondary" className="text-blue-600">
+                  Criar Conta
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-600">
+                  Entrar
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

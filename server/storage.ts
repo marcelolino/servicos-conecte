@@ -6,6 +6,13 @@ import {
   serviceRequests,
   reviews,
   notifications,
+  employees,
+  serviceZones,
+  promotionalBanners,
+  payments,
+  coupons,
+  serviceAssignments,
+  systemSettings,
   type User,
   type InsertUser,
   type Provider,
@@ -20,6 +27,20 @@ import {
   type InsertReview,
   type Notification,
   type InsertNotification,
+  type Employee,
+  type InsertEmployee,
+  type ServiceZone,
+  type InsertServiceZone,
+  type PromotionalBanner,
+  type InsertPromotionalBanner,
+  type Payment,
+  type InsertPayment,
+  type Coupon,
+  type InsertCoupon,
+  type ServiceAssignment,
+  type InsertServiceAssignment,
+  type SystemSetting,
+  type InsertSystemSetting,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -98,6 +119,49 @@ export interface IStorage {
     totalRevenue: number;
     pendingApprovals: number;
   }>;
+
+  // Employee management
+  getEmployeesByProvider(providerId: number): Promise<(Employee & { user: User })[]>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee>;
+  deleteEmployee(id: number): Promise<void>;
+  
+  // Service zones
+  getServiceZones(): Promise<ServiceZone[]>;
+  createServiceZone(zone: InsertServiceZone): Promise<ServiceZone>;
+  updateServiceZone(id: number, zone: Partial<InsertServiceZone>): Promise<ServiceZone>;
+  deleteServiceZone(id: number): Promise<void>;
+  
+  // Promotional banners
+  getPromotionalBanners(): Promise<(PromotionalBanner & { category?: ServiceCategory })[]>;
+  createPromotionalBanner(banner: InsertPromotionalBanner): Promise<PromotionalBanner>;
+  updatePromotionalBanner(id: number, banner: Partial<InsertPromotionalBanner>): Promise<PromotionalBanner>;
+  deletePromotionalBanner(id: number): Promise<void>;
+  incrementBannerClick(id: number): Promise<void>;
+  
+  // Payments
+  getPaymentsByServiceRequest(serviceRequestId: number): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: number, payment: Partial<InsertPayment>): Promise<Payment>;
+  
+  // Coupons
+  getCoupons(): Promise<Coupon[]>;
+  getCouponByCode(code: string): Promise<Coupon | undefined>;
+  createCoupon(coupon: InsertCoupon): Promise<Coupon>;
+  updateCoupon(id: number, coupon: Partial<InsertCoupon>): Promise<Coupon>;
+  deleteCoupon(id: number): Promise<void>;
+  useCoupon(id: number): Promise<void>;
+  
+  // Service assignments
+  getServiceAssignmentsByEmployee(employeeId: number): Promise<(ServiceAssignment & { serviceRequest: ServiceRequest & { client: User; category: ServiceCategory } })[]>;
+  createServiceAssignment(assignment: InsertServiceAssignment): Promise<ServiceAssignment>;
+  updateServiceAssignment(id: number, assignment: Partial<InsertServiceAssignment>): Promise<ServiceAssignment>;
+  
+  // System settings
+  getSystemSettings(): Promise<SystemSetting[]>;
+  getSystemSetting(key: string): Promise<SystemSetting | undefined>;
+  createSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
+  updateSystemSetting(key: string, value: string): Promise<SystemSetting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -731,6 +795,294 @@ export class DatabaseStorage implements IStorage {
       totalRevenue: Number(totalRevenue[0].sum) || 0,
       pendingApprovals: pendingApprovals[0].count,
     };
+  }
+
+  // Employee management
+  async getEmployeesByProvider(providerId: number): Promise<(Employee & { user: User })[]> {
+    const result = await db
+      .select({
+        id: employees.id,
+        providerId: employees.providerId,
+        userId: employees.userId,
+        name: employees.name,
+        phone: employees.phone,
+        email: employees.email,
+        specialization: employees.specialization,
+        isActive: employees.isActive,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        user: users,
+      })
+      .from(employees)
+      .innerJoin(users, eq(employees.userId, users.id))
+      .where(eq(employees.providerId, providerId))
+      .orderBy(desc(employees.createdAt));
+
+    return result;
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const [newEmployee] = await db
+      .insert(employees)
+      .values(employee)
+      .returning();
+    return newEmployee;
+  }
+
+  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee> {
+    const [updatedEmployee] = await db
+      .update(employees)
+      .set({ ...employee, updatedAt: new Date() })
+      .where(eq(employees.id, id))
+      .returning();
+    return updatedEmployee;
+  }
+
+  async deleteEmployee(id: number): Promise<void> {
+    await db.delete(employees).where(eq(employees.id, id));
+  }
+
+  // Service zones
+  async getServiceZones(): Promise<ServiceZone[]> {
+    return await db.select().from(serviceZones).orderBy(asc(serviceZones.name));
+  }
+
+  async createServiceZone(zone: InsertServiceZone): Promise<ServiceZone> {
+    const [newZone] = await db
+      .insert(serviceZones)
+      .values(zone)
+      .returning();
+    return newZone;
+  }
+
+  async updateServiceZone(id: number, zone: Partial<InsertServiceZone>): Promise<ServiceZone> {
+    const [updatedZone] = await db
+      .update(serviceZones)
+      .set(zone)
+      .where(eq(serviceZones.id, id))
+      .returning();
+    return updatedZone;
+  }
+
+  async deleteServiceZone(id: number): Promise<void> {
+    await db.delete(serviceZones).where(eq(serviceZones.id, id));
+  }
+
+  // Promotional banners
+  async getPromotionalBanners(): Promise<(PromotionalBanner & { category?: ServiceCategory })[]> {
+    const result = await db
+      .select({
+        id: promotionalBanners.id,
+        title: promotionalBanners.title,
+        description: promotionalBanners.description,
+        imageUrl: promotionalBanners.imageUrl,
+        categoryId: promotionalBanners.categoryId,
+        targetUrl: promotionalBanners.targetUrl,
+        status: promotionalBanners.status,
+        startDate: promotionalBanners.startDate,
+        endDate: promotionalBanners.endDate,
+        clickCount: promotionalBanners.clickCount,
+        displayOrder: promotionalBanners.displayOrder,
+        createdAt: promotionalBanners.createdAt,
+        updatedAt: promotionalBanners.updatedAt,
+        category: serviceCategories,
+      })
+      .from(promotionalBanners)
+      .leftJoin(serviceCategories, eq(promotionalBanners.categoryId, serviceCategories.id))
+      .orderBy(asc(promotionalBanners.displayOrder));
+
+    return result;
+  }
+
+  async createPromotionalBanner(banner: InsertPromotionalBanner): Promise<PromotionalBanner> {
+    const [newBanner] = await db
+      .insert(promotionalBanners)
+      .values(banner)
+      .returning();
+    return newBanner;
+  }
+
+  async updatePromotionalBanner(id: number, banner: Partial<InsertPromotionalBanner>): Promise<PromotionalBanner> {
+    const [updatedBanner] = await db
+      .update(promotionalBanners)
+      .set({ ...banner, updatedAt: new Date() })
+      .where(eq(promotionalBanners.id, id))
+      .returning();
+    return updatedBanner;
+  }
+
+  async deletePromotionalBanner(id: number): Promise<void> {
+    await db.delete(promotionalBanners).where(eq(promotionalBanners.id, id));
+  }
+
+  async incrementBannerClick(id: number): Promise<void> {
+    await db
+      .update(promotionalBanners)
+      .set({ clickCount: sql`${promotionalBanners.clickCount} + 1` })
+      .where(eq(promotionalBanners.id, id));
+  }
+
+  // Payments
+  async getPaymentsByServiceRequest(serviceRequestId: number): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.serviceRequestId, serviceRequestId))
+      .orderBy(desc(payments.createdAt));
+  }
+
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db
+      .insert(payments)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+
+  async updatePayment(id: number, payment: Partial<InsertPayment>): Promise<Payment> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({ ...payment, updatedAt: new Date() })
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment;
+  }
+
+  // Coupons
+  async getCoupons(): Promise<Coupon[]> {
+    return await db.select().from(coupons).orderBy(desc(coupons.createdAt));
+  }
+
+  async getCouponByCode(code: string): Promise<Coupon | undefined> {
+    const [coupon] = await db
+      .select()
+      .from(coupons)
+      .where(and(eq(coupons.code, code), eq(coupons.isActive, true)))
+      .limit(1);
+    return coupon || undefined;
+  }
+
+  async createCoupon(coupon: InsertCoupon): Promise<Coupon> {
+    const [newCoupon] = await db
+      .insert(coupons)
+      .values(coupon)
+      .returning();
+    return newCoupon;
+  }
+
+  async updateCoupon(id: number, coupon: Partial<InsertCoupon>): Promise<Coupon> {
+    const [updatedCoupon] = await db
+      .update(coupons)
+      .set({ ...coupon, updatedAt: new Date() })
+      .where(eq(coupons.id, id))
+      .returning();
+    return updatedCoupon;
+  }
+
+  async deleteCoupon(id: number): Promise<void> {
+    await db.delete(coupons).where(eq(coupons.id, id));
+  }
+
+  async useCoupon(id: number): Promise<void> {
+    await db
+      .update(coupons)
+      .set({ currentUses: sql`${coupons.currentUses} + 1` })
+      .where(eq(coupons.id, id));
+  }
+
+  // Service assignments
+  async getServiceAssignmentsByEmployee(employeeId: number): Promise<(ServiceAssignment & { serviceRequest: ServiceRequest & { client: User; category: ServiceCategory } })[]> {
+    const result = await db
+      .select({
+        id: serviceAssignments.id,
+        serviceRequestId: serviceAssignments.serviceRequestId,
+        employeeId: serviceAssignments.employeeId,
+        assignedAt: serviceAssignments.assignedAt,
+        startedAt: serviceAssignments.startedAt,
+        completedAt: serviceAssignments.completedAt,
+        notes: serviceAssignments.notes,
+        createdAt: serviceAssignments.createdAt,
+        updatedAt: serviceAssignments.updatedAt,
+        serviceRequest: {
+          id: serviceRequests.id,
+          clientId: serviceRequests.clientId,
+          categoryId: serviceRequests.categoryId,
+          providerId: serviceRequests.providerId,
+          title: serviceRequests.title,
+          description: serviceRequests.description,
+          address: serviceRequests.address,
+          cep: serviceRequests.cep,
+          city: serviceRequests.city,
+          state: serviceRequests.state,
+          latitude: serviceRequests.latitude,
+          longitude: serviceRequests.longitude,
+          estimatedPrice: serviceRequests.estimatedPrice,
+          finalPrice: serviceRequests.finalPrice,
+          status: serviceRequests.status,
+          scheduledAt: serviceRequests.scheduledAt,
+          completedAt: serviceRequests.completedAt,
+          createdAt: serviceRequests.createdAt,
+          updatedAt: serviceRequests.updatedAt,
+          client: users,
+          category: serviceCategories,
+        },
+      })
+      .from(serviceAssignments)
+      .innerJoin(serviceRequests, eq(serviceAssignments.serviceRequestId, serviceRequests.id))
+      .innerJoin(users, eq(serviceRequests.clientId, users.id))
+      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+      .where(eq(serviceAssignments.employeeId, employeeId))
+      .orderBy(desc(serviceAssignments.assignedAt));
+
+    return result;
+  }
+
+  async createServiceAssignment(assignment: InsertServiceAssignment): Promise<ServiceAssignment> {
+    const [newAssignment] = await db
+      .insert(serviceAssignments)
+      .values(assignment)
+      .returning();
+    return newAssignment;
+  }
+
+  async updateServiceAssignment(id: number, assignment: Partial<InsertServiceAssignment>): Promise<ServiceAssignment> {
+    const [updatedAssignment] = await db
+      .update(serviceAssignments)
+      .set({ ...assignment, updatedAt: new Date() })
+      .where(eq(serviceAssignments.id, id))
+      .returning();
+    return updatedAssignment;
+  }
+
+  // System settings
+  async getSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings).orderBy(asc(systemSettings.key));
+  }
+
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key))
+      .limit(1);
+    return setting || undefined;
+  }
+
+  async createSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting> {
+    const [newSetting] = await db
+      .insert(systemSettings)
+      .values(setting)
+      .returning();
+    return newSetting;
+  }
+
+  async updateSystemSetting(key: string, value: string): Promise<SystemSetting> {
+    const [updatedSetting] = await db
+      .update(systemSettings)
+      .set({ value, updatedAt: new Date() })
+      .where(eq(systemSettings.key, key))
+      .returning();
+    return updatedSetting;
   }
 }
 
