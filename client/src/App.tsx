@@ -30,6 +30,7 @@ function Router() {
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
+          <Route path="/admin" component={AdminDashboard} />
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/profile/:id" component={ProviderProfile} />
           <Route component={NotFound} />

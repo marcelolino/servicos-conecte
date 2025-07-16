@@ -39,7 +39,8 @@ import {
   FileText,
   Star,
   MapPin,
-  Calendar
+  Calendar,
+  Cog
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -94,6 +95,49 @@ export default function AdminDashboard() {
   const [bookingSearchTerm, setBookingSearchTerm] = useState("");
   const [bookingFilterStatus, setBookingFilterStatus] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [companySettings, setCompanySettings] = useState({
+    name: "",
+    description: "",
+    address: "",
+    city: "",
+    state: "",
+    cep: "",
+    phone: "",
+    email: "",
+    website: "",
+    logo: "",
+    primaryColor: "#3B82F6",
+    secondaryColor: "#6B7280",
+    currency: "BRL",
+    timezone: "America/Sao_Paulo",
+    workingHours: {
+      monday: { start: "08:00", end: "18:00", active: true },
+      tuesday: { start: "08:00", end: "18:00", active: true },
+      wednesday: { start: "08:00", end: "18:00", active: true },
+      thursday: { start: "08:00", end: "18:00", active: true },
+      friday: { start: "08:00", end: "18:00", active: true },
+      saturday: { start: "08:00", end: "12:00", active: true },
+      sunday: { start: "08:00", end: "12:00", active: false },
+    },
+    features: {
+      emailNotifications: true,
+      smsNotifications: false,
+      automaticApproval: false,
+      requireVerification: true,
+      allowCancellation: true,
+      allowReschedule: true,
+    },
+    paymentMethods: {
+      creditCard: true,
+      debitCard: true,
+      pix: true,
+      cash: true,
+      bankTransfer: false,
+    },
+    commissionRate: 5,
+    cancellationPolicy: "24",
+    reschedulePolicy: "12",
+  });
 
   const form = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema),
@@ -544,6 +588,12 @@ export default function AdminDashboard() {
       label: "Relatórios",
       icon: BarChart3,
       description: "Relatórios e estatísticas"
+    },
+    {
+      id: "settings",
+      label: "Configurações",
+      icon: Cog,
+      description: "Configurações do sistema"
     }
   ];
 
@@ -1971,6 +2021,402 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderSettings = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Configurações do Sistema</h2>
+        <p className="text-muted-foreground">Gerencie as configurações e dados da sua empresa</p>
+      </div>
+
+      <Tabs defaultValue="company" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="company">Empresa</TabsTrigger>
+          <TabsTrigger value="appearance">Aparência</TabsTrigger>
+          <TabsTrigger value="hours">Horários</TabsTrigger>
+          <TabsTrigger value="features">Funcionalidades</TabsTrigger>
+          <TabsTrigger value="payment">Pagamentos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="company" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações da Empresa</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="company-name">Nome da Empresa</Label>
+                  <Input
+                    id="company-name"
+                    value={companySettings.name}
+                    onChange={(e) => setCompanySettings({ ...companySettings, name: e.target.value })}
+                    placeholder="Ex: Qserviços Ltda"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-email">Email</Label>
+                  <Input
+                    id="company-email"
+                    type="email"
+                    value={companySettings.email}
+                    onChange={(e) => setCompanySettings({ ...companySettings, email: e.target.value })}
+                    placeholder="contato@qservicos.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-phone">Telefone</Label>
+                  <Input
+                    id="company-phone"
+                    value={companySettings.phone}
+                    onChange={(e) => setCompanySettings({ ...companySettings, phone: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-website">Website</Label>
+                  <Input
+                    id="company-website"
+                    value={companySettings.website}
+                    onChange={(e) => setCompanySettings({ ...companySettings, website: e.target.value })}
+                    placeholder="https://qservicos.com"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="company-description">Descrição da Empresa</Label>
+                <Textarea
+                  id="company-description"
+                  value={companySettings.description}
+                  onChange={(e) => setCompanySettings({ ...companySettings, description: e.target.value })}
+                  placeholder="Descreva sua empresa..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="company-address">Endereço</Label>
+                  <Input
+                    id="company-address"
+                    value={companySettings.address}
+                    onChange={(e) => setCompanySettings({ ...companySettings, address: e.target.value })}
+                    placeholder="Rua da Empresa, 123"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-city">Cidade</Label>
+                  <Input
+                    id="company-city"
+                    value={companySettings.city}
+                    onChange={(e) => setCompanySettings({ ...companySettings, city: e.target.value })}
+                    placeholder="São Paulo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-state">Estado</Label>
+                  <Input
+                    id="company-state"
+                    value={companySettings.state}
+                    onChange={(e) => setCompanySettings({ ...companySettings, state: e.target.value })}
+                    placeholder="SP"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="company-cep">CEP</Label>
+                  <Input
+                    id="company-cep"
+                    value={companySettings.cep}
+                    onChange={(e) => setCompanySettings({ ...companySettings, cep: e.target.value })}
+                    placeholder="01234-567"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="commission-rate">Taxa de Comissão (%)</Label>
+                  <Input
+                    id="commission-rate"
+                    type="number"
+                    value={companySettings.commissionRate}
+                    onChange={(e) => setCompanySettings({ ...companySettings, commissionRate: Number(e.target.value) })}
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="currency">Moeda</Label>
+                  <Select value={companySettings.currency} onValueChange={(value) => setCompanySettings({ ...companySettings, currency: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BRL">Real (BRL)</SelectItem>
+                      <SelectItem value="USD">Dólar (USD)</SelectItem>
+                      <SelectItem value="EUR">Euro (EUR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button className="w-full">
+                <Settings className="h-4 w-4 mr-2" />
+                Salvar Configurações da Empresa
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Aparência e Branding</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="primary-color">Cor Primária</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="primary-color"
+                      type="color"
+                      value={companySettings.primaryColor}
+                      onChange={(e) => setCompanySettings({ ...companySettings, primaryColor: e.target.value })}
+                      className="w-12 h-10"
+                    />
+                    <Input
+                      value={companySettings.primaryColor}
+                      onChange={(e) => setCompanySettings({ ...companySettings, primaryColor: e.target.value })}
+                      placeholder="#3B82F6"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="secondary-color">Cor Secundária</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="secondary-color"
+                      type="color"
+                      value={companySettings.secondaryColor}
+                      onChange={(e) => setCompanySettings({ ...companySettings, secondaryColor: e.target.value })}
+                      className="w-12 h-10"
+                    />
+                    <Input
+                      value={companySettings.secondaryColor}
+                      onChange={(e) => setCompanySettings({ ...companySettings, secondaryColor: e.target.value })}
+                      placeholder="#6B7280"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="logo-url">URL do Logo</Label>
+                <Input
+                  id="logo-url"
+                  value={companySettings.logo}
+                  onChange={(e) => setCompanySettings({ ...companySettings, logo: e.target.value })}
+                  placeholder="https://exemplo.com/logo.png"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="timezone">Fuso Horário</Label>
+                <Select value={companySettings.timezone} onValueChange={(value) => setCompanySettings({ ...companySettings, timezone: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/Sao_Paulo">São Paulo (UTC-3)</SelectItem>
+                    <SelectItem value="America/Manaus">Manaus (UTC-4)</SelectItem>
+                    <SelectItem value="America/Rio_Branco">Rio Branco (UTC-5)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button className="w-full">
+                <Eye className="h-4 w-4 mr-2" />
+                Salvar Configurações de Aparência
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hours" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Horários de Funcionamento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Object.entries(companySettings.workingHours).map(([day, hours]) => (
+                <div key={day} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2 min-w-[120px]">
+                    <input
+                      type="checkbox"
+                      checked={hours.active}
+                      onChange={(e) => setCompanySettings({
+                        ...companySettings,
+                        workingHours: {
+                          ...companySettings.workingHours,
+                          [day]: { ...hours, active: e.target.checked }
+                        }
+                      })}
+                      className="rounded"
+                    />
+                    <Label className="capitalize">{day === 'monday' ? 'Segunda' : 
+                                                  day === 'tuesday' ? 'Terça' :
+                                                  day === 'wednesday' ? 'Quarta' :
+                                                  day === 'thursday' ? 'Quinta' :
+                                                  day === 'friday' ? 'Sexta' :
+                                                  day === 'saturday' ? 'Sábado' :
+                                                  'Domingo'}</Label>
+                  </div>
+                  
+                  {hours.active && (
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="time"
+                        value={hours.start}
+                        onChange={(e) => setCompanySettings({
+                          ...companySettings,
+                          workingHours: {
+                            ...companySettings.workingHours,
+                            [day]: { ...hours, start: e.target.value }
+                          }
+                        })}
+                        className="w-24"
+                      />
+                      <span>até</span>
+                      <Input
+                        type="time"
+                        value={hours.end}
+                        onChange={(e) => setCompanySettings({
+                          ...companySettings,
+                          workingHours: {
+                            ...companySettings.workingHours,
+                            [day]: { ...hours, end: e.target.value }
+                          }
+                        })}
+                        className="w-24"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <Button className="w-full">
+                <Clock className="h-4 w-4 mr-2" />
+                Salvar Horários de Funcionamento
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="features" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Funcionalidades do Sistema</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(companySettings.features).map(([key, value]) => (
+                  <div key={key} className="flex items-center space-x-2 p-3 border rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setCompanySettings({
+                        ...companySettings,
+                        features: {
+                          ...companySettings.features,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="rounded"
+                    />
+                    <Label className="flex-1">
+                      {key === 'emailNotifications' ? 'Notificações por Email' :
+                       key === 'smsNotifications' ? 'Notificações por SMS' :
+                       key === 'automaticApproval' ? 'Aprovação Automática' :
+                       key === 'requireVerification' ? 'Verificação Obrigatória' :
+                       key === 'allowCancellation' ? 'Permitir Cancelamento' :
+                       key === 'allowReschedule' ? 'Permitir Reagendamento' : key}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="cancellation-policy">Política de Cancelamento (horas)</Label>
+                  <Input
+                    id="cancellation-policy"
+                    value={companySettings.cancellationPolicy}
+                    onChange={(e) => setCompanySettings({ ...companySettings, cancellationPolicy: e.target.value })}
+                    placeholder="24"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="reschedule-policy">Política de Reagendamento (horas)</Label>
+                  <Input
+                    id="reschedule-policy"
+                    value={companySettings.reschedulePolicy}
+                    onChange={(e) => setCompanySettings({ ...companySettings, reschedulePolicy: e.target.value })}
+                    placeholder="12"
+                  />
+                </div>
+              </div>
+
+              <Button className="w-full">
+                <Shield className="h-4 w-4 mr-2" />
+                Salvar Configurações de Funcionalidades
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payment" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Métodos de Pagamento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(companySettings.paymentMethods).map(([key, value]) => (
+                  <div key={key} className="flex items-center space-x-2 p-3 border rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setCompanySettings({
+                        ...companySettings,
+                        paymentMethods: {
+                          ...companySettings.paymentMethods,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="rounded"
+                    />
+                    <Label className="flex-1">
+                      {key === 'creditCard' ? 'Cartão de Crédito' :
+                       key === 'debitCard' ? 'Cartão de Débito' :
+                       key === 'pix' ? 'PIX' :
+                       key === 'cash' ? 'Dinheiro' :
+                       key === 'bankTransfer' ? 'Transferência Bancária' : key}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+
+              <Button className="w-full">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Salvar Configurações de Pagamento
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -1997,6 +2443,8 @@ export default function AdminDashboard() {
             </p>
           </div>
         );
+      case "settings":
+        return renderSettings();
       default:
         return renderDashboard();
     }
