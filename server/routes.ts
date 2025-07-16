@@ -147,6 +147,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/categories/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const category = await storage.updateServiceCategory(categoryId, req.body);
+      res.json(category);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/categories/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      
+      // Instead of deleting, we'll mark as inactive
+      await storage.updateServiceCategory(categoryId, { isActive: false });
+      
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Provider routes
   app.post("/api/providers", authenticateToken, async (req, res) => {
     try {

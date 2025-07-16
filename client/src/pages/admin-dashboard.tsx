@@ -86,11 +86,13 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
   const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<(Provider & { user: User }) | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [editingService, setEditingService] = useState<any>(null);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [userSearchTerm, setUserSearchTerm] = useState("");
@@ -190,6 +192,17 @@ export default function AdminDashboard() {
     },
   });
 
+  const editCategoryForm = useForm<CategoryForm>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      icon: "",
+      imageUrl: "",
+      color: "",
+    },
+  });
+
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats/admin"],
@@ -244,6 +257,52 @@ export default function AdminDashboard() {
     onError: (error: any) => {
       toast({
         title: "Erro ao criar categoria",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Edit category mutation
+  const editCategoryMutation = useMutation({
+    mutationFn: (data: CategoryForm & { id: number }) => 
+      apiRequest("PUT", `/api/categories/${data.id}`, {
+        ...data,
+        imageUrl: categoryImage,
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Categoria atualizada com sucesso!",
+        description: "As alterações foram salvas.",
+      });
+      setIsEditCategoryOpen(false);
+      editCategoryForm.reset();
+      setCategoryImage("");
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao editar categoria",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete category mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (categoryId: number) => 
+      apiRequest("DELETE", `/api/categories/${categoryId}`, {}),
+    onSuccess: () => {
+      toast({
+        title: "Categoria excluída com sucesso!",
+        description: "A categoria foi removida do sistema.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir categoria",
         description: error.message,
         variant: "destructive",
       });
@@ -1288,6 +1347,104 @@ export default function AdminDashboard() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Category Dialog */}
+        <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Editar Categoria</DialogTitle>
+            </DialogHeader>
+            <Form {...editCategoryForm}>
+              <form onSubmit={editCategoryForm.handleSubmit((data) => {
+                if (editingCategory) {
+                  editCategoryMutation.mutate({ ...data, id: editingCategory.id });
+                }
+              })} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editCategoryForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Categoria</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Encanamento" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editCategoryForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ícone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: wrench" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={editCategoryForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Descreva a categoria..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editCategoryForm.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cor (opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: #3B82F6" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-2">
+                  <Label>Imagem da Categoria</Label>
+                  <ImageUpload
+                    category="category"
+                    onUpload={handleCategoryImageUpload}
+                    onRemove={handleCategoryImageRemove}
+                    currentImages={categoryImage ? [{ id: categoryImage, url: categoryImage, name: '' }] : []}
+                    multiple={false}
+                    maxFiles={1}
+                    accept="image/*"
+                    maxSize={5}
+                    disabled={editCategoryMutation.isPending}
+                    showPreview={true}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsEditCategoryOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={editCategoryMutation.isPending}>
+                    {editCategoryMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="dashboard-card">
@@ -1328,6 +1485,39 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>ID: {category.id}</span>
                     <span>{new Date(category.createdAt).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCategory(category);
+                        editCategoryForm.reset({
+                          name: category.name,
+                          description: category.description,
+                          icon: category.icon || "",
+                          color: category.color || "",
+                        });
+                        setCategoryImage(category.imageUrl || "");
+                        setIsEditCategoryOpen(true);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm("Tem certeza que deseja excluir esta categoria?")) {
+                          deleteCategoryMutation.mutate(category.id);
+                        }
+                      }}
+                      disabled={deleteCategoryMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Excluir
+                    </Button>
                   </div>
                 </div>
               ))

@@ -146,11 +146,21 @@ export default function Home() {
                 <Link key={category.id} to={`/services/${category.id}`}>
                   <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
                     <CardHeader className="text-center">
-                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                        <span className="text-white text-2xl font-bold">
-                          {category.icon || category.name.charAt(0)}
-                        </span>
-                      </div>
+                      {category.imageUrl ? (
+                        <div className="w-20 h-20 rounded-lg overflow-hidden mx-auto mb-3 group-hover:scale-110 transition-transform">
+                          <img
+                            src={category.imageUrl}
+                            alt={category.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                          <span className="text-white text-2xl font-bold">
+                            {category.icon || category.name.charAt(0)}
+                          </span>
+                        </div>
+                      )}
                       <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
                         {category.name}
                       </CardTitle>
