@@ -1464,15 +1464,26 @@ export default function AdminDashboard() {
             ) : (
               categories?.map((category: ServiceCategory) => (
                 <div key={category.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                  {category.imageUrl && (
-                    <div className="mb-3 rounded-lg overflow-hidden bg-muted">
+                  <div className="mb-3 rounded-lg overflow-hidden bg-muted">
+                    {category.imageUrl ? (
                       <img
                         src={category.imageUrl}
                         alt={category.name}
                         className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/api/placeholder/400/400';
+                        }}
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-2xl mb-1">{category.icon || '📋'}</div>
+                          <div className="text-xs text-muted-foreground">Sem imagem</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-foreground">{category.name}</h3>
                     <Badge variant={category.isActive ? "default" : "secondary"}>

@@ -1036,6 +1036,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Placeholder image route
+  app.get("/api/placeholder/:width/:height", (req, res) => {
+    const width = parseInt(req.params.width) || 400;
+    const height = parseInt(req.params.height) || 400;
+    
+    // Generate a simple SVG placeholder
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${width}" height="${height}" fill="#f0f0f0" stroke="#ccc" stroke-width="2"/>
+        <text x="50%" y="50%" text-anchor="middle" fill="#666" font-family="Arial, sans-serif" font-size="16">
+          ${width} × ${height}
+        </text>
+      </svg>
+    `;
+    
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(svg);
+  });
+
   // Image upload routes
   app.post("/api/upload/banner", authenticateToken, requireAdmin, upload.single('image'), uploadBannerImage);
   app.post("/api/upload/service", authenticateToken, upload.single('image'), uploadServiceImage);
