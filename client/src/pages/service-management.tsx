@@ -19,6 +19,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import ImageUpload from "@/components/image-upload";
 import { 
   Plus, 
   Search, 
@@ -74,6 +75,8 @@ export default function ServiceManagement() {
   const [selectedService, setSelectedService] = useState<ServiceWithCategory | null>(null);
   const [editingService, setEditingService] = useState<ServiceWithCategory | null>(null);
   const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
+  const [serviceImages, setServiceImages] = useState<string[]>([]);
+  const [editServiceImages, setEditServiceImages] = useState<string[]>([]);
 
   const form = useForm<ServiceForm>({
     resolver: zodResolver(serviceSchema),
@@ -165,15 +168,39 @@ export default function ServiceManagement() {
     },
   });
 
+  const handleImageUpload = (imageUrl: string) => {
+    setServiceImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleImageRemove = (imageUrl: string) => {
+    setServiceImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
+  const handleEditImageUpload = (imageUrl: string) => {
+    setEditServiceImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleEditImageRemove = (imageUrl: string) => {
+    setEditServiceImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
   const onSubmit = (data: ServiceForm) => {
-    createServiceMutation.mutate(data);
+    const serviceData = {
+      ...data,
+      images: serviceImages,
+    };
+    createServiceMutation.mutate(serviceData);
   };
 
   const onEditSubmit = (data: ServiceForm) => {
     if (editingService) {
+      const serviceData = {
+        ...data,
+        images: editServiceImages,
+      };
       updateServiceMutation.mutate({
         id: editingService.id,
-        data,
+        data: serviceData,
       });
     }
   };
@@ -641,6 +668,26 @@ export default function ServiceManagement() {
                 )}
               />
 
+              {/* Service Images Upload */}
+              <div className="space-y-2">
+                <Label>Imagens do Serviço (Opcional)</Label>
+                <ImageUpload
+                  category="service"
+                  onUpload={handleImageUpload}
+                  onRemove={handleImageRemove}
+                  currentImages={serviceImages.map(url => ({ id: url, url, name: '' }))}
+                  multiple={true}
+                  maxFiles={5}
+                  accept="image/*"
+                  maxSize={5}
+                  disabled={createServiceMutation.isPending}
+                  showPreview={true}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Adicione até 5 imagens para mostrar exemplos do seu trabalho
+                </p>
+              </div>
+
               <FormField
                 control={form.control}
                 name="isActive"
@@ -805,6 +852,26 @@ export default function ServiceManagement() {
                   </FormItem>
                 )}
               />
+
+              {/* Edit Service Images Upload */}
+              <div className="space-y-2">
+                <Label>Imagens do Serviço (Opcional)</Label>
+                <ImageUpload
+                  category="service"
+                  onUpload={handleEditImageUpload}
+                  onRemove={handleEditImageRemove}
+                  currentImages={editServiceImages.map(url => ({ id: url, url, name: '' }))}
+                  multiple={true}
+                  maxFiles={5}
+                  accept="image/*"
+                  maxSize={5}
+                  disabled={updateServiceMutation.isPending}
+                  showPreview={true}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Atualize as imagens do seu serviço para mostrar exemplos do seu trabalho
+                </p>
+              </div>
 
               <FormField
                 control={editForm.control}
