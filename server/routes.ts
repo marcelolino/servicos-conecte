@@ -36,11 +36,13 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
+    console.log("No token provided");
     return res.status(401).json({ message: "Access token required" });
   }
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) {
+      console.log("JWT verification failed:", err.message);
       return res.status(403).json({ message: "Invalid token" });
     }
     req.user = user;

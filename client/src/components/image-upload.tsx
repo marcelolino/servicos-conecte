@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthToken } from '@/lib/auth';
 import { 
   Upload, 
   X, 
@@ -122,7 +123,7 @@ export default function ImageUpload({
         const response = await fetch('/api/upload/multiple', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${getAuthToken()}`
           },
           body: formData
         });
@@ -145,7 +146,7 @@ export default function ImageUpload({
         const response = await fetch(`/api/upload/${category}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${getAuthToken()}`
           },
           body: formData
         });
