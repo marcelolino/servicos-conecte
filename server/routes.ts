@@ -14,6 +14,13 @@ import {
   deleteImage, 
   getImageInfo 
 } from "./upload";
+import { 
+  advancedUploadHandler, 
+  getUserUploadStats, 
+  getFileUploadHistory, 
+  deleteUploadedFile, 
+  trackFileAccess 
+} from "./advanced-upload";
 
 // Extend Request type to include user
 declare global {
@@ -1062,6 +1069,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/category", authenticateToken, requireAdmin, upload.single('image'), uploadCategoryImage);
   app.post("/api/upload/provider", authenticateToken, requireProvider, upload.single('image'), uploadProviderImage);
   app.post("/api/upload/multiple", authenticateToken, upload.array('images', 10), uploadMultipleImages);
+  
+  // Advanced upload routes with limits, virus scanning, and caching
+  app.post("/api/upload/advanced/banner", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('banners'));
+  app.post("/api/upload/advanced/service", authenticateToken, upload.single('image'), advancedUploadHandler('services'));
+  app.post("/api/upload/advanced/category", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('categories'));
+  app.post("/api/upload/advanced/provider", authenticateToken, requireProvider, upload.single('image'), advancedUploadHandler('providers'));
+  app.post("/api/upload/advanced/avatar", authenticateToken, upload.single('image'), advancedUploadHandler('avatars'));
+  
+  // Upload management routes
+  app.get("/api/upload/stats", authenticateToken, getUserUploadStats);
+  app.get("/api/upload/history", authenticateToken, getFileUploadHistory);
+  app.delete("/api/upload/file/:id", authenticateToken, deleteUploadedFile);
   
   // Image management routes
   app.delete("/api/upload/image", authenticateToken, deleteImage);

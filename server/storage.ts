@@ -13,6 +13,8 @@ import {
   coupons,
   serviceAssignments,
   systemSettings,
+  fileUploads,
+  userUploadStats,
   type User,
   type InsertUser,
   type Provider,
@@ -41,6 +43,10 @@ import {
   type InsertServiceAssignment,
   type SystemSetting,
   type InsertSystemSetting,
+  type FileUpload,
+  type InsertFileUpload,
+  type UserUploadStats,
+  type InsertUserUploadStats,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";

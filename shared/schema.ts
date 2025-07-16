@@ -127,6 +127,39 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// File uploads table for tracking and management
+export const fileUploads = pgTable("file_uploads", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  originalName: varchar("original_name", { length: 255 }).notNull(),
+  filePath: text("file_path").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // 'banners', 'services', 'categories', 'providers', 'avatars'
+  isActive: boolean("is_active").default(true),
+  virusScanned: boolean("virus_scanned").default(false),
+  virusScanResult: varchar("virus_scan_result", { length: 50 }).default("pending"), // 'clean', 'infected', 'pending', 'error'
+  lastAccessed: timestamp("last_accessed").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User upload limits and statistics
+export const userUploadStats = pgTable("user_upload_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  dailyUploads: integer("daily_uploads").default(0),
+  monthlyUploads: integer("monthly_uploads").default(0),
+  totalUploads: integer("total_uploads").default(0),
+  totalSize: integer("total_size").default(0), // in bytes
+  lastUpload: timestamp("last_upload"),
+  lastDailyReset: timestamp("last_daily_reset").defaultNow(),
+  lastMonthlyReset: timestamp("last_monthly_reset").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Employees table (workers under providers)
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
@@ -432,6 +465,18 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const insertFileUploadSchema = createInsertSchema(fileUploads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserUploadStatsSchema = createInsertSchema(userUploadStats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -461,3 +506,7 @@ export type ServiceAssignment = typeof serviceAssignments.$inferSelect;
 export type InsertServiceAssignment = z.infer<typeof insertServiceAssignmentSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type FileUpload = typeof fileUploads.$inferSelect;
+export type InsertFileUpload = z.infer<typeof insertFileUploadSchema>;
+export type UserUploadStats = typeof userUploadStats.$inferSelect;
+export type InsertUserUploadStats = z.infer<typeof insertUserUploadStatsSchema>;

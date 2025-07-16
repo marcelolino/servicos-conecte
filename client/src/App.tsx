@@ -17,6 +17,7 @@ import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
 import UploadTest from "@/pages/upload-test";
+import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
 import Profile from "@/pages/profile";
 import Header from "@/components/layout/header";
@@ -39,6 +40,7 @@ function Router() {
           <Route path="/employee-management" component={EmployeeManagement} />
           <Route path="/media-management" component={MediaManagement} />
           <Route path="/upload-test" component={UploadTest} />
+          <Route path="/advanced-upload" component={AdvancedUploadDemo} />
           <Route path="/profile" component={Profile} />
           <Route path="/profile/:id" component={ProviderProfile} />
           <Route component={NotFound} />
