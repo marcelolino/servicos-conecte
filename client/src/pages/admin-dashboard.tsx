@@ -41,7 +41,11 @@ import {
   Star,
   MapPin,
   Calendar,
-  Cog
+  Cog,
+  ImageIcon,
+  Upload,
+  Download,
+  Trash2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -98,6 +102,7 @@ export default function AdminDashboard() {
   const [bookingFilterStatus, setBookingFilterStatus] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [categoryImage, setCategoryImage] = useState<string>("");
+  const [serviceImages, setServiceImages] = useState<string[]>([]);
   const [companySettings, setCompanySettings] = useState({
     name: "",
     description: "",
@@ -290,7 +295,10 @@ export default function AdminDashboard() {
   // Create service mutation
   const createServiceMutation = useMutation({
     mutationFn: (data: ServiceForm) => 
-      apiRequest("POST", "/api/admin/services", data),
+      apiRequest("POST", "/api/admin/services", {
+        ...data,
+        images: JSON.stringify(serviceImages),
+      }),
     onSuccess: () => {
       toast({
         title: "Serviço criado com sucesso!",
@@ -298,6 +306,7 @@ export default function AdminDashboard() {
       });
       setIsNewServiceOpen(false);
       serviceForm.reset();
+      setServiceImages([]);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
     },
     onError: (error: any) => {
@@ -359,6 +368,15 @@ export default function AdminDashboard() {
 
   const handleCategoryImageRemove = () => {
     setCategoryImage("");
+  };
+
+  // Service image handling functions
+  const handleServiceImageUpload = (imageUrl: string) => {
+    setServiceImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleServiceImageRemove = (imageUrl: string) => {
+    setServiceImages(prev => prev.filter(img => img !== imageUrl));
   };
 
   const getProviderStatusColor = (status: string) => {
@@ -593,6 +611,12 @@ export default function AdminDashboard() {
       label: "Categorias",
       icon: FileText,
       description: "Categorias de serviços"
+    },
+    {
+      id: "media",
+      label: "Mídia",
+      icon: ImageIcon,
+      description: "Gerenciar imagens"
     },
     {
       id: "users",
@@ -1283,6 +1307,15 @@ export default function AdminDashboard() {
             ) : (
               categories?.map((category: ServiceCategory) => (
                 <div key={category.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                  {category.imageUrl && (
+                    <div className="mb-3 rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={category.imageUrl}
+                        alt={category.name}
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-foreground">{category.name}</h3>
                     <Badge variant={category.isActive ? "default" : "secondary"}>
@@ -1628,6 +1661,29 @@ export default function AdminDashboard() {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <Label>Imagens do Serviço (Opcional)</Label>
+                <ImageUpload
+                  category="service"
+                  onUpload={handleServiceImageUpload}
+                  onRemove={handleServiceImageRemove}
+                  currentImages={serviceImages.map((url, index) => ({ 
+                    id: url, 
+                    url, 
+                    name: `Serviço ${index + 1}` 
+                  }))}
+                  multiple={true}
+                  maxFiles={5}
+                  accept="image/*"
+                  maxSize={5}
+                  disabled={createServiceMutation.isPending}
+                  showPreview={true}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Adicione até 5 imagens para ilustrar o serviço.
+                </p>
+              </div>
 
               <div className="flex items-center justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsNewServiceOpen(false)}>
@@ -2054,6 +2110,231 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderMedia = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Mídia</h2>
+          <p className="text-muted-foreground">Gerencie todas as imagens do sistema</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload em Massa
+          </Button>
+        </div>
+      </div>
+
+      {/* Upload Area */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Upload de Imagens
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageUpload
+            category="general"
+            onUpload={(imageUrl) => {
+              toast({
+                title: "Imagem enviada com sucesso!",
+                description: "A imagem foi processada e está disponível no sistema.",
+              });
+            }}
+            onRemove={() => {}}
+            currentImages={[]}
+            multiple={true}
+            maxFiles={10}
+            accept="image/*"
+            maxSize={10}
+            showPreview={true}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Image Categories */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="dashboard-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Categorias</h3>
+              <Badge variant="secondary">{categories?.length || 0}</Badge>
+            </div>
+            <div className="space-y-2">
+              {categories?.slice(0, 3).map((category: ServiceCategory) => (
+                <div key={category.id} className="flex items-center gap-2">
+                  {category.imageUrl ? (
+                    <img
+                      src={category.imageUrl}
+                      alt={category.name}
+                      className="w-8 h-8 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="text-sm truncate">{category.name}</span>
+                </div>
+              ))}
+              {(categories?.length || 0) > 3 && (
+                <p className="text-xs text-muted-foreground">
+                  +{(categories?.length || 0) - 3} mais
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Serviços</h3>
+              <Badge variant="secondary">{allServices?.length || 0}</Badge>
+            </div>
+            <div className="space-y-2">
+              {allServices?.slice(0, 3).map((service: any) => {
+                const images = service.images ? JSON.parse(service.images) : [];
+                return (
+                  <div key={service.id} className="flex items-center gap-2">
+                    {images.length > 0 ? (
+                      <img
+                        src={images[0]}
+                        alt={service.name}
+                        className="w-8 h-8 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-sm truncate">{service.name}</span>
+                  </div>
+                );
+              })}
+              {(allServices?.length || 0) > 3 && (
+                <p className="text-xs text-muted-foreground">
+                  +{(allServices?.length || 0) - 3} mais
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Prestadores</h3>
+              <Badge variant="secondary">{providers?.length || 0}</Badge>
+            </div>
+            <div className="space-y-2">
+              {providers?.slice(0, 3).map((provider: any) => {
+                const images = provider.portfolioImages ? JSON.parse(provider.portfolioImages) : [];
+                return (
+                  <div key={provider.id} className="flex items-center gap-2">
+                    {images.length > 0 ? (
+                      <img
+                        src={images[0]}
+                        alt={provider.user?.name}
+                        className="w-8 h-8 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-sm truncate">{provider.user?.name}</span>
+                  </div>
+                );
+              })}
+              {(providers?.length || 0) > 3 && (
+                <p className="text-xs text-muted-foreground">
+                  +{(providers?.length || 0) - 3} mais
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Estatísticas</h3>
+              <Badge variant="outline">Resumo</Badge>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total de Imagens</span>
+                <span className="font-medium">
+                  {(categories?.filter(c => c.imageUrl).length || 0) + 
+                   (allServices?.reduce((acc: number, service: any) => {
+                     const images = service.images ? JSON.parse(service.images) : [];
+                     return acc + images.length;
+                   }, 0) || 0) + 
+                   (providers?.reduce((acc: number, provider: any) => {
+                     const images = provider.portfolioImages ? JSON.parse(provider.portfolioImages) : [];
+                     return acc + images.length;
+                   }, 0) || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Categorias c/ Imagem</span>
+                <span className="font-medium">{categories?.filter(c => c.imageUrl).length || 0}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Serviços c/ Imagem</span>
+                <span className="font-medium">
+                  {allServices?.filter((service: any) => {
+                    const images = service.images ? JSON.parse(service.images) : [];
+                    return images.length > 0;
+                  }).length || 0}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Storage Management */}
+      <Card className="dashboard-card">
+        <CardHeader>
+          <CardTitle>Gestão de Armazenamento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <Upload className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+              <h4 className="font-semibold mb-1">Upload</h4>
+              <p className="text-sm text-muted-foreground">
+                Envie novas imagens para o sistema
+              </p>
+            </div>
+            <div className="text-center">
+              <ImageIcon className="h-8 w-8 text-green-500 mx-auto mb-2" />
+              <h4 className="font-semibold mb-1">Otimização</h4>
+              <p className="text-sm text-muted-foreground">
+                Imagens são automaticamente otimizadas
+              </p>
+            </div>
+            <div className="text-center">
+              <Trash2 className="h-8 w-8 text-red-500 mx-auto mb-2" />
+              <h4 className="font-semibold mb-1">Limpeza</h4>
+              <p className="text-sm text-muted-foreground">
+                Remova imagens não utilizadas
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderSettings = () => (
     <div className="space-y-6">
       <div>
@@ -2462,6 +2743,8 @@ export default function AdminDashboard() {
         return renderBookings();
       case "categories":
         return renderCategories();
+      case "media":
+        return renderMedia();
       case "users":
         return renderUsers();
       case "reports":

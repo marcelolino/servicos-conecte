@@ -528,6 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requirements: req.body.requirements || null,
         serviceZone: req.body.serviceZone || null,
         isActive: req.body.isActive !== undefined ? req.body.isActive : true,
+        images: req.body.images || null,
       };
       
       const service = await storage.createProviderService(serviceData);
