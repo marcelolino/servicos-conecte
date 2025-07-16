@@ -75,6 +75,7 @@ export interface IStorage {
   
   // Admin service management
   getAllServicesForAdmin(): Promise<(ProviderService & { category: ServiceCategory; provider: Provider & { user: User } })[]>;
+  getAllBookingsForAdmin(): Promise<(ServiceRequest & { client: User; provider?: Provider & { user: User }; category: ServiceCategory })[]>;
 
   // Statistics
   getProviderStats(providerId: number): Promise<{
@@ -642,6 +643,65 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(providers, eq(providerServices.providerId, providers.id))
       .innerJoin(users, eq(providers.userId, users.id))
       .orderBy(desc(providerServices.createdAt));
+  }
+
+  async getAllBookingsForAdmin(): Promise<(ServiceRequest & { client: User; provider?: Provider & { user: User }; category: ServiceCategory })[]> {
+    const result = await db
+      .select({
+        id: serviceRequests.id,
+        clientId: serviceRequests.clientId,
+        providerId: serviceRequests.providerId,
+        categoryId: serviceRequests.categoryId,
+        title: serviceRequests.title,
+        description: serviceRequests.description,
+        address: serviceRequests.address,
+        city: serviceRequests.city,
+        state: serviceRequests.state,
+        cep: serviceRequests.cep,
+        latitude: serviceRequests.latitude,
+        longitude: serviceRequests.longitude,
+        estimatedPrice: serviceRequests.estimatedPrice,
+        finalPrice: serviceRequests.finalPrice,
+        status: serviceRequests.status,
+        scheduledAt: serviceRequests.scheduledAt,
+        completedAt: serviceRequests.completedAt,
+        createdAt: serviceRequests.createdAt,
+        updatedAt: serviceRequests.updatedAt,
+        client: users,
+        provider: providers,
+        category: serviceCategories,
+      })
+      .from(serviceRequests)
+      .innerJoin(users, eq(serviceRequests.clientId, users.id))
+      .leftJoin(providers, eq(serviceRequests.providerId, providers.id))
+      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+      .orderBy(desc(serviceRequests.createdAt));
+
+    // Buscar dados do usuário do prestador separadamente
+    const enrichedResults = await Promise.all(
+      result.map(async (booking) => {
+        let providerWithUser = null;
+        if (booking.provider) {
+          const providerUser = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, booking.provider.userId))
+            .limit(1);
+          
+          providerWithUser = {
+            ...booking.provider,
+            user: providerUser[0] || null,
+          };
+        }
+
+        return {
+          ...booking,
+          provider: providerWithUser,
+        };
+      })
+    );
+
+    return enrichedResults;
   }
 
   async getAdminStats(): Promise<{

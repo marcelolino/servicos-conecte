@@ -638,6 +638,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/bookings", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bookings = await storage.getAllBookingsForAdmin();
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get bookings", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

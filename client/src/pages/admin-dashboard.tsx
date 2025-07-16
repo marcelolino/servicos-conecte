@@ -91,6 +91,9 @@ export default function AdminDashboard() {
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [serviceFilterStatus, setServiceFilterStatus] = useState<string>("all");
   const [serviceFilterCategory, setServiceFilterCategory] = useState<string>("all");
+  const [bookingSearchTerm, setBookingSearchTerm] = useState("");
+  const [bookingFilterStatus, setBookingFilterStatus] = useState<string>("all");
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   const form = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema),
@@ -160,6 +163,12 @@ export default function AdminDashboard() {
   // Fetch all services for admin
   const { data: allServices, isLoading: allServicesLoading } = useQuery({
     queryKey: ["/api/admin/services"],
+    enabled: user?.userType === "admin",
+  });
+
+  // Fetch all bookings for admin
+  const { data: bookings, isLoading: bookingsLoading } = useQuery({
+    queryKey: ["/api/admin/bookings"],
     enabled: user?.userType === "admin",
   });
 
@@ -321,6 +330,40 @@ export default function AdminDashboard() {
     }
   };
 
+  const getBookingStatusText = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "Pendente";
+      case "accepted":
+        return "Aceito";
+      case "in_progress":
+        return "Em Andamento";
+      case "completed":
+        return "Concluído";
+      case "cancelled":
+        return "Cancelado";
+      default:
+        return "Desconhecido";
+    }
+  };
+
+  const getBookingStatusVariant = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "secondary";
+      case "accepted":
+        return "default";
+      case "in_progress":
+        return "default";
+      case "completed":
+        return "default";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  };
+
   const getUserTypeText = (userType: string) => {
     switch (userType) {
       case "client":
@@ -449,6 +492,15 @@ export default function AdminDashboard() {
     return matchesSearch && matchesStatus && matchesCategory;
   }) || [];
 
+  // Filter bookings based on search and status
+  const filteredBookings = bookings?.filter((booking: any) => {
+    const matchesSearch = booking.title?.toLowerCase().includes(bookingSearchTerm.toLowerCase()) ||
+                         booking.client?.name?.toLowerCase().includes(bookingSearchTerm.toLowerCase()) ||
+                         booking.provider?.user?.name?.toLowerCase().includes(bookingSearchTerm.toLowerCase());
+    const matchesStatus = bookingFilterStatus === "all" || booking.status === bookingFilterStatus;
+    return matchesSearch && matchesStatus;
+  }) || [];
+
   const sidebarItems = [
     {
       id: "dashboard",
@@ -468,6 +520,12 @@ export default function AdminDashboard() {
       label: "Serviços",
       icon: Settings,
       description: "Gerenciar serviços"
+    },
+    {
+      id: "bookings",
+      label: "Agendamentos",
+      icon: Calendar,
+      description: "Gerenciar reservas"
     },
     {
       id: "categories",
@@ -1675,6 +1733,244 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderBookings = () => (
+    <div className="space-y-6">
+      {/* Header and Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Agendamentos</h2>
+          <p className="text-muted-foreground">Todas as reservas e agendamentos de serviços</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar agendamentos..."
+            value={bookingSearchTerm}
+            onChange={(e) => setBookingSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={bookingFilterStatus} onValueChange={setBookingFilterStatus}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pending">Pendente</SelectItem>
+            <SelectItem value="accepted">Aceito</SelectItem>
+            <SelectItem value="in_progress">Em Andamento</SelectItem>
+            <SelectItem value="completed">Concluído</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Bookings Table */}
+      <Card className="dashboard-card">
+        <CardContent className="p-0">
+          {bookingsLoading ? (
+            <div className="p-6 space-y-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Data da Reserva</TableHead>
+                  <TableHead>Onde o serviço será prestado</TableHead>
+                  <TableHead>Data do Agendamento</TableHead>
+                  <TableHead>Informações do Cliente</TableHead>
+                  <TableHead>Informações do Prestador</TableHead>
+                  <TableHead>Valor Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBookings?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {bookingSearchTerm || bookingFilterStatus !== "all"
+                          ? "Nenhum agendamento encontrado com os filtros aplicados."
+                          : "Nenhum agendamento cadastrado ainda."}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBookings?.map((booking: any, index: number) => (
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-medium">{booking.id}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {booking.createdAt ? new Date(booking.createdAt).toLocaleDateString('pt-BR') : "-"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {booking.createdAt ? new Date(booking.createdAt).toLocaleTimeString('pt-BR') : "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm max-w-xs">
+                          <p className="font-medium">{booking.address}</p>
+                          <p className="text-muted-foreground">{booking.city}, {booking.state}</p>
+                          <p className="text-muted-foreground">CEP: {booking.cep}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {booking.scheduledAt ? new Date(booking.scheduledAt).toLocaleDateString('pt-BR') : "A agendar"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {booking.scheduledAt ? new Date(booking.scheduledAt).toLocaleTimeString('pt-BR') : "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">{booking.client?.name || "N/A"}</p>
+                          <p className="text-muted-foreground">{booking.client?.email || "N/A"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">{booking.provider?.user?.name || "Não atribuído"}</p>
+                          <p className="text-muted-foreground">{booking.provider?.user?.email || "N/A"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            R$ {Number(booking.finalPrice || booking.estimatedPrice || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getBookingStatusVariant(booking.status)}>
+                          {getBookingStatusText(booking.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedBooking(booking)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Reagendar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              <AlertCircle className="h-4 w-4 mr-2" />
+                              Cancelar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Booking Details Dialog */}
+      {selectedBooking && (
+        <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Agendamento #{selectedBooking.id}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Serviço</Label>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.title}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Categoria</Label>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.category?.name || "N/A"}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Cliente</Label>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.client?.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Prestador</Label>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.provider?.user?.name || "Não atribuído"}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <Badge variant={getBookingStatusVariant(selectedBooking.status)}>
+                    {getBookingStatusText(selectedBooking.status)}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Valor</Label>
+                  <p className="text-sm text-muted-foreground">
+                    R$ {Number(selectedBooking.finalPrice || selectedBooking.estimatedPrice || 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Endereço</Label>
+                <p className="text-sm text-muted-foreground">
+                  {selectedBooking.address}, {selectedBooking.city}, {selectedBooking.state} - CEP: {selectedBooking.cep}
+                </p>
+              </div>
+
+              {selectedBooking.description && (
+                <div>
+                  <Label className="text-sm font-medium">Descrição</Label>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Data de Criação</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString('pt-BR') : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Data Agendada</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.scheduledAt ? new Date(selectedBooking.scheduledAt).toLocaleString('pt-BR') : "A agendar"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -1683,6 +1979,8 @@ export default function AdminDashboard() {
         return renderProviders();
       case "services":
         return renderServices();
+      case "bookings":
+        return renderBookings();
       case "categories":
         return renderCategories();
       case "users":
