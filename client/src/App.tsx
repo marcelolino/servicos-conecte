@@ -15,6 +15,8 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import ProviderProfile from "@/pages/provider-profile";
 import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
+import MediaManagement from "@/pages/media-management";
+import UploadTest from "@/pages/upload-test";
 import TestProfile from "@/pages/test-profile";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -34,6 +36,8 @@ function Router() {
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
+          <Route path="/media-management" component={MediaManagement} />
+          <Route path="/upload-test" component={UploadTest} />
           <Route path="/profile/:id" component={ProviderProfile} />
           <Route component={NotFound} />
         </Switch>

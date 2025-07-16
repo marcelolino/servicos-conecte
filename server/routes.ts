@@ -4,6 +4,16 @@ import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema } from "@shared/schema";
+import { 
+  upload, 
+  uploadBannerImage, 
+  uploadServiceImage, 
+  uploadCategoryImage, 
+  uploadProviderImage, 
+  uploadMultipleImages, 
+  deleteImage, 
+  getImageInfo 
+} from "./upload";
 
 // Extend Request type to include user
 declare global {
@@ -955,6 +965,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Failed to create coupon", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
+
+  // Image upload routes
+  app.post("/api/upload/banner", authenticateToken, requireAdmin, upload.single('image'), uploadBannerImage);
+  app.post("/api/upload/service", authenticateToken, upload.single('image'), uploadServiceImage);
+  app.post("/api/upload/category", authenticateToken, requireAdmin, upload.single('image'), uploadCategoryImage);
+  app.post("/api/upload/provider", authenticateToken, requireProvider, upload.single('image'), uploadProviderImage);
+  app.post("/api/upload/multiple", authenticateToken, upload.array('images', 10), uploadMultipleImages);
+  
+  // Image management routes
+  app.delete("/api/upload/image", authenticateToken, deleteImage);
+  app.get("/api/upload/info/:imagePath", getImageInfo);
 
   const httpServer = createServer(app);
   return httpServer;
