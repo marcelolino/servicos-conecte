@@ -18,6 +18,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import ImageUpload from "@/components/image-upload";
 import { 
   Users, 
   DollarSign, 
@@ -55,6 +56,7 @@ const categorySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
   icon: z.string().optional(),
+  imageUrl: z.string().optional(),
   color: z.string().optional(),
 });
 
@@ -95,6 +97,7 @@ export default function AdminDashboard() {
   const [bookingSearchTerm, setBookingSearchTerm] = useState("");
   const [bookingFilterStatus, setBookingFilterStatus] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [categoryImage, setCategoryImage] = useState<string>("");
   const [companySettings, setCompanySettings] = useState({
     name: "",
     description: "",
@@ -145,6 +148,7 @@ export default function AdminDashboard() {
       name: "",
       description: "",
       icon: "",
+      imageUrl: "",
       color: "",
     },
   });
@@ -218,7 +222,10 @@ export default function AdminDashboard() {
 
   // Create category mutation
   const createCategoryMutation = useMutation({
-    mutationFn: (data: CategoryForm) => apiRequest("POST", "/api/categories", data),
+    mutationFn: (data: CategoryForm) => apiRequest("POST", "/api/categories", {
+      ...data,
+      imageUrl: categoryImage,
+    }),
     onSuccess: () => {
       toast({
         title: "Categoria criada com sucesso!",
@@ -226,6 +233,7 @@ export default function AdminDashboard() {
       });
       setIsNewCategoryOpen(false);
       form.reset();
+      setCategoryImage("");
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
     },
     onError: (error: any) => {
@@ -343,6 +351,15 @@ export default function AdminDashboard() {
       });
     },
   });
+
+  // Image handling functions
+  const handleCategoryImageUpload = (imageUrl: string) => {
+    setCategoryImage(imageUrl);
+  };
+
+  const handleCategoryImageRemove = () => {
+    setCategoryImage("");
+  };
 
   const getProviderStatusColor = (status: string) => {
     switch (status) {
@@ -1216,6 +1233,22 @@ export default function AdminDashboard() {
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Imagem da Categoria (Opcional)</Label>
+                  <ImageUpload
+                    category="category"
+                    onUpload={handleCategoryImageUpload}
+                    onRemove={handleCategoryImageRemove}
+                    currentImages={categoryImage ? [{ id: categoryImage, url: categoryImage, name: '' }] : []}
+                    multiple={false}
+                    maxFiles={1}
+                    accept="image/*"
+                    maxSize={5}
+                    disabled={createCategoryMutation.isPending}
+                    showPreview={true}
                   />
                 </div>
 

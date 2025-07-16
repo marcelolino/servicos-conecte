@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import ImageUpload from "@/components/image-upload";
 import { User, Settings, MapPin, DollarSign, FileText } from "lucide-react";
 
 const createProviderSchema = z.object({
@@ -18,6 +19,7 @@ const createProviderSchema = z.object({
   basePrice: z.string().min(1, "Preço base é obrigatório"),
   description: z.string().min(20, "Descrição deve ter pelo menos 20 caracteres"),
   experience: z.string().min(10, "Experiência deve ter pelo menos 10 caracteres"),
+  portfolioImages: z.array(z.string()).optional(),
 });
 
 type CreateProviderForm = z.infer<typeof createProviderSchema>;
@@ -30,6 +32,7 @@ interface CreateProviderProfileProps {
 export default function CreateProviderProfile({ userId, onSuccess }: CreateProviderProfileProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
 
   const form = useForm<CreateProviderForm>({
     resolver: zodResolver(createProviderSchema),
@@ -38,6 +41,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
       basePrice: "",
       description: "",
       experience: "",
+      portfolioImages: [],
     },
   });
 
@@ -47,6 +51,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
         userId,
         ...data,
         basePrice: parseFloat(data.basePrice).toFixed(2),
+        portfolioImages: JSON.stringify(portfolioImages),
         status: "pending",
       }),
     onSuccess: () => {
@@ -67,7 +72,19 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
   });
 
   const onSubmit = (data: CreateProviderForm) => {
-    createProviderMutation.mutate(data);
+    const providerData = {
+      ...data,
+      portfolioImages,
+    };
+    createProviderMutation.mutate(providerData);
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setPortfolioImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleImageRemove = (imageUrl: string) => {
+    setPortfolioImages(prev => prev.filter(img => img !== imageUrl));
   };
 
   return (
@@ -175,6 +192,25 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Portfólio de Trabalhos (Opcional)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Adicione imagens dos seus trabalhos anteriores para demonstrar a qualidade dos seus serviços.
+                </p>
+                <ImageUpload
+                  category="provider"
+                  onUpload={handleImageUpload}
+                  onRemove={handleImageRemove}
+                  currentImages={portfolioImages.map(url => ({ id: url, url, name: '' }))}
+                  multiple={true}
+                  maxFiles={10}
+                  accept="image/*"
+                  maxSize={5}
+                  disabled={createProviderMutation.isPending}
+                  showPreview={true}
+                />
+              </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">

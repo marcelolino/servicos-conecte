@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { getQueryFn } from "@/lib/queryClient";
-import { User, MapPin, Star, Clock, Award, Phone, Mail, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { getQueryFn, apiRequest } from "@/lib/queryClient";
+import { User, MapPin, Star, Clock, Award, Phone, Mail, Calendar, Edit, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import ImageUpload from "@/components/image-upload";
 // import { format } from "date-fns";
 // import { ptBR } from "date-fns/locale";
 
@@ -21,6 +26,7 @@ interface ProviderProfileData {
   rating: string;
   totalReviews: number;
   totalServices: number;
+  portfolioImages: string | null;
   createdAt: string;
   user: {
     id: number;
@@ -51,7 +57,11 @@ interface ServiceData {
 export default function ProviderProfile() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const providerId = parseInt(id || "0");
+  const [isEditingPortfolio, setIsEditingPortfolio] = useState(false);
+  const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
 
   console.log("ProviderProfile - ID from params:", id);
   console.log("ProviderProfile - Parsed ID:", providerId);
@@ -73,6 +83,60 @@ export default function ProviderProfile() {
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!providerId,
   });
+
+  // Portfolio update mutation
+  const updatePortfolioMutation = useMutation({
+    mutationFn: (images: string[]) => 
+      apiRequest("PUT", `/api/provider-profile/${providerId}/portfolio`, {
+        portfolioImages: JSON.stringify(images),
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Portfólio atualizado!",
+        description: "Suas imagens foram salvas com sucesso.",
+      });
+      setIsEditingPortfolio(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/provider-profile", providerId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar portfólio",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper functions for portfolio images
+  const getCurrentPortfolioImages = () => {
+    if (!provider?.portfolioImages) return [];
+    try {
+      const parsed = JSON.parse(provider.portfolioImages);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const handlePortfolioImageUpload = (imageUrl: string) => {
+    setPortfolioImages(prev => [...prev, imageUrl]);
+  };
+
+  const handlePortfolioImageRemove = (imageUrl: string) => {
+    setPortfolioImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
+  const openPortfolioEditor = () => {
+    setPortfolioImages(getCurrentPortfolioImages());
+    setIsEditingPortfolio(true);
+  };
+
+  const savePortfolio = () => {
+    updatePortfolioMutation.mutate(portfolioImages);
+  };
+
+  // Check if current user is the provider
+  const isOwnProfile = user?.id === provider?.userId;
 
   // Early return for testing
   if (!id) {
@@ -257,6 +321,58 @@ export default function ProviderProfile() {
                   </div>
                 </div>
               )}
+
+              {/* Portfolio Section */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Portfólio
+                  </h3>
+                  {isOwnProfile && (
+                    <Button size="sm" variant="outline" onClick={openPortfolioEditor}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  )}
+                </div>
+
+                {getCurrentPortfolioImages().length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {getCurrentPortfolioImages().map((imageUrl, index) => (
+                      <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <img
+                          src={imageUrl}
+                          alt={`Portfolio ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                          onClick={() => window.open(imageUrl, '_blank')}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {isOwnProfile ? (
+                      <div>
+                        <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>Adicione imagens do seu trabalho para mostrar sua qualidade</p>
+                        <Button
+                          variant="link"
+                          className="mt-2"
+                          onClick={openPortfolioEditor}
+                        >
+                          Adicionar primeiras imagens
+                        </Button>
+                      </div>
+                    ) : (
+                      <div>
+                        <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>Este prestador ainda não adicionou imagens ao portfólio</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -302,6 +418,56 @@ export default function ProviderProfile() {
           )}
         </div>
       </div>
+
+      {/* Portfolio Editing Dialog */}
+      <Dialog open={isEditingPortfolio} onOpenChange={setIsEditingPortfolio}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Portfólio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Imagens do Portfólio</Label>
+              <ImageUpload
+                category="portfolio"
+                onUpload={handlePortfolioImageUpload}
+                onRemove={handlePortfolioImageRemove}
+                currentImages={portfolioImages.map((url, index) => ({ 
+                  id: url, 
+                  url, 
+                  name: `Portfolio ${index + 1}` 
+                }))}
+                multiple={true}
+                maxFiles={10}
+                accept="image/*"
+                maxSize={10}
+                disabled={updatePortfolioMutation.isPending}
+                showPreview={true}
+              />
+              <p className="text-sm text-muted-foreground">
+                Adicione até 10 imagens para mostrar seu trabalho. Formatos aceitos: JPG, PNG, WebP.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsEditingPortfolio(false)}
+                disabled={updatePortfolioMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={savePortfolio}
+                disabled={updatePortfolioMutation.isPending}
+              >
+                {updatePortfolioMutation.isPending ? "Salvando..." : "Salvar Portfólio"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

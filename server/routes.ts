@@ -648,6 +648,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/provider-profile/:id/portfolio", authenticateToken, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const { portfolioImages } = req.body;
+
+      // Check if user owns this provider profile or is admin
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      if (req.user!.userType !== "admin" && provider.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Unauthorized to update this portfolio" });
+      }
+
+      const updatedProvider = await storage.updateProvider(providerId, { 
+        portfolioImages: portfolioImages 
+      });
+      res.json(updatedProvider);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update portfolio", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.get("/api/admin/bookings", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const bookings = await storage.getAllBookingsForAdmin();

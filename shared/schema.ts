@@ -37,6 +37,7 @@ export const serviceCategories = pgTable("service_categories", {
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   icon: varchar("icon", { length: 50 }),
+  imageUrl: text("image_url"), // Category image
   color: varchar("color", { length: 20 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -52,6 +53,7 @@ export const providers = pgTable("providers", {
   description: text("description"),
   experience: text("experience"),
   documents: text("documents"), // JSON array of document URLs
+  portfolioImages: text("portfolio_images"), // JSON array of portfolio image URLs
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalReviews: integer("total_reviews").default(0),
   totalServices: integer("total_services").default(0),
@@ -73,6 +75,7 @@ export const providerServices = pgTable("provider_services", {
   estimatedDuration: varchar("estimated_duration", { length: 100 }),
   requirements: text("requirements"),
   serviceZone: text("service_zone"),
+  images: text("images"), // JSON array of service image URLs
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

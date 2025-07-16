@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import CreateProviderProfile from "@/components/create-provider-profile";
+import ImageUpload from "@/components/image-upload";
 import { 
   DollarSign, 
   Star, 
@@ -39,8 +40,10 @@ import type { ServiceRequest, ServiceCategory, Provider } from "@shared/schema";
 
 const providerServiceSchema = z.object({
   categoryId: z.string().min(1, "Selecione uma categoria"),
+  name: z.string().min(3, "Nome do serviço é obrigatório"),
   price: z.string().min(1, "Preço é obrigatório"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  images: z.array(z.string()).optional(),
 });
 
 type ProviderServiceForm = z.infer<typeof providerServiceSchema>;
@@ -52,13 +55,16 @@ export default function ProviderDashboard() {
   const [activeTab, setActiveTab] = useState("requests");
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
   const [showCreateProfile, setShowCreateProfile] = useState(false);
+  const [serviceImages, setServiceImages] = useState<string[]>([]);
 
   const form = useForm<ProviderServiceForm>({
     resolver: zodResolver(providerServiceSchema),
     defaultValues: {
       categoryId: "",
+      name: "",
       price: "",
       description: "",
+      images: [],
     },
   });
 
@@ -143,6 +149,7 @@ export default function ProviderDashboard() {
         ...data,
         categoryId: parseInt(data.categoryId),
         price: parseFloat(data.price),
+        images: JSON.stringify(serviceImages),
       }),
     onSuccess: () => {
       toast({
@@ -151,6 +158,7 @@ export default function ProviderDashboard() {
       });
       setIsNewServiceOpen(false);
       form.reset();
+      setServiceImages([]);
       queryClient.invalidateQueries({ queryKey: ["/api/providers", provider?.id, "services"] });
     },
     onError: (error: any) => {
@@ -227,7 +235,19 @@ export default function ProviderDashboard() {
   };
 
   const onSubmit = (data: ProviderServiceForm) => {
-    addServiceMutation.mutate(data);
+    const serviceData = {
+      ...data,
+      images: serviceImages,
+    };
+    addServiceMutation.mutate(serviceData);
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setServiceImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleImageRemove = (imageUrl: string) => {
+    setServiceImages(prev => prev.filter(img => img !== imageUrl));
   };
 
   if (!user || user.userType !== "provider") {
@@ -405,12 +425,26 @@ export default function ProviderDashboard() {
                   Adicionar Serviço
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Adicionar Novo Serviço</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Serviço</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Instalação de torneira" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={form.control}
                       name="categoryId"
@@ -473,6 +507,22 @@ export default function ProviderDashboard() {
                         </FormItem>
                       )}
                     />
+
+                    <div className="space-y-2">
+                      <Label>Imagens do Serviço (Opcional)</Label>
+                      <ImageUpload
+                        category="service"
+                        onUpload={handleImageUpload}
+                        onRemove={handleImageRemove}
+                        currentImages={serviceImages.map(url => ({ id: url, url, name: '' }))}
+                        multiple={true}
+                        maxFiles={5}
+                        accept="image/*"
+                        maxSize={5}
+                        disabled={addServiceMutation.isPending}
+                        showPreview={true}
+                      />
+                    </div>
 
                     <div className="flex justify-end space-x-2">
                       <Button type="button" variant="outline" onClick={() => setIsNewServiceOpen(false)}>
