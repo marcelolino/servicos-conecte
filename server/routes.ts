@@ -842,6 +842,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all provider services (public endpoint)
+  app.get("/api/services/all", async (req, res) => {
+    try {
+      console.log("Getting all provider services...");
+      const services = await storage.getAllProviderServices();
+      console.log("Retrieved services count:", services.length);
+      res.json(services);
+    } catch (error) {
+      console.error("Error in /api/services/all:", error);
+      res.status(500).json({ message: "Failed to get provider services", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Employee management routes
   app.get("/api/employees", authenticateToken, requireProvider, async (req, res) => {
     try {

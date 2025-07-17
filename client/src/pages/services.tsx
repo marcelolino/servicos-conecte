@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,15 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("price");
 
+  // Read URL parameters to set initial category
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryParam = urlParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, []);
+
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["/api/categories"],
@@ -66,7 +75,7 @@ export default function ServicesPage() {
 
   // Fetch all provider services
   const { data: services, isLoading: servicesLoading } = useQuery({
-    queryKey: ["/api/providers/services"],
+    queryKey: ["/api/services/all"],
   });
 
   // Fetch cart

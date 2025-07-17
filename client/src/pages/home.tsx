@@ -143,7 +143,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCategories.map((category: ServiceCategory) => (
-                <Link key={category.id} to={`/services/${category.id}`}>
+                <Link key={category.id} to={`/services?category=${category.id}`}>
                   <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
                     <CardHeader className="text-center">
                       {category.imageUrl ? (

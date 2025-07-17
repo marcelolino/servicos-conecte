@@ -398,6 +398,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(providerServices).where(eq(providerServices.id, id));
   }
 
+  async getAllProviderServices(): Promise<any[]> {
+    try {
+      // First, let's try a simpler query without the complex nesting
+      const results = await db
+        .select()
+        .from(providerServices)
+        .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+        .innerJoin(providers, eq(providerServices.providerId, providers.id))
+        .innerJoin(users, eq(providers.userId, users.id))
+        .where(eq(providerServices.isActive, true))
+        .orderBy(asc(serviceCategories.name), asc(providerServices.name));
+
+      // Transform the results to match the expected structure
+      return results.map(row => ({
+        ...row.provider_services,
+        category: row.service_categories,
+        provider: {
+          ...row.providers,
+          user: row.users
+        }
+      }));
+    } catch (error) {
+      console.error('Error in getAllProviderServices:', error);
+      throw error;
+    }
+  }
+
   async getServiceRequest(id: number): Promise<(ServiceRequest & { client: User; provider?: Provider; category: ServiceCategory }) | undefined> {
     const [request] = await db
       .select({
