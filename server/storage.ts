@@ -1137,7 +1137,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Orders and cart management
-  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[] }) | undefined> {
+  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider & { user: User } } })[] }) | undefined> {
     const [order] = await db
       .select({
         id: orders.id,
@@ -1194,13 +1194,48 @@ export class DatabaseStorage implements IStorage {
           createdAt: providerServices.createdAt,
           updatedAt: providerServices.updatedAt,
           category: serviceCategories,
-          provider: providers,
+          provider: {
+            id: providers.id,
+            userId: providers.userId,
+            status: providers.status,
+            serviceRadius: providers.serviceRadius,
+            basePrice: providers.basePrice,
+            description: providers.description,
+            experience: providers.experience,
+            documents: providers.documents,
+            portfolioImages: providers.portfolioImages,
+            rating: providers.rating,
+            totalReviews: providers.totalReviews,
+            totalServices: providers.totalServices,
+            isTrialActive: providers.isTrialActive,
+            trialEndsAt: providers.trialEndsAt,
+            createdAt: providers.createdAt,
+            updatedAt: providers.updatedAt,
+            user: {
+              id: users.id,
+              email: users.email,
+              name: users.name,
+              phone: users.phone,
+              userType: users.userType,
+              address: users.address,
+              cep: users.cep,
+              city: users.city,
+              state: users.state,
+              latitude: users.latitude,
+              longitude: users.longitude,
+              avatar: users.avatar,
+              isActive: users.isActive,
+              createdAt: users.createdAt,
+              updatedAt: users.updatedAt,
+            },
+          },
         },
       })
       .from(orderItems)
       .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
       .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
       .innerJoin(providers, eq(providerServices.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id))
       .where(eq(orderItems.orderId, order.id));
 
     return { ...order, items };

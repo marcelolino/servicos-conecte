@@ -29,10 +29,37 @@ interface CartItem {
     };
     provider: {
       id: number;
+      userId: number;
+      status: string;
+      serviceRadius: number;
+      basePrice: string;
+      description: string;
+      experience: string;
+      documents: string;
+      portfolioImages: string;
+      rating: string;
+      totalReviews: number;
+      totalServices: number;
+      isTrialActive: boolean;
+      trialEndsAt: Date;
+      createdAt: Date;
+      updatedAt: Date;
       user: {
         id: number;
+        email: string;
         name: string;
-        city?: string;
+        phone: string;
+        userType: string;
+        address: string;
+        cep: string;
+        city: string;
+        state: string;
+        latitude: string;
+        longitude: string;
+        avatar: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
       };
     };
   };
