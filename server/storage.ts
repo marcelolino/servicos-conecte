@@ -1395,47 +1395,73 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Check if item already exists in cart
-    const existingItem = await db
+    const existingItems = await db
       .select()
       .from(orderItems)
       .where(and(
         eq(orderItems.orderId, cart.id),
         eq(orderItems.providerServiceId, item.providerServiceId)
-      ))
-      .limit(1);
+      ));
 
-    if (existingItem.length > 0) {
-      // Update quantity
+    if (existingItems.length > 0) {
+      // Update existing item quantity
+      const existingItem = existingItems[0];
+      const newQuantity = existingItem.quantity + item.quantity;
+      const unitPrice = parseFloat(existingItem.unitPrice);
+      const newTotalPrice = (unitPrice * newQuantity).toFixed(2);
+      
       const [updatedItem] = await db
         .update(orderItems)
         .set({
-          quantity: sql`${orderItems.quantity} + ${item.quantity}`,
-          totalPrice: sql`${orderItems.unitPrice} * (${orderItems.quantity} + ${item.quantity})`,
+          quantity: newQuantity,
+          totalPrice: newTotalPrice,
           updatedAt: new Date()
         })
-        .where(eq(orderItems.id, existingItem[0].id))
+        .where(eq(orderItems.id, existingItem.id))
         .returning();
       return updatedItem;
     } else {
       // Add new item
+      const unitPrice = parseFloat(item.unitPrice);
+      const totalPrice = (unitPrice * item.quantity).toFixed(2);
+      
+      const insertData = {
+        orderId: cart.id,
+        providerServiceId: item.providerServiceId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: totalPrice,
+        notes: item.notes || null
+      };
+      
       const [newItem] = await db
         .insert(orderItems)
-        .values({
-          ...item,
-          orderId: cart.id,
-          totalPrice: sql`${item.unitPrice} * ${item.quantity}`
-        })
+        .values(insertData)
         .returning();
       return newItem;
     }
   }
 
   async updateCartItem(itemId: number, quantity: number): Promise<OrderItem> {
+    // First get the current item to calculate the new total price
+    const [currentItem] = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.id, itemId))
+      .limit(1);
+    
+    if (!currentItem) {
+      throw new Error("Cart item not found");
+    }
+    
+    const unitPrice = parseFloat(currentItem.unitPrice);
+    const totalPrice = (unitPrice * quantity).toFixed(2);
+    
     const [updatedItem] = await db
       .update(orderItems)
       .set({
         quantity,
-        totalPrice: sql`${orderItems.unitPrice} * ${quantity}`,
+        totalPrice,
         updatedAt: new Date()
       })
       .where(eq(orderItems.id, itemId))
