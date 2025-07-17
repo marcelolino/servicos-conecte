@@ -10,6 +10,7 @@ export const providerStatusEnum = pgEnum("provider_status", ["pending", "approve
 export const paymentMethodEnum = pgEnum("payment_method", ["digital", "cash", "credit_card", "pix"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 export const bannerStatusEnum = pgEnum("banner_status", ["active", "inactive", "scheduled"]);
+export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment", "confirmed", "in_progress", "completed", "cancelled"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -249,6 +250,43 @@ export const serviceAssignments = pgTable("service_assignments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Orders table
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => users.id).notNull(),
+  providerId: integer("provider_id").references(() => providers.id),
+  status: orderStatusEnum("status").default("cart"),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default("0.00"),
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
+  serviceAmount: decimal("service_amount", { precision: 10, scale: 2 }).default("0.00"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0.00"),
+  couponCode: varchar("coupon_code", { length: 50 }),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  address: text("address"),
+  cep: varchar("cep", { length: 10 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  scheduledAt: timestamp("scheduled_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Order items table
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => orders.id).notNull(),
+  providerServiceId: integer("provider_service_id").references(() => providerServices.id).notNull(),
+  quantity: integer("quantity").default(1),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // System settings table
 export const systemSettings = pgTable("system_settings", {
   id: serial("id").primaryKey(),
@@ -267,6 +305,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [providers.userId],
   }),
   serviceRequests: many(serviceRequests),
+  orders: many(orders),
   reviews: many(reviews),
   notifications: many(notifications),
 }));
@@ -379,6 +418,33 @@ export const serviceAssignmentsRelations = relations(serviceAssignments, ({ one 
   }),
 }));
 
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  client: one(users, {
+    fields: [orders.clientId],
+    references: [users.id],
+  }),
+  provider: one(providers, {
+    fields: [orders.providerId],
+    references: [providers.id],
+  }),
+  items: many(orderItems),
+  payment: one(payments, {
+    fields: [orders.id],
+    references: [payments.serviceRequestId], // Reusing for order payments
+  }),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  providerService: one(providerServices, {
+    fields: [orderItems.providerServiceId],
+    references: [providerServices.id],
+  }),
+}));
+
 export const systemSettingsRelations = relations(systemSettings, ({ many }) => ({
   // Add relations as needed
 }));
@@ -477,6 +543,18 @@ export const insertUserUploadStatsSchema = createInsertSchema(userUploadStats).o
   updatedAt: true,
 });
 
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -510,3 +588,7 @@ export type FileUpload = typeof fileUploads.$inferSelect;
 export type InsertFileUpload = z.infer<typeof insertFileUploadSchema>;
 export type UserUploadStats = typeof userUploadStats.$inferSelect;
 export type InsertUserUploadStats = z.infer<typeof insertUserUploadStatsSchema>;
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;

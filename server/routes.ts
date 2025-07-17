@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema } from "@shared/schema";
 import { 
   upload, 
   uploadBannerImage, 
@@ -1040,6 +1040,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(coupon);
     } catch (error) {
       res.status(400).json({ message: "Failed to create coupon", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Order management routes
+  
+  // Get client's cart
+  app.get("/api/cart", authenticateToken, async (req, res) => {
+    try {
+      const cart = await storage.getCartByClient(req.user!.id);
+      res.json(cart || { items: [] });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get cart", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Add item to cart
+  app.post("/api/cart/items", authenticateToken, async (req, res) => {
+    try {
+      const itemData = {
+        providerServiceId: parseInt(req.body.providerServiceId),
+        quantity: parseInt(req.body.quantity) || 1,
+        unitPrice: req.body.unitPrice,
+        totalPrice: req.body.unitPrice, // Will be calculated in storage
+        notes: req.body.notes || null,
+      };
+
+      const item = await storage.addItemToCart(req.user!.id, itemData);
+      res.json(item);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add item to cart", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Update cart item
+  app.put("/api/cart/items/:id", authenticateToken, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const quantity = parseInt(req.body.quantity);
+
+      if (quantity <= 0) {
+        await storage.removeCartItem(itemId);
+        res.json({ message: "Item removed from cart" });
+      } else {
+        const item = await storage.updateCartItem(itemId, quantity);
+        res.json(item);
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update cart item", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Remove item from cart
+  app.delete("/api/cart/items/:id", authenticateToken, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      await storage.removeCartItem(itemId);
+      res.json({ message: "Item removed from cart" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to remove cart item", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Clear cart
+  app.delete("/api/cart", authenticateToken, async (req, res) => {
+    try {
+      await storage.clearCart(req.user!.id);
+      res.json({ message: "Cart cleared" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to clear cart", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Convert cart to order
+  app.post("/api/orders", authenticateToken, async (req, res) => {
+    try {
+      const orderData = {
+        address: req.body.address,
+        cep: req.body.cep,
+        city: req.body.city,
+        state: req.body.state,
+        latitude: req.body.latitude || null,
+        longitude: req.body.longitude || null,
+        scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null,
+        notes: req.body.notes || null,
+        couponCode: req.body.couponCode || null,
+        discountAmount: req.body.discountAmount || "0.00",
+        paymentMethod: req.body.paymentMethod || null,
+      };
+
+      const order = await storage.convertCartToOrder(req.user!.id, orderData);
+      res.json(order);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create order", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get client's orders
+  app.get("/api/orders", authenticateToken, async (req, res) => {
+    try {
+      const orders = await storage.getOrdersByClient(req.user!.id);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get orders", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get specific order
+  app.get("/api/orders/:id", authenticateToken, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getOrderById(orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Check if user has access to this order
+      const hasAccess = order.clientId === req.user!.id ||
+                       (order.provider && order.provider.userId === req.user!.id) ||
+                       req.user!.userType === "admin";
+
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get order", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Update order status
+  app.put("/api/orders/:id", authenticateToken, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      const order = await storage.getOrderById(orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Check permissions for update
+      let canUpdate = false;
+      if (order.clientId === req.user!.id) {
+        canUpdate = true;
+      } else if (req.user!.userType === "admin") {
+        canUpdate = true;
+      } else if (order.provider && order.provider.userId === req.user!.id) {
+        canUpdate = true;
+      }
+
+      if (!canUpdate) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updateData: any = {};
+      if (req.body.status) updateData.status = req.body.status;
+      if (req.body.paymentMethod) updateData.paymentMethod = req.body.paymentMethod;
+      if (req.body.providerId) updateData.providerId = req.body.providerId;
+      if (req.body.scheduledAt) updateData.scheduledAt = new Date(req.body.scheduledAt);
+      if (req.body.notes) updateData.notes = req.body.notes;
+
+      const updatedOrder = await storage.updateOrder(orderId, updateData);
+      res.json(updatedOrder);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update order", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

@@ -20,6 +20,11 @@ import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
 import Profile from "@/pages/profile";
+import Services from "@/pages/services";
+import Cart from "@/pages/cart";
+import Checkout from "@/pages/checkout";
+import Orders from "@/pages/orders";
+import OrderDetails from "@/pages/order-details";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -43,6 +48,11 @@ function Router() {
           <Route path="/advanced-upload" component={AdvancedUploadDemo} />
           <Route path="/profile" component={Profile} />
           <Route path="/profile/:id" component={ProviderProfile} />
+          <Route path="/services" component={Services} />
+          <Route path="/cart" component={Cart} />
+          <Route path="/checkout" component={Checkout} />
+          <Route path="/orders" component={Orders} />
+          <Route path="/orders/:id" component={OrderDetails} />
           <Route component={NotFound} />
         </Switch>
       </main>

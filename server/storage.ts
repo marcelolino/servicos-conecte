@@ -15,6 +15,8 @@ import {
   systemSettings,
   fileUploads,
   userUploadStats,
+  orders,
+  orderItems,
   type User,
   type InsertUser,
   type Provider,
@@ -47,6 +49,10 @@ import {
   type InsertFileUpload,
   type UserUploadStats,
   type InsertUserUploadStats,
+  type Order,
+  type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -168,6 +174,18 @@ export interface IStorage {
   getSystemSetting(key: string): Promise<SystemSetting | undefined>;
   createSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
   updateSystemSetting(key: string, value: string): Promise<SystemSetting>;
+
+  // Orders and cart management
+  getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[] }) | undefined>;
+  getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined>;
+  getOrdersByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; provider?: Provider })[]>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order>;
+  addItemToCart(clientId: number, item: InsertOrderItem): Promise<OrderItem>;
+  updateCartItem(itemId: number, quantity: number): Promise<OrderItem>;
+  removeCartItem(itemId: number): Promise<void>;
+  clearCart(clientId: number): Promise<void>;
+  convertCartToOrder(clientId: number, orderData: Partial<InsertOrder>): Promise<Order>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1089,6 +1107,352 @@ export class DatabaseStorage implements IStorage {
       .where(eq(systemSettings.key, key))
       .returning();
     return updatedSetting;
+  }
+
+  // Orders and cart management
+  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[] }) | undefined> {
+    const [order] = await db
+      .select({
+        id: orders.id,
+        clientId: orders.clientId,
+        providerId: orders.providerId,
+        status: orders.status,
+        subtotal: orders.subtotal,
+        discountAmount: orders.discountAmount,
+        serviceAmount: orders.serviceAmount,
+        totalAmount: orders.totalAmount,
+        couponCode: orders.couponCode,
+        paymentMethod: orders.paymentMethod,
+        address: orders.address,
+        cep: orders.cep,
+        city: orders.city,
+        state: orders.state,
+        latitude: orders.latitude,
+        longitude: orders.longitude,
+        scheduledAt: orders.scheduledAt,
+        notes: orders.notes,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+      })
+      .from(orders)
+      .where(and(eq(orders.clientId, clientId), eq(orders.status, "cart")))
+      .limit(1);
+
+    if (!order) return undefined;
+
+    const items = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        providerServiceId: orderItems.providerServiceId,
+        quantity: orderItems.quantity,
+        unitPrice: orderItems.unitPrice,
+        totalPrice: orderItems.totalPrice,
+        notes: orderItems.notes,
+        createdAt: orderItems.createdAt,
+        updatedAt: orderItems.updatedAt,
+        providerService: {
+          id: providerServices.id,
+          providerId: providerServices.providerId,
+          categoryId: providerServices.categoryId,
+          name: providerServices.name,
+          description: providerServices.description,
+          price: providerServices.price,
+          minimumPrice: providerServices.minimumPrice,
+          estimatedDuration: providerServices.estimatedDuration,
+          requirements: providerServices.requirements,
+          serviceZone: providerServices.serviceZone,
+          images: providerServices.images,
+          isActive: providerServices.isActive,
+          createdAt: providerServices.createdAt,
+          updatedAt: providerServices.updatedAt,
+          category: serviceCategories,
+          provider: providers,
+        },
+      })
+      .from(orderItems)
+      .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .innerJoin(providers, eq(providerServices.providerId, providers.id))
+      .where(eq(orderItems.orderId, order.id));
+
+    return { ...order, items };
+  }
+
+  async getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined> {
+    const [order] = await db
+      .select({
+        id: orders.id,
+        clientId: orders.clientId,
+        providerId: orders.providerId,
+        status: orders.status,
+        subtotal: orders.subtotal,
+        discountAmount: orders.discountAmount,
+        serviceAmount: orders.serviceAmount,
+        totalAmount: orders.totalAmount,
+        couponCode: orders.couponCode,
+        paymentMethod: orders.paymentMethod,
+        address: orders.address,
+        cep: orders.cep,
+        city: orders.city,
+        state: orders.state,
+        latitude: orders.latitude,
+        longitude: orders.longitude,
+        scheduledAt: orders.scheduledAt,
+        notes: orders.notes,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        client: users,
+        provider: providers,
+      })
+      .from(orders)
+      .innerJoin(users, eq(orders.clientId, users.id))
+      .leftJoin(providers, eq(orders.providerId, providers.id))
+      .where(eq(orders.id, id))
+      .limit(1);
+
+    if (!order) return undefined;
+
+    const items = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        providerServiceId: orderItems.providerServiceId,
+        quantity: orderItems.quantity,
+        unitPrice: orderItems.unitPrice,
+        totalPrice: orderItems.totalPrice,
+        notes: orderItems.notes,
+        createdAt: orderItems.createdAt,
+        updatedAt: orderItems.updatedAt,
+        providerService: {
+          id: providerServices.id,
+          providerId: providerServices.providerId,
+          categoryId: providerServices.categoryId,
+          name: providerServices.name,
+          description: providerServices.description,
+          price: providerServices.price,
+          minimumPrice: providerServices.minimumPrice,
+          estimatedDuration: providerServices.estimatedDuration,
+          requirements: providerServices.requirements,
+          serviceZone: providerServices.serviceZone,
+          images: providerServices.images,
+          isActive: providerServices.isActive,
+          createdAt: providerServices.createdAt,
+          updatedAt: providerServices.updatedAt,
+          category: serviceCategories,
+          provider: providers,
+        },
+      })
+      .from(orderItems)
+      .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .innerJoin(providers, eq(providerServices.providerId, providers.id))
+      .where(eq(orderItems.orderId, order.id));
+
+    return { 
+      ...order, 
+      items,
+      provider: order.provider || undefined
+    };
+  }
+
+  async getOrdersByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; provider?: Provider })[]> {
+    const ordersList = await db
+      .select({
+        id: orders.id,
+        clientId: orders.clientId,
+        providerId: orders.providerId,
+        status: orders.status,
+        subtotal: orders.subtotal,
+        discountAmount: orders.discountAmount,
+        serviceAmount: orders.serviceAmount,
+        totalAmount: orders.totalAmount,
+        couponCode: orders.couponCode,
+        paymentMethod: orders.paymentMethod,
+        address: orders.address,
+        cep: orders.cep,
+        city: orders.city,
+        state: orders.state,
+        latitude: orders.latitude,
+        longitude: orders.longitude,
+        scheduledAt: orders.scheduledAt,
+        notes: orders.notes,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        provider: providers,
+      })
+      .from(orders)
+      .leftJoin(providers, eq(orders.providerId, providers.id))
+      .where(and(eq(orders.clientId, clientId), sql`${orders.status} != 'cart'`))
+      .orderBy(desc(orders.createdAt));
+
+    // Get items for each order
+    const ordersWithItems = await Promise.all(
+      ordersList.map(async (order) => {
+        const items = await db
+          .select({
+            id: orderItems.id,
+            orderId: orderItems.orderId,
+            providerServiceId: orderItems.providerServiceId,
+            quantity: orderItems.quantity,
+            unitPrice: orderItems.unitPrice,
+            totalPrice: orderItems.totalPrice,
+            notes: orderItems.notes,
+            createdAt: orderItems.createdAt,
+            updatedAt: orderItems.updatedAt,
+            providerService: {
+              id: providerServices.id,
+              providerId: providerServices.providerId,
+              categoryId: providerServices.categoryId,
+              name: providerServices.name,
+              description: providerServices.description,
+              price: providerServices.price,
+              minimumPrice: providerServices.minimumPrice,
+              estimatedDuration: providerServices.estimatedDuration,
+              requirements: providerServices.requirements,
+              serviceZone: providerServices.serviceZone,
+              images: providerServices.images,
+              isActive: providerServices.isActive,
+              createdAt: providerServices.createdAt,
+              updatedAt: providerServices.updatedAt,
+              category: serviceCategories,
+              provider: providers,
+            },
+          })
+          .from(orderItems)
+          .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+          .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+          .innerJoin(providers, eq(providerServices.providerId, providers.id))
+          .where(eq(orderItems.orderId, order.id));
+
+        return {
+          ...order,
+          items,
+          provider: order.provider || undefined
+        };
+      })
+    );
+
+    return ordersWithItems;
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const [newOrder] = await db
+      .insert(orders)
+      .values(order)
+      .returning();
+    return newOrder;
+  }
+
+  async updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ ...order, updatedAt: new Date() })
+      .where(eq(orders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async addItemToCart(clientId: number, item: InsertOrderItem): Promise<OrderItem> {
+    // Get or create cart
+    let cart = await this.getCartByClient(clientId);
+    if (!cart) {
+      cart = await this.createOrder({
+        clientId,
+        status: "cart",
+        subtotal: "0.00",
+        discountAmount: "0.00",
+        serviceAmount: "0.00",
+        totalAmount: "0.00",
+      });
+    }
+
+    // Check if item already exists in cart
+    const existingItem = await db
+      .select()
+      .from(orderItems)
+      .where(and(
+        eq(orderItems.orderId, cart.id),
+        eq(orderItems.providerServiceId, item.providerServiceId)
+      ))
+      .limit(1);
+
+    if (existingItem.length > 0) {
+      // Update quantity
+      const [updatedItem] = await db
+        .update(orderItems)
+        .set({
+          quantity: sql`${orderItems.quantity} + ${item.quantity}`,
+          totalPrice: sql`${orderItems.unitPrice} * (${orderItems.quantity} + ${item.quantity})`,
+          updatedAt: new Date()
+        })
+        .where(eq(orderItems.id, existingItem[0].id))
+        .returning();
+      return updatedItem;
+    } else {
+      // Add new item
+      const [newItem] = await db
+        .insert(orderItems)
+        .values({
+          ...item,
+          orderId: cart.id,
+          totalPrice: sql`${item.unitPrice} * ${item.quantity}`
+        })
+        .returning();
+      return newItem;
+    }
+  }
+
+  async updateCartItem(itemId: number, quantity: number): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({
+        quantity,
+        totalPrice: sql`${orderItems.unitPrice} * ${quantity}`,
+        updatedAt: new Date()
+      })
+      .where(eq(orderItems.id, itemId))
+      .returning();
+    return updatedItem;
+  }
+
+  async removeCartItem(itemId: number): Promise<void> {
+    await db.delete(orderItems).where(eq(orderItems.id, itemId));
+  }
+
+  async clearCart(clientId: number): Promise<void> {
+    const cart = await this.getCartByClient(clientId);
+    if (cart) {
+      await db.delete(orderItems).where(eq(orderItems.orderId, cart.id));
+      await db.delete(orders).where(eq(orders.id, cart.id));
+    }
+  }
+
+  async convertCartToOrder(clientId: number, orderData: Partial<InsertOrder>): Promise<Order> {
+    const cart = await this.getCartByClient(clientId);
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    // Calculate totals
+    const subtotal = cart.items.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+    const serviceAmount = subtotal * 0.1; // 10% service fee
+    const totalAmount = subtotal + serviceAmount - parseFloat(orderData.discountAmount || "0");
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        ...orderData,
+        status: "pending_payment",
+        subtotal: subtotal.toString(),
+        serviceAmount: serviceAmount.toString(),
+        totalAmount: totalAmount.toString(),
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, cart.id))
+      .returning();
+
+    return updatedOrder;
   }
 }
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +12,8 @@ import {
   Wrench, 
   Bell,
   User,
-  LogOut
+  LogOut,
+  ShoppingCart
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +28,14 @@ export default function Header() {
   const { theme, setTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch cart data for authenticated clients
+  const { data: cart } = useQuery({
+    queryKey: ["/api/cart"],
+    enabled: isAuthenticated && user?.userType === "client",
+  });
+
+  const cartItemCount = cart?.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -68,6 +78,9 @@ export default function Header() {
             <Link href="/" className="text-foreground hover:text-primary transition-colors">
               Como funciona
             </Link>
+            <Link href="/services" className="text-foreground hover:text-primary transition-colors">
+              Serviços
+            </Link>
             <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
               Seja um prestador
             </Link>
@@ -93,6 +106,24 @@ export default function Header() {
 
             {isAuthenticated ? (
               <>
+                {user?.userType === "client" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative hover:bg-muted"
+                    asChild
+                  >
+                    <Link href="/cart">
+                      <ShoppingCart className="h-5 w-5" />
+                      {cartItemCount > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground">
+                          {cartItemCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  </Button>
+                )}
+                
                 <Button
                   variant="ghost"
                   size="icon"
@@ -115,6 +146,13 @@ export default function Header() {
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    {user?.userType === "client" && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/orders">
+                          Meus Pedidos
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href="/profile">
                         Perfil
@@ -158,6 +196,14 @@ export default function Header() {
               <Link href="/" className="text-foreground hover:text-primary transition-colors">
                 Como funciona
               </Link>
+              <Link href="/services" className="text-foreground hover:text-primary transition-colors">
+                Serviços
+              </Link>
+              {isAuthenticated && user?.userType === "client" && (
+                <Link href="/orders" className="text-foreground hover:text-primary transition-colors">
+                  Meus Pedidos
+                </Link>
+              )}
               <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
                 Seja um prestador
               </Link>
