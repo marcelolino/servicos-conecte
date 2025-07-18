@@ -13,6 +13,7 @@ import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProviderProfile from "@/pages/provider-profile";
+import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
@@ -39,6 +40,7 @@ function Router() {
           <Route path="/register" component={Register} />
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
+          <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/service-management" component={ServiceManagement} />

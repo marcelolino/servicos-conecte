@@ -35,7 +35,7 @@ import {
   Settings,
   Package
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { ServiceRequest, ServiceCategory, Provider } from "@shared/schema";
 
 const providerServiceSchema = z.object({
@@ -52,6 +52,7 @@ export default function ProviderDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("requests");
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
   const [showCreateProfile, setShowCreateProfile] = useState(false);
@@ -417,13 +418,22 @@ export default function ProviderDashboard() {
               <TabsTrigger value="profile">Perfil</TabsTrigger>
             </TabsList>
 
-            <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={provider.status !== "approved"}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Serviço
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setLocation("/provider-services")}
+                disabled={provider.status !== "approved"}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Gestão de Serviços
+              </Button>
+              <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={provider.status !== "approved"}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Serviço
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Adicionar Novo Serviço</DialogTitle>
@@ -535,6 +545,7 @@ export default function ProviderDashboard() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <TabsContent value="requests" className="space-y-6">

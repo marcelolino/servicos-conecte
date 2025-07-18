@@ -280,6 +280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/providers/:id/employees", async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const employees = await storage.getEmployeesByProvider(providerId);
+      res.json(employees);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get employees", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.get("/api/providers/:id/reviews", async (req, res) => {
     try {
       const providerId = parseInt(req.params.id);
