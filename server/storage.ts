@@ -1531,7 +1531,7 @@ export class DatabaseStorage implements IStorage {
       .update(orders)
       .set({
         ...orderData,
-        status: "pending_payment",
+        status: "confirmed",
         subtotal: subtotal.toString(),
         serviceAmount: serviceAmount.toString(),
         totalAmount: totalAmount.toString(),
