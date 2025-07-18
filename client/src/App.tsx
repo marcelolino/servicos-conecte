@@ -26,6 +26,7 @@ import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import Orders from "@/pages/orders";
 import OrderDetails from "@/pages/order-details";
+import OrderSuccess from "@/pages/order-success";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -55,6 +56,7 @@ function Router() {
           <Route path="/checkout" component={Checkout} />
           <Route path="/orders" component={Orders} />
           <Route path="/orders/:id" component={OrderDetails} />
+          <Route path="/order-success/:id" component={OrderSuccess} />
           <Route component={NotFound} />
         </Switch>
       </main>

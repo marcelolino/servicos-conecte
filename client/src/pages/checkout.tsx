@@ -79,13 +79,12 @@ export default function CheckoutPage() {
   const createOrderMutation = useMutation({
     mutationFn: (data: CheckoutForm) => apiRequest("POST", "/api/orders", data),
     onSuccess: (order) => {
-      toast({
-        title: "Pedido criado com sucesso!",
-        description: "Você será redirecionado para os detalhes do pedido.",
-      });
+      // Clear the cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      setLocation(`/orders/${order.id}`);
+      
+      // Redirect to success page
+      setLocation(`/order-success/${order.id}`);
     },
     onError: (error: any) => {
       toast({
