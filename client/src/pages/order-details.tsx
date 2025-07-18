@@ -17,7 +17,8 @@ import {
   Phone,
   MessageCircle,
   Star,
-  X
+  X,
+  Check
 } from "lucide-react";
 
 interface OrderDetails {
@@ -103,10 +104,32 @@ export default function OrderDetailsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId] });
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setLocation("/orders");
     },
     onError: (error: any) => {
       toast({
         title: "Erro ao cancelar pedido",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Complete order mutation
+  const completeOrderMutation = useMutation({
+    mutationFn: () => apiRequest("PUT", `/api/orders/${orderId}`, { status: "completed" }),
+    onSuccess: () => {
+      toast({
+        title: "Pedido concluído",
+        description: "O pedido foi marcado como concluído com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setLocation("/orders");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao concluir pedido",
         description: error.message,
         variant: "destructive",
       });
@@ -227,20 +250,35 @@ export default function OrderDetailsPage() {
                 Criado em {new Date(order.createdAt).toLocaleDateString("pt-BR")}
               </p>
             </div>
-            {canCancelOrder(order.status) && (
-              <Button
-                variant="destructive"
-                onClick={() => cancelOrderMutation.mutate()}
-                disabled={cancelOrderMutation.isPending}
-              >
-                {cancelOrderMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <X className="h-4 w-4 mr-2" />
-                )}
-                Cancelar Pedido
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {order.status === "in_progress" && (
+                <Button
+                  onClick={() => completeOrderMutation.mutate()}
+                  disabled={completeOrderMutation.isPending}
+                >
+                  {completeOrderMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  Concluir Pedido
+                </Button>
+              )}
+              {canCancelOrder(order.status) && (
+                <Button
+                  variant="destructive"
+                  onClick={() => cancelOrderMutation.mutate()}
+                  disabled={cancelOrderMutation.isPending}
+                >
+                  {cancelOrderMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <X className="h-4 w-4 mr-2" />
+                  )}
+                  Cancelar Pedido
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

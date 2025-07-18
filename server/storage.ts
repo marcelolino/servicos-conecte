@@ -1540,6 +1540,60 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, cart.id))
       .returning();
 
+    // Create service requests for each provider in the cart
+    const providerRequests = new Map<number, {
+      providerId: number;
+      categoryId: number;
+      items: any[];
+    }>();
+
+    // Group items by provider
+    cart.items.forEach(item => {
+      const providerId = item.providerService.provider.id;
+      const categoryId = item.providerService.category.id;
+      
+      if (!providerRequests.has(providerId)) {
+        providerRequests.set(providerId, {
+          providerId,
+          categoryId,
+          items: []
+        });
+      }
+      
+      providerRequests.get(providerId)!.items.push(item);
+    });
+
+    // Create service requests for each provider
+    for (const [providerId, providerData] of providerRequests) {
+      const serviceDescription = providerData.items
+        .map(item => `${item.quantity}x ${item.providerService.category.name}`)
+        .join(', ');
+      
+      const totalPrice = providerData.items
+        .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+
+      await db.insert(serviceRequests).values({
+        clientId,
+        categoryId: providerData.categoryId,
+        providerId: null, // Will be assigned when provider accepts
+        title: `Pedido #${updatedOrder.id}`,
+        description: `${serviceDescription}${orderData.notes ? ` - ${orderData.notes}` : ''}`,
+        address: orderData.address || '',
+        cep: orderData.cep || '',
+        city: orderData.city || '',
+        state: orderData.state || '',
+        latitude: orderData.latitude,
+        longitude: orderData.longitude,
+        estimatedPrice: totalPrice.toString(),
+        finalPrice: null,
+        status: "pending",
+        scheduledAt: orderData.scheduledAt,
+        completedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
     return updatedOrder;
   }
 }
