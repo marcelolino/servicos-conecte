@@ -79,14 +79,27 @@ export default function CheckoutPage() {
   const createOrderMutation = useMutation({
     mutationFn: (data: CheckoutForm) => apiRequest("POST", "/api/orders", data),
     onSuccess: (order) => {
+      console.log("Order created successfully:", order);
+      
       // Clear the cache to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       
-      // Redirect to success page
-      setLocation(`/order-success/${order.id}`);
+      // Ensure we have an order ID
+      if (order && order.id) {
+        setLocation(`/order-success/${order.id}`);
+      } else {
+        console.error("Order ID is missing from response:", order);
+        // Fallback to orders page if ID is missing
+        toast({
+          title: "Pedido criado com sucesso!",
+          description: "Redirecionando para a página de pedidos...",
+        });
+        setLocation("/orders");
+      }
     },
     onError: (error: any) => {
+      console.error("Order creation error:", error);
       toast({
         title: "Erro ao criar pedido",
         description: error.message,

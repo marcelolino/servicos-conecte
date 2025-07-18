@@ -21,6 +21,10 @@ export default function OrderSuccessPage() {
   const [, setLocation] = useLocation();
   const orderId = params?.id;
 
+  console.log("OrderSuccessPage - match:", match);
+  console.log("OrderSuccessPage - params:", params);
+  console.log("OrderSuccessPage - orderId:", orderId);
+
   // Fetch order details
   const { data: order, isLoading } = useQuery({
     queryKey: ["/api/orders", orderId],

@@ -1138,6 +1138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Convert cart to order
   app.post("/api/orders", authenticateToken, async (req, res) => {
     try {
+      console.log("Creating order for user:", req.user!.id);
       const orderData = {
         address: req.body.address,
         cep: req.body.cep,
@@ -1153,8 +1154,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const order = await storage.convertCartToOrder(req.user!.id, orderData);
+      console.log("Order created successfully:", order);
       res.json(order);
     } catch (error) {
+      console.error("Failed to create order:", error);
       res.status(400).json({ message: "Failed to create order", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
