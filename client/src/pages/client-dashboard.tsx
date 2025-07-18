@@ -27,7 +27,8 @@ import {
   MapPin,
   Calendar,
   DollarSign,
-  Filter
+  Filter,
+  Play
 } from "lucide-react";
 import type { ServiceRequest, ServiceCategory } from "@shared/schema";
 
@@ -104,6 +105,51 @@ export default function ClientDashboard() {
     },
   });
 
+  // Start service mutation
+  const startServiceMutation = useMutation({
+    mutationFn: (requestId: number) =>
+      apiRequest("PUT", `/api/service-requests/${requestId}`, {
+        status: "in_progress",
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Serviço iniciado!",
+        description: "O prestador foi notificado que o serviço foi iniciado.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/service-requests/client"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao iniciar serviço",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Complete service mutation
+  const completeServiceMutation = useMutation({
+    mutationFn: (requestId: number) =>
+      apiRequest("PUT", `/api/service-requests/${requestId}`, {
+        status: "completed",
+        completedAt: new Date().toISOString(),
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Serviço concluído!",
+        description: "Agora você pode avaliar o prestador.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/service-requests/client"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao finalizar serviço",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -141,6 +187,75 @@ export default function ClientDashboard() {
   const filteredRequests = serviceRequests?.filter((request: ServiceRequest) => 
     selectedStatus === "all" || request.status === selectedStatus
   );
+
+  // Helper function to check if service can be started
+  const canStartService = (request: any) => {
+    if (request.status !== "accepted") return false;
+    if (!request.scheduledAt) return true; // Can start immediately if no scheduled time
+    
+    const scheduledTime = new Date(request.scheduledAt);
+    const now = new Date();
+    const timeDiff = scheduledTime.getTime() - now.getTime();
+    const minutesDiff = timeDiff / (1000 * 60);
+    
+    // Allow starting 15 minutes before scheduled time
+    return minutesDiff <= 15;
+  };
+
+  // Helper function to check if service can be completed
+  const canCompleteService = (request: any) => {
+    return request.status === "in_progress";
+  };
+
+  // Helper function to get next action button
+  const getServiceActionButton = (request: any) => {
+    if (canStartService(request)) {
+      return (
+        <Button
+          size="sm"
+          onClick={() => startServiceMutation.mutate(request.id)}
+          disabled={startServiceMutation.isPending}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          {startServiceMutation.isPending ? (
+            <Clock className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4 mr-1" />
+          )}
+          Iniciar Serviço
+        </Button>
+      );
+    }
+
+    if (canCompleteService(request)) {
+      return (
+        <Button
+          size="sm"
+          onClick={() => completeServiceMutation.mutate(request.id)}
+          disabled={completeServiceMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {completeServiceMutation.isPending ? (
+            <CheckCircle className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <CheckCircle className="h-4 w-4 mr-1" />
+          )}
+          Finalizar Serviço
+        </Button>
+      );
+    }
+
+    if (request.status === "completed") {
+      return (
+        <Button variant="outline" size="sm">
+          <Star className="h-4 w-4 mr-1" />
+          Avaliar
+        </Button>
+      );
+    }
+
+    return null;
+  };
 
   const onSubmit = (data: ServiceRequestForm) => {
     createRequestMutation.mutate(data);
@@ -460,7 +575,16 @@ export default function ClientDashboard() {
                                 R$ {Number(request.estimatedPrice).toFixed(2)}
                               </div>
                             )}
+                            {request.scheduledAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                {new Date(request.scheduledAt).toLocaleDateString('pt-BR')} às {new Date(request.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
                           </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {getServiceActionButton(request)}
                         </div>
                       </div>
                       
@@ -485,11 +609,7 @@ export default function ClientDashboard() {
                                 </div>
                               </div>
                             </div>
-                            {request.status === "completed" && (
-                              <Button variant="outline" size="sm">
-                                Avaliar
-                              </Button>
-                            )}
+                            {getServiceActionButton(request)}
                           </div>
                         </div>
                       )}
