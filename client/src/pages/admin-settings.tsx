@@ -201,9 +201,13 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="comissao" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="comissao">Comissão</TabsTrigger>
-            <TabsTrigger value="gerais">Gerais</TabsTrigger>
+            <TabsTrigger value="empresa">Empresa</TabsTrigger>
+            <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+            <TabsTrigger value="horarios">Horários</TabsTrigger>
+            <TabsTrigger value="funcionalidades">Funcionalidades</TabsTrigger>
+            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="comissao" className="space-y-6">
@@ -281,16 +285,6 @@ export default function AdminSettings() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="gerais" className="space-y-6">
-            <Tabs defaultValue="empresa" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="empresa">Empresa</TabsTrigger>
-                <TabsTrigger value="aparencia">Aparência</TabsTrigger>
-                <TabsTrigger value="horarios">Horários</TabsTrigger>
-                <TabsTrigger value="funcionalidades">Funcionalidades</TabsTrigger>
-                <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
-              </TabsList>
 
               <TabsContent value="empresa" className="space-y-6">
             <Card>
@@ -670,8 +664,6 @@ export default function AdminSettings() {
                 </Button>
               </CardContent>
             </Card>
-              </TabsContent>
-            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
