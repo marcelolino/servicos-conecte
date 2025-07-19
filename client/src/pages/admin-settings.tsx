@@ -200,167 +200,391 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <Tabs defaultValue="commission" className="w-full">
+        <Tabs defaultValue="empresa" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="commission">Comissão</TabsTrigger>
-            <TabsTrigger value="general">Gerais</TabsTrigger>
-            <TabsTrigger value="hours">Horários</TabsTrigger>
-            <TabsTrigger value="features">Funcionalidades</TabsTrigger>
-            <TabsTrigger value="payment">Pagamento</TabsTrigger>
+            <TabsTrigger value="empresa">Empresa</TabsTrigger>
+            <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+            <TabsTrigger value="horarios">Horários</TabsTrigger>
+            <TabsTrigger value="funcionalidades">Funcionalidades</TabsTrigger>
+            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="commission" className="space-y-6">
+          <TabsContent value="empresa" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Percent className="h-5 w-5" />
-                  Taxa de Comissão
-                </CardTitle>
-                <CardDescription>
-                  Configure a taxa de comissão padrão que será descontada dos prestadores de serviço em cada pedido
-                </CardDescription>
+                <CardTitle>Informações da Empresa</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="commission-rate">
-                    Taxa de comissão padrão no pedido em porcentagem (%)
-                  </Label>
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company-name">Nome da Empresa</Label>
                     <Input
-                      id="commission-rate"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={commissionRate}
-                      onChange={(e) => setCommissionRate(e.target.value)}
-                      placeholder="Ex: 5.0"
-                      className="max-w-[200px]"
+                      id="company-name"
+                      value={companySettings.name}
+                      onChange={(e) => setCompanySettings({ ...companySettings, name: e.target.value })}
+                      placeholder="Ex: Qserviços Ltda"
                     />
-                    <span className="flex items-center text-muted-foreground">%</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Insira um valor entre 0 e 100. Esta porcentagem será descontada do valor que o prestador recebe.
-                  </p>
+                  <div>
+                    <Label htmlFor="company-email">Email</Label>
+                    <Input
+                      id="company-email"
+                      type="email"
+                      value={companySettings.email}
+                      onChange={(e) => setCompanySettings({ ...companySettings, email: e.target.value })}
+                      placeholder="contato@qservicos.com"
+                    />
+                  </div>
                 </div>
 
-                {commissionSetting && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Valor atual:</strong> {commissionSetting.value}%
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Última atualização: {new Date(commissionSetting.updatedAt).toLocaleString('pt-BR')}
-                    </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company-phone">Telefone</Label>
+                    <Input
+                      id="company-phone"
+                      value={companySettings.phone}
+                      onChange={(e) => setCompanySettings({ ...companySettings, phone: e.target.value })}
+                      placeholder="(11) 99999-9999"
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label htmlFor="company-website">Website</Label>
+                    <Input
+                      id="company-website"
+                      value={companySettings.website}
+                      onChange={(e) => setCompanySettings({ ...companySettings, website: e.target.value })}
+                      placeholder="https://qservicos.com"
+                    />
+                  </div>
+                </div>
 
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSaveCommission}
-                    disabled={saveSettingMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    {saveSettingMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
+                <div>
+                  <Label htmlFor="company-description">Descrição da Empresa</Label>
+                  <Textarea
+                    id="company-description"
+                    value={companySettings.description}
+                    onChange={(e) => setCompanySettings({ ...companySettings, description: e.target.value })}
+                    placeholder="Descreva sua empresa..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="company-address">Endereço</Label>
+                    <Input
+                      id="company-address"
+                      value={companySettings.address}
+                      onChange={(e) => setCompanySettings({ ...companySettings, address: e.target.value })}
+                      placeholder="Rua da Empresa, 123"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company-city">Cidade</Label>
+                    <Input
+                      id="company-city"
+                      value={companySettings.city}
+                      onChange={(e) => setCompanySettings({ ...companySettings, city: e.target.value })}
+                      placeholder="São Paulo"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company-state">Estado</Label>
+                    <Input
+                      id="company-state"
+                      value={companySettings.state}
+                      onChange={(e) => setCompanySettings({ ...companySettings, state: e.target.value })}
+                      placeholder="SP"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company-cep">CEP</Label>
+                    <Input
+                      id="company-cep"
+                      value={companySettings.cep}
+                      onChange={(e) => setCompanySettings({ ...companySettings, cep: e.target.value })}
+                      placeholder="01234-567"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="commission-rate">Taxa de Comissão (%)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="commission-rate"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={commissionRate}
+                        onChange={(e) => setCommissionRate(e.target.value)}
+                        placeholder="5"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="company-currency">Moeda</Label>
+                    <Input
+                      id="company-currency"
+                      value={companySettings.currency}
+                      onChange={(e) => setCompanySettings({ ...companySettings, currency: e.target.value })}
+                      placeholder="Real (BRL)"
+                    />
+                  </div>
+                </div>
+
+                <Button className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Configurações da Empresa
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="aparencia" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Aparência e Branding</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="primary-color">Cor Primária</Label>
+                    <div className="flex gap-2">
+                      <div 
+                        className="w-10 h-10 rounded border"
+                        style={{ backgroundColor: companySettings.primaryColor }}
+                      />
+                      <Input
+                        id="primary-color"
+                        type="color"
+                        value={companySettings.primaryColor}
+                        onChange={(e) => setCompanySettings({ ...companySettings, primaryColor: e.target.value })}
+                        className="w-20"
+                      />
+                      <span className="flex items-center text-sm text-muted-foreground">
+                        {companySettings.primaryColor}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="secondary-color">Cor Secundária</Label>
+                    <div className="flex gap-2">
+                      <div 
+                        className="w-10 h-10 rounded border"
+                        style={{ backgroundColor: companySettings.secondaryColor }}
+                      />
+                      <Input
+                        id="secondary-color"
+                        type="color"
+                        value={companySettings.secondaryColor}
+                        onChange={(e) => setCompanySettings({ ...companySettings, secondaryColor: e.target.value })}
+                        className="w-20"
+                      />
+                      <span className="flex items-center text-sm text-muted-foreground">
+                        {companySettings.secondaryColor}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="logo-url">URL do Logo</Label>
+                  <Input
+                    id="logo-url"
+                    value={companySettings.logo}
+                    onChange={(e) => setCompanySettings({ ...companySettings, logo: e.target.value })}
+                    placeholder="https://exemplo.com/logo.png"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="timezone">Fuso Horário</Label>
+                  <Input
+                    id="timezone"
+                    value={companySettings.timezone}
+                    onChange={(e) => setCompanySettings({ ...companySettings, timezone: e.target.value })}
+                    placeholder="São Paulo (UTC-3)"
+                  />
+                </div>
+
+                <Button className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Configurações de Aparência
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="horarios" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Horários de Funcionamento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(companySettings.workingHours).map(([day, hours]) => (
+                  <div key={day} className="flex items-center space-x-4 p-3 border rounded-lg">
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Switch
+                        checked={hours.active}
+                        onCheckedChange={(checked) => setCompanySettings({
+                          ...companySettings,
+                          workingHours: {
+                            ...companySettings.workingHours,
+                            [day]: { ...hours, active: checked }
+                          }
+                        })}
+                      />
+                      <Label className="min-w-[80px]">
+                        {day === 'monday' ? 'Segunda' :
+                         day === 'tuesday' ? 'Terça' :
+                         day === 'wednesday' ? 'Quarta' :
+                         day === 'thursday' ? 'Quinta' :
+                         day === 'friday' ? 'Sexta' :
+                         day === 'saturday' ? 'Sábado' :
+                         'Domingo'}
+                      </Label>
+                    </div>
+                    
+                    {hours.active && (
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="time"
+                          value={hours.start}
+                          onChange={(e) => setCompanySettings({
+                            ...companySettings,
+                            workingHours: {
+                              ...companySettings.workingHours,
+                              [day]: { ...hours, start: e.target.value }
+                            }
+                          })}
+                          className="w-24"
+                        />
+                        <span>até</span>
+                        <Input
+                          type="time"
+                          value={hours.end}
+                          onChange={(e) => setCompanySettings({
+                            ...companySettings,
+                            workingHours: {
+                              ...companySettings.workingHours,
+                              [day]: { ...hours, end: e.target.value }
+                            }
+                          })}
+                          className="w-24"
+                        />
+                      </div>
                     )}
-                    Salvar Taxa de Comissão
-                  </Button>
-                </div>
+                  </div>
+                ))}
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Como funciona:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• A taxa é aplicada automaticamente em todos os novos pedidos</li>
-                    <li>• O valor é descontado do pagamento ao prestador</li>
-                    <li>• Exemplo: Serviço de R$ 100 com taxa de 5% = Prestador recebe R$ 95</li>
-                    <li>• A plataforma fica com R$ 5 de comissão</li>
-                  </ul>
-                </div>
+                <Button className="w-full">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Salvar Horários de Funcionamento
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="general" className="space-y-6">
+          <TabsContent value="funcionalidades" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Configurações Gerais
-                </CardTitle>
-                <CardDescription>
-                  Outras configurações do sistema serão adicionadas aqui conforme necessário
-                </CardDescription>
+                <CardTitle>Funcionalidades do Sistema</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Outras configurações serão adicionadas aqui em futuras versões</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(companySettings.features).map(([key, value]) => (
+                    <div key={key} className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <Switch
+                        checked={value}
+                        onCheckedChange={(checked) => setCompanySettings({
+                          ...companySettings,
+                          features: {
+                            ...companySettings.features,
+                            [key]: checked
+                          }
+                        })}
+                      />
+                      <Label className="flex-1">
+                        {key === 'emailNotifications' ? 'Notificações por Email' :
+                         key === 'smsNotifications' ? 'Notificações por SMS' :
+                         key === 'automaticApproval' ? 'Aprovação Automática' :
+                         key === 'requireVerification' ? 'Verificação Obrigatória' :
+                         key === 'allowCancellation' ? 'Permitir Cancelamento' :
+                         key === 'allowReschedule' ? 'Permitir Reagendamento' : key}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cancellation-policy">Política de Cancelamento (horas)</Label>
+                    <Input
+                      id="cancellation-policy"
+                      value={companySettings.cancellationPolicy}
+                      onChange={(e) => setCompanySettings({ ...companySettings, cancellationPolicy: e.target.value })}
+                      placeholder="24"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="reschedule-policy">Política de Reagendamento (horas)</Label>
+                    <Input
+                      id="reschedule-policy"
+                      value={companySettings.reschedulePolicy}
+                      onChange={(e) => setCompanySettings({ ...companySettings, reschedulePolicy: e.target.value })}
+                      placeholder="12"
+                    />
+                  </div>
+                </div>
+
+                <Button className="w-full">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Salvar Configurações de Funcionalidades
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="hours" className="space-y-6">
+          <TabsContent value="pagamentos" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Horários de Funcionamento
-                </CardTitle>
-                <CardDescription>
-                  Configure os horários de funcionamento da plataforma
-                </CardDescription>
+                <CardTitle>Métodos de Pagamento</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Configuração de horários em desenvolvimento</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(companySettings.paymentMethods).map(([key, value]) => (
+                    <div key={key} className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <Switch
+                        checked={value}
+                        onCheckedChange={(checked) => setCompanySettings({
+                          ...companySettings,
+                          paymentMethods: {
+                            ...companySettings.paymentMethods,
+                            [key]: checked
+                          }
+                        })}
+                      />
+                      <Label className="flex-1">
+                        {key === 'creditCard' ? 'Cartão de Crédito' :
+                         key === 'debitCard' ? 'Cartão de Débito' :
+                         key === 'pix' ? 'PIX' :
+                         key === 'cash' ? 'Dinheiro' :
+                         key === 'bankTransfer' ? 'Transferência Bancária' : key}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="features" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Funcionalidades do Sistema
-                </CardTitle>
-                <CardDescription>
-                  Controle as funcionalidades disponíveis na plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Configuração de funcionalidades em desenvolvimento</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payment" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Métodos de Pagamento
-                </CardTitle>
-                <CardDescription>
-                  Configure os métodos de pagamento aceitos pela plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Configuração de pagamentos em desenvolvimento</p>
-                </div>
+                <Button className="w-full">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Salvar Configurações de Pagamento
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
