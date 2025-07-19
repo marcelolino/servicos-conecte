@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (token: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoggingOut: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +24,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAuthToken());
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: loading } = useQuery({
@@ -38,9 +40,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    setIsLoggingOut(true);
     removeAuthToken();
     setIsAuthenticated(false);
     queryClient.clear();
+    // Reset logging out state after a short delay
+    setTimeout(() => setIsLoggingOut(false), 100);
   };
 
   useEffect(() => {
@@ -60,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     isAuthenticated,
+    isLoggingOut,
   };
 
   return React.createElement(

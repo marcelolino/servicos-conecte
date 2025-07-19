@@ -43,7 +43,10 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
-    window.location.href = "/";
+    // Use wouter navigation instead of window.location for smoother redirect
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 50);
   };
 
   const getDashboardLink = () => {
