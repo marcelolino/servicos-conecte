@@ -1,12 +1,23 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getAuthToken } from "./auth";
 
+// Function to check if user is currently logging out
+function isUserLoggingOut(): boolean {
+  // Check if there's a logout in progress by looking for a temporary flag
+  return sessionStorage.getItem('logout-in-progress') === 'true';
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     
     // Handle authentication errors
     if (res.status === 401 || res.status === 403) {
+      // If user is logging out, silently ignore auth errors
+      if (isUserLoggingOut()) {
+        throw new Error("SILENT_LOGOUT_ERROR");
+      }
+      
       // Check if response is JSON and contains message
       try {
         const errorData = JSON.parse(text);
@@ -20,7 +31,7 @@ async function throwIfResNotOk(res: Response) {
       if (res.status === 401) {
         throw new Error("Sessão expirada. Faça login novamente.");
       } else {
-        throw new Error("Acesso negado. Verifique suas permissões.");
+        throw new Error("Permissão insuficiente para esta operação.");
       }
     }
     

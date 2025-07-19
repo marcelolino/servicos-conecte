@@ -26,13 +26,15 @@ import { Badge } from "@/components/ui/badge";
 export default function Header() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isLoggingOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Fetch cart data for authenticated clients
+  // Fetch cart data for authenticated clients (but not during logout)
   const { data: cart } = useQuery({
     queryKey: ["/api/cart"],
-    enabled: isAuthenticated && user?.userType === "client",
+    enabled: isAuthenticated && user?.userType === "client" && !isLoggingOut,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const cartItemCount = cart?.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;

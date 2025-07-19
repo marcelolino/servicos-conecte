@@ -30,8 +30,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { data: user, isLoading: loading } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isLoggingOut,
     retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const login = (token: string) => {
@@ -41,11 +42,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setIsLoggingOut(true);
+    
+    // Set logout flag to suppress error messages
+    sessionStorage.setItem('logout-in-progress', 'true');
+    
     removeAuthToken();
     setIsAuthenticated(false);
+    
+    // Cancel all queries and clear cache
+    queryClient.cancelQueries();
     queryClient.clear();
+    
     // Reset logging out state after a short delay
-    setTimeout(() => setIsLoggingOut(false), 100);
+    setTimeout(() => {
+      setIsLoggingOut(false);
+      sessionStorage.removeItem('logout-in-progress');
+    }, 500);
   };
 
   useEffect(() => {
