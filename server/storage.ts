@@ -570,13 +570,25 @@ export class DatabaseStorage implements IStorage {
     // Clean up the request data to ensure no invalid values
     const cleanRequest: Partial<InsertServiceRequest> = {};
     
-    // Only include defined values
+    // Only include defined values and handle date fields properly
     if (request.status !== undefined) cleanRequest.status = request.status;
     if (request.providerId !== undefined) cleanRequest.providerId = request.providerId;
     if (request.notes !== undefined) cleanRequest.notes = request.notes;
-    if (request.scheduledAt !== undefined) cleanRequest.scheduledAt = request.scheduledAt;
-    if (request.completedAt !== undefined) cleanRequest.completedAt = request.completedAt;
-    if (request.acceptedAt !== undefined) cleanRequest.acceptedAt = request.acceptedAt;
+    if (request.scheduledAt !== undefined) {
+      cleanRequest.scheduledAt = typeof request.scheduledAt === 'string' 
+        ? new Date(request.scheduledAt) 
+        : request.scheduledAt;
+    }
+    if (request.completedAt !== undefined) {
+      cleanRequest.completedAt = typeof request.completedAt === 'string' 
+        ? new Date(request.completedAt) 
+        : request.completedAt;
+    }
+    if (request.acceptedAt !== undefined) {
+      cleanRequest.acceptedAt = typeof request.acceptedAt === 'string' 
+        ? new Date(request.acceptedAt) 
+        : request.acceptedAt;
+    }
     if (request.estimatedPrice !== undefined) cleanRequest.estimatedPrice = request.estimatedPrice;
     if (request.finalPrice !== undefined) cleanRequest.finalPrice = request.finalPrice;
     
