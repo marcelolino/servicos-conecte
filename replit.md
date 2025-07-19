@@ -71,6 +71,9 @@ Preferred communication style: Simple, everyday language.
 - ✓ Implemented proper date handling for completedAt field
 - ✓ Added loading states to prevent "Acesso Negado" flash during auth check
 - ✓ Corrected authentication loading state in client and provider dashboards
+- ✓ Fixed logout "Acesso Negado" issue by adding isLoggingOut state
+- ✓ Applied loading state fix to all protected pages (admin, profile, service-management, etc.)
+- ✓ Improved logout flow with proper redirection and loading states
 
 ### Admin Dashboard Improvements (January 15, 2025)
 - ✓ Implemented complete admin dashboard redesign with sidebar navigation

@@ -41,7 +41,7 @@ const employeeSchema = z.object({
 type EmployeeForm = z.infer<typeof employeeSchema>;
 
 export default function EmployeeManagement() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isNewEmployeeOpen, setIsNewEmployeeOpen] = useState(false);
@@ -156,6 +156,18 @@ export default function EmployeeManagement() {
       deleteEmployeeMutation.mutate(id);
     }
   };
+
+  // Show loading while checking authentication or logging out
+  if (authLoading || isLoggingOut) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{isLoggingOut ? "Saindo..." : "Carregando..."}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (user?.userType !== 'provider') {
     return (

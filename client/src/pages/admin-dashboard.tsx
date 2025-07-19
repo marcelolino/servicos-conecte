@@ -81,7 +81,7 @@ type CategoryForm = z.infer<typeof categorySchema>;
 type ServiceForm = z.infer<typeof serviceSchema>;
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -588,6 +588,18 @@ export default function AdminDashboard() {
       deleteServiceMutation.mutate(serviceId);
     }
   };
+
+  // Show loading while checking authentication or logging out
+  if (authLoading || isLoggingOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{isLoggingOut ? "Saindo..." : "Carregando..."}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || user.userType !== "admin") {
     return (

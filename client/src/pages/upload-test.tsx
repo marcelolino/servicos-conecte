@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Upload as UploadIcon } from 'lucide-react';
 
 export default function UploadTest() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const [bannerImages, setBannerImages] = useState<string[]>([]);
   const [serviceImages, setServiceImages] = useState<string[]>([]);
@@ -58,6 +58,18 @@ export default function UploadTest() {
       description: `Imagem de ${category} foi removida.`,
     });
   };
+
+  // Show loading while checking authentication or logging out
+  if (authLoading || isLoggingOut) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{isLoggingOut ? "Saindo..." : "Carregando..."}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
