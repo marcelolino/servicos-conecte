@@ -1278,6 +1278,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/upload/image", authenticateToken, deleteImage);
   app.get("/api/upload/info/:imagePath", getImageInfo);
 
+  // Media management routes
+  app.get("/api/media/files", authenticateToken, async (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      const categories = ['banners', 'services', 'categories', 'providers'];
+      const mediaFiles: any[] = [];
+      
+      for (const category of categories) {
+        const categoryDir = path.join(uploadsDir, category);
+        if (fs.existsSync(categoryDir)) {
+          const files = fs.readdirSync(categoryDir);
+          for (const file of files) {
+            const filePath = path.join(categoryDir, file);
+            const stats = fs.statSync(filePath);
+            
+            if (stats.isFile() && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)) {
+              mediaFiles.push({
+                id: `${category}_${file}`,
+                url: `/uploads/${category}/${file}`,
+                name: file,
+                size: stats.size,
+                type: `image/${path.extname(file).slice(1).toLowerCase()}`,
+                category: category.slice(0, -1), // Remove 's' from plural
+                createdAt: stats.birthtime || stats.mtime,
+                lastModified: stats.mtime
+              });
+            }
+          }
+        }
+      }
+      
+      // Sort by creation date (newest first)
+      mediaFiles.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      res.json(mediaFiles);
+    } catch (error) {
+      console.error('Error fetching media files:', error);
+      res.status(500).json({ message: "Failed to fetch media files", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Delete media file
+  app.delete("/api/media/files/:category/:filename", authenticateToken, async (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const { category, filename } = req.params;
+      const filePath = path.join(process.cwd(), 'uploads', `${category}s`, filename);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.json({ message: "File deleted successfully" });
+      } else {
+        res.status(404).json({ message: "File not found" });
+      }
+    } catch (error) {
+      console.error('Error deleting media file:', error);
+      res.status(500).json({ message: "Failed to delete file", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

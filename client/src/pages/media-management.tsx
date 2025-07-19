@@ -57,57 +57,13 @@ export default function MediaManagement() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<'banner' | 'service' | 'category' | 'provider'>('service');
 
-  // Mock data - in real app, this would come from API
-  const mediaFiles: MediaFile[] = [
-    {
-      id: '1',
-      url: '/uploads/banners/banner1.webp',
-      name: 'banner1.webp',
-      size: 245760,
-      type: 'image/webp',
-      category: 'banner',
-      createdAt: '2025-01-16T10:00:00Z',
-      width: 1200,
-      height: 400,
-      usedIn: ['Banner promocional de encanamento']
-    },
-    {
-      id: '2',
-      url: '/uploads/services/service1.webp',
-      name: 'service1.webp',
-      size: 189440,
-      type: 'image/webp',
-      category: 'service',
-      createdAt: '2025-01-16T09:30:00Z',
-      width: 800,
-      height: 600,
-      usedIn: ['Serviço de limpeza residencial']
-    },
-    {
-      id: '3',
-      url: '/uploads/categories/category1.webp',
-      name: 'category1.webp',
-      size: 156672,
-      type: 'image/webp',
-      category: 'category',
-      createdAt: '2025-01-16T09:00:00Z',
-      width: 400,
-      height: 400,
-      usedIn: ['Categoria Jardinagem']
-    },
-    {
-      id: '4',
-      url: '/uploads/providers/provider1.webp',
-      name: 'provider1.webp',
-      size: 178176,
-      type: 'image/webp',
-      category: 'provider',
-      createdAt: '2025-01-16T08:30:00Z',
-      width: 400,
-      height: 400,
-      usedIn: ['Perfil do prestador João Silva']
-    }
-  ];
+  // Fetch media files from API
+  const { data: mediaFiles = [], isLoading: mediaLoading, refetch: refetchMedia } = useQuery({
+    queryKey: ["/api/media/files"],
+    enabled: !authLoading && !isLoggingOut && user?.userType === "admin",
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   const filteredFiles = mediaFiles.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -159,8 +115,7 @@ export default function MediaManagement() {
       title: 'Imagem enviada com sucesso!',
       description: 'A imagem foi processada e está pronta para uso.',
     });
-    // In real app, refresh the media list
-    queryClient.invalidateQueries({ queryKey: ['media-files'] });
+    refetchMedia(); // Refresh the media list
     setIsUploadDialogOpen(false);
   };
 
@@ -176,17 +131,14 @@ export default function MediaManagement() {
 
     if (confirm(`Tem certeza que deseja excluir ${file.name}?`)) {
       try {
-        await apiRequest('/api/upload/image', {
-          method: 'DELETE',
-          body: { imagePath: file.url }
-        });
+        await apiRequest('DELETE', `/api/media/files/${file.category}/${file.name}`);
         
         toast({
           title: 'Imagem excluída',
           description: 'A imagem foi removida com sucesso.',
         });
         
-        queryClient.invalidateQueries({ queryKey: ['media-files'] });
+        refetchMedia(); // Refresh the media list
       } catch (error) {
         toast({
           title: 'Erro ao excluir',
