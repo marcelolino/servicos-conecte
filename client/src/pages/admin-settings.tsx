@@ -200,16 +200,99 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <Tabs defaultValue="empresa" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="empresa">Empresa</TabsTrigger>
-            <TabsTrigger value="aparencia">Aparência</TabsTrigger>
-            <TabsTrigger value="horarios">Horários</TabsTrigger>
-            <TabsTrigger value="funcionalidades">Funcionalidades</TabsTrigger>
-            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+        <Tabs defaultValue="comissao" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="comissao">Comissão</TabsTrigger>
+            <TabsTrigger value="gerais">Gerais</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="empresa" className="space-y-6">
+          <TabsContent value="comissao" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Percent className="h-5 w-5" />
+                  Taxa de Comissão
+                </CardTitle>
+                <CardDescription>
+                  Configure a taxa de comissão padrão que será descontada dos prestadores de serviço em cada pedido
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="commission-rate">
+                    Taxa de comissão padrão no pedido em porcentagem (%)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="commission-rate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(e.target.value)}
+                      placeholder="Ex: 5.0"
+                      className="max-w-[200px]"
+                    />
+                    <span className="flex items-center text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Insira um valor entre 0 e 100. Esta porcentagem será descontada do valor que o prestador recebe.
+                  </p>
+                </div>
+
+                {commissionSetting && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Valor atual:</strong> {commissionSetting.value}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Última atualização: {new Date(commissionSetting.updatedAt).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSaveCommission}
+                    disabled={saveSettingMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    {saveSettingMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Salvar Taxa de Comissão
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Como funciona:</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• A taxa é aplicada automaticamente em todos os novos pedidos</li>
+                    <li>• O valor é descontado do pagamento ao prestador</li>
+                    <li>• Exemplo: Serviço de R$ 100 com taxa de 5% = Prestador recebe R$ 95</li>
+                    <li>• A plataforma fica com R$ 5 de comissão</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="gerais" className="space-y-6">
+            <Tabs defaultValue="empresa" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="empresa">Empresa</TabsTrigger>
+                <TabsTrigger value="aparencia">Aparência</TabsTrigger>
+                <TabsTrigger value="horarios">Horários</TabsTrigger>
+                <TabsTrigger value="funcionalidades">Funcionalidades</TabsTrigger>
+                <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="empresa" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informações da Empresa</CardTitle>
@@ -587,6 +670,8 @@ export default function AdminSettings() {
                 </Button>
               </CardContent>
             </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
