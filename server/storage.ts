@@ -565,9 +565,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateServiceRequest(id: number, request: Partial<InsertServiceRequest>): Promise<ServiceRequest> {
+    console.log('Updating service request:', id, 'with data:', request);
+    
+    // Clean up the request data to ensure no invalid values
+    const cleanRequest: Partial<InsertServiceRequest> = {};
+    
+    // Only include defined values
+    if (request.status !== undefined) cleanRequest.status = request.status;
+    if (request.providerId !== undefined) cleanRequest.providerId = request.providerId;
+    if (request.notes !== undefined) cleanRequest.notes = request.notes;
+    if (request.scheduledAt !== undefined) cleanRequest.scheduledAt = request.scheduledAt;
+    if (request.completedAt !== undefined) cleanRequest.completedAt = request.completedAt;
+    if (request.acceptedAt !== undefined) cleanRequest.acceptedAt = request.acceptedAt;
+    if (request.estimatedPrice !== undefined) cleanRequest.estimatedPrice = request.estimatedPrice;
+    if (request.finalPrice !== undefined) cleanRequest.finalPrice = request.finalPrice;
+    
+    console.log('Clean request data:', cleanRequest);
+    
     const [updatedRequest] = await db
       .update(serviceRequests)
-      .set({ ...request, updatedAt: new Date() })
+      .set({ ...cleanRequest, updatedAt: new Date() })
       .where(eq(serviceRequests.id, id))
       .returning();
     return updatedRequest;
