@@ -22,13 +22,24 @@ interface SystemSetting {
 }
 
 export default function AdminSettings() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [commissionRate, setCommissionRate] = useState('');
 
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   // Redirect if not admin
-  if (!authLoading && (!user || user.userType !== 'admin')) {
+  if (!user || user.userType !== 'admin') {
     window.location.href = '/';
     return null;
   }
@@ -108,9 +119,16 @@ export default function AdminSettings() {
     });
   };
 
-  if (authLoading || settingsLoading) {
+  if (settingsLoading) {
     return (
       <div className="container mx-auto p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Settings className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
+            <p className="text-muted-foreground">Carregando configurações...</p>
+          </div>
+        </div>
         <div className="flex items-center justify-center min-h-64">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
