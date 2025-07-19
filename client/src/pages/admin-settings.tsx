@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Percent, Save, RefreshCw } from 'lucide-react';
+import { Settings, Percent, Save, RefreshCw, DollarSign, Clock, Shield, Building, Palette } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 interface SystemSetting {
   id: number;
@@ -26,6 +27,48 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [commissionRate, setCommissionRate] = useState('');
+  const [companySettings, setCompanySettings] = useState({
+    name: "Qserviços",
+    description: "Plataforma de serviços sob demanda",
+    address: "",
+    city: "",
+    state: "",
+    cep: "",
+    phone: "",
+    email: "",
+    website: "",
+    logo: "",
+    primaryColor: "#3B82F6",
+    secondaryColor: "#6B7280",
+    currency: "BRL",
+    timezone: "America/Sao_Paulo",
+    workingHours: {
+      monday: { start: "08:00", end: "18:00", active: true },
+      tuesday: { start: "08:00", end: "18:00", active: true },
+      wednesday: { start: "08:00", end: "18:00", active: true },
+      thursday: { start: "08:00", end: "18:00", active: true },
+      friday: { start: "08:00", end: "18:00", active: true },
+      saturday: { start: "08:00", end: "12:00", active: true },
+      sunday: { start: "08:00", end: "12:00", active: false },
+    },
+    features: {
+      emailNotifications: true,
+      smsNotifications: false,
+      automaticApproval: false,
+      requireVerification: true,
+      allowCancellation: true,
+      allowReschedule: true,
+    },
+    paymentMethods: {
+      creditCard: true,
+      debitCard: true,
+      pix: true,
+      cash: true,
+      bankTransfer: false,
+    },
+    cancellationPolicy: "24",
+    reschedulePolicy: "12",
+  });
 
   // Query to fetch system settings - must be called before any conditional returns
   const { data: settings = [], isLoading: settingsLoading } = useQuery({
@@ -36,11 +79,17 @@ export default function AdminSettings() {
   // Mutation to save settings
   const saveSettingMutation = useMutation({
     mutationFn: async (data: { key: string; value: string; description?: string }) => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           key: data.key,
@@ -51,7 +100,8 @@ export default function AdminSettings() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save setting');
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        throw new Error(errorData.message || 'Failed to save setting');
       }
 
       return response.json();
