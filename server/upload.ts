@@ -10,8 +10,11 @@ const bannersDir = path.join(uploadDir, 'banners');
 const servicesDir = path.join(uploadDir, 'services');
 const categoriesDir = path.join(uploadDir, 'categories');
 const providersDir = path.join(uploadDir, 'providers');
+const avatarsDir = path.join(uploadDir, 'avatars');
+const generalDir = path.join(uploadDir, 'general');
+const portfolioDir = path.join(uploadDir, 'portfolio');
 
-[uploadDir, bannersDir, servicesDir, categoriesDir, providersDir].forEach(dir => {
+[uploadDir, bannersDir, servicesDir, categoriesDir, providersDir, avatarsDir, generalDir, portfolioDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -40,7 +43,7 @@ export const upload = multer({
 // Image processing and saving function
 export const processAndSaveImage = async (
   file: Express.Multer.File,
-  category: 'banners' | 'services' | 'categories' | 'providers',
+  category: 'banners' | 'services' | 'categories' | 'providers' | 'avatars' | 'general' | 'portfolio',
   options: {
     width?: number;
     height?: number;
@@ -211,9 +214,36 @@ export const uploadMultipleImages = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
-    const category = req.body.category || 'services';
+    let category = req.body.category || 'services';
+    
+    // Ensure category ends with 's' for folder names
+    if (!category.endsWith('s')) {
+      switch(category) {
+        case 'banner':
+          category = 'banners';
+          break;
+        case 'service':
+          category = 'services';
+          break;
+        case 'category':
+          category = 'categories';
+          break;
+        case 'provider':
+          category = 'providers';
+          break;
+        case 'avatar':
+          category = 'avatars';
+          break;
+        case 'portfolio':
+          category = 'portfolio';
+          break;
+        default:
+          category = 'general';
+      }
+    }
+    
     const uploadPromises = files.map(file => 
-      processAndSaveImage(file, category, {
+      processAndSaveImage(file, category as any, {
         width: 800,
         height: 600,
         quality: 85,

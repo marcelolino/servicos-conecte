@@ -1285,7 +1285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const path = require('path');
       
       const uploadsDir = path.join(process.cwd(), 'uploads');
-      const categories = ['banners', 'services', 'categories', 'providers'];
+      const categories = ['banners', 'services', 'categories', 'providers', 'avatars', 'general', 'portfolio'];
       const mediaFiles: any[] = [];
       
       for (const category of categories) {
@@ -1303,7 +1303,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: file,
                 size: stats.size,
                 type: `image/${path.extname(file).slice(1).toLowerCase()}`,
-                category: category.slice(0, -1), // Remove 's' from plural
+                category: category === 'categories' ? 'category' : 
+                         category === 'banners' ? 'banner' :
+                         category === 'services' ? 'service' :
+                         category === 'providers' ? 'provider' :
+                         category === 'avatars' ? 'avatar' :
+                         category, // Keep as-is for 'general' and 'portfolio'
                 createdAt: stats.birthtime || stats.mtime,
                 lastModified: stats.mtime
               });
@@ -1329,7 +1334,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const path = require('path');
       
       const { category, filename } = req.params;
-      const filePath = path.join(process.cwd(), 'uploads', `${category}s`, filename);
+      
+      // Map singular category names to plural folder names
+      let folderName = category;
+      switch(category) {
+        case 'banner':
+          folderName = 'banners';
+          break;
+        case 'service':
+          folderName = 'services';
+          break;
+        case 'category':
+          folderName = 'categories';
+          break;
+        case 'provider':
+          folderName = 'providers';
+          break;
+        case 'avatar':
+          folderName = 'avatars';
+          break;
+        // 'general' and 'portfolio' stay the same
+      }
+      
+      const filePath = path.join(process.cwd(), 'uploads', folderName, filename);
       
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
