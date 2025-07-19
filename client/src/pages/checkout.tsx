@@ -306,7 +306,6 @@ export default function CheckoutPage() {
                               <Input 
                                 type="datetime-local" 
                                 {...field}
-                                min={new Date().toISOString().slice(0, 16)}
                               />
                             </FormControl>
                             <FormMessage />
