@@ -27,38 +27,11 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const [commissionRate, setCommissionRate] = useState('');
 
-  // Show loading while auth is being checked
-  if (authLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-64">
-          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect if not admin
-  if (!user || user.userType !== 'admin') {
-    window.location.href = '/';
-    return null;
-  }
-
-  // Query to fetch system settings
+  // Query to fetch system settings - must be called before any conditional returns
   const { data: settings = [], isLoading: settingsLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
-    enabled: !!user
+    enabled: !!user && user.userType === 'admin'
   });
-
-  // Get commission rate from settings
-  const commissionSetting = settings.find((s: SystemSetting) => s.key === 'commission_rate');
-  
-  // Initialize commission rate value
-  useEffect(() => {
-    if (commissionSetting) {
-      setCommissionRate(commissionSetting.value);
-    }
-  }, [commissionSetting]);
 
   // Mutation to save settings
   const saveSettingMutation = useMutation({
@@ -100,6 +73,16 @@ export default function AdminSettings() {
     }
   });
 
+  // Get commission rate from settings
+  const commissionSetting = settings.find((s: SystemSetting) => s.key === 'commission_rate');
+  
+  // Initialize commission rate value
+  useEffect(() => {
+    if (commissionSetting) {
+      setCommissionRate(commissionSetting.value);
+    }
+  }, [commissionSetting]);
+
   const handleSaveCommission = () => {
     const rate = parseFloat(commissionRate);
     
@@ -118,6 +101,23 @@ export default function AdminSettings() {
       description: 'Taxa de comissão padrão no pedido em porcentagem (%)'
     });
   };
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not admin
+  if (!user || user.userType !== 'admin') {
+    window.location.href = '/';
+    return null;
+  }
 
   if (settingsLoading) {
     return (
