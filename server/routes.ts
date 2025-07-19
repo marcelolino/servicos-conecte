@@ -1278,6 +1278,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/upload/image", authenticateToken, deleteImage);
   app.get("/api/upload/info/:imagePath", getImageInfo);
 
+  // System settings endpoints
+  app.get('/api/admin/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const settings = await storage.getSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.get('/api/admin/settings/:key', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getSystemSetting(key);
+      if (!setting) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      res.json(setting);
+    } catch (error) {
+      console.error('Error fetching system setting:', error);
+      res.status(500).json({ message: "Failed to fetch setting" });
+    }
+  });
+
+  app.post('/api/admin/settings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { key, value, type = 'string', description } = req.body;
+      
+      if (!key || value === undefined) {
+        return res.status(400).json({ message: "Key and value are required" });
+      }
+
+      // Check if setting exists
+      const existingSetting = await storage.getSystemSetting(key);
+      
+      if (existingSetting) {
+        // Update existing setting
+        const updatedSetting = await storage.updateSystemSetting(key, value.toString());
+        res.json(updatedSetting);
+      } else {
+        // Create new setting
+        const newSetting = await storage.createSystemSetting({
+          key,
+          value: value.toString(),
+          type,
+          description,
+          isSystem: false
+        });
+        res.json(newSetting);
+      }
+    } catch (error) {
+      console.error('Error creating/updating system setting:', error);
+      res.status(500).json({ message: "Failed to save setting" });
+    }
+  });
+
+  app.put('/api/admin/settings/:key', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      
+      if (value === undefined) {
+        return res.status(400).json({ message: "Value is required" });
+      }
+
+      const updatedSetting = await storage.updateSystemSetting(key, value.toString());
+      res.json(updatedSetting);
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      res.status(500).json({ message: "Failed to update setting" });
+    }
+  });
+
   // Media management routes
   app.get("/api/media/files", authenticateToken, async (req, res) => {
     try {

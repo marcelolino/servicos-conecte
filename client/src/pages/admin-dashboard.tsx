@@ -2994,7 +2994,13 @@ export default function AdminDashboard() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => {
+                  if (item.id === 'settings') {
+                    window.location.href = '/admin-settings';
+                  } else {
+                    setActiveSection(item.id);
+                  }
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                   activeSection === item.id
                     ? "bg-primary text-primary-foreground"

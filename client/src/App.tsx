@@ -17,6 +17,7 @@ import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
+import AdminSettings from "@/pages/admin-settings";
 import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
@@ -44,6 +45,7 @@ function Router() {
           <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin-settings" component={AdminSettings} />
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
           <Route path="/media-management" component={MediaManagement} />
