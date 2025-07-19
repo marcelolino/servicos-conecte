@@ -81,9 +81,20 @@ export default function AdminSettings() {
     mutationFn: async (data: { key: string; value: string; description?: string }) => {
       const token = localStorage.getItem('token');
       
+      console.log('Token from localStorage:', token ? 'exists' : 'not found');
+      
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
+
+      const payload = {
+        key: data.key,
+        value: data.value,
+        type: 'number',
+        description: data.description
+      };
+
+      console.log('Sending payload:', payload);
 
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -91,16 +102,14 @@ export default function AdminSettings() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          key: data.key,
-          value: data.value,
-          type: 'number',
-          description: data.description
-        })
+        body: JSON.stringify(payload)
       });
+
+      console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        console.error('Error response:', errorData);
         throw new Error(errorData.message || 'Failed to save setting');
       }
 
