@@ -45,7 +45,7 @@ const serviceRequestSchema = z.object({
 type ServiceRequestForm = z.infer<typeof serviceRequestSchema>;
 
 export default function ClientDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("requests");
@@ -261,6 +261,18 @@ export default function ClientDashboard() {
   const onSubmit = (data: ServiceRequestForm) => {
     createRequestMutation.mutate(data);
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

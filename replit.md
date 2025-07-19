@@ -63,11 +63,14 @@ Preferred communication style: Simple, everyday language.
 - ✓ Created "Finalizar Serviço" button for in-progress services
 - ✓ Added service control mutations with proper error handling
 - ✓ Integrated scheduled time display in service request cards
-- ✓ Removed time restrictions to allow immediate service testing
+- ✓ Removed time restrictions from checkout to allow immediate service testing
 - ✓ Enhanced client dashboard with action buttons based on service status
 - ✓ Added debugging logs to troubleshoot button visibility
 - ✓ Updated storage layer to include provider user information
-- → Currently debugging service request data structure for action buttons
+- ✓ Fixed "toString is not a function" error in service completion
+- ✓ Implemented proper date handling for completedAt field
+- ✓ Added loading states to prevent "Acesso Negado" flash during auth check
+- ✓ Corrected authentication loading state in client and provider dashboards
 
 ### Admin Dashboard Improvements (January 15, 2025)
 - ✓ Implemented complete admin dashboard redesign with sidebar navigation
