@@ -201,9 +201,12 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="commission" className="w-full">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="commission">Comissão</TabsTrigger>
             <TabsTrigger value="general">Gerais</TabsTrigger>
+            <TabsTrigger value="hours">Horários</TabsTrigger>
+            <TabsTrigger value="features">Funcionalidades</TabsTrigger>
+            <TabsTrigger value="payment">Pagamento</TabsTrigger>
           </TabsList>
 
           <TabsContent value="commission" className="space-y-6">
@@ -285,7 +288,10 @@ export default function AdminSettings() {
           <TabsContent value="general" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Configurações Gerais</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Configurações Gerais
+                </CardTitle>
                 <CardDescription>
                   Outras configurações do sistema serão adicionadas aqui conforme necessário
                 </CardDescription>
@@ -294,6 +300,66 @@ export default function AdminSettings() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Settings className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>Outras configurações serão adicionadas aqui em futuras versões</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="hours" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Horários de Funcionamento
+                </CardTitle>
+                <CardDescription>
+                  Configure os horários de funcionamento da plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Configuração de horários em desenvolvimento</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="features" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Funcionalidades do Sistema
+                </CardTitle>
+                <CardDescription>
+                  Controle as funcionalidades disponíveis na plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Configuração de funcionalidades em desenvolvimento</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payment" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Métodos de Pagamento
+                </CardTitle>
+                <CardDescription>
+                  Configure os métodos de pagamento aceitos pela plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Configuração de pagamentos em desenvolvimento</p>
                 </div>
               </CardContent>
             </Card>
