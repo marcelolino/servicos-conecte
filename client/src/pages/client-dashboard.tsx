@@ -73,6 +73,9 @@ export default function ClientDashboard() {
   // Fetch client's service requests
   const { data: serviceRequests, isLoading: requestsLoading } = useQuery({
     queryKey: ["/api/service-requests/client"],
+    onSuccess: (data) => {
+      console.log('Service Requests Fetched:', data);
+    }
   });
 
   // Fetch client statistics
@@ -190,16 +193,7 @@ export default function ClientDashboard() {
 
   // Helper function to check if service can be started
   const canStartService = (request: any) => {
-    if (request.status !== "accepted") return false;
-    if (!request.scheduledAt) return true; // Can start immediately if no scheduled time
-    
-    const scheduledTime = new Date(request.scheduledAt);
-    const now = new Date();
-    const timeDiff = scheduledTime.getTime() - now.getTime();
-    const minutesDiff = timeDiff / (1000 * 60);
-    
-    // Allow starting 15 minutes before scheduled time
-    return minutesDiff <= 15;
+    return request.status === "accepted";
   };
 
   // Helper function to check if service can be completed
@@ -209,6 +203,13 @@ export default function ClientDashboard() {
 
   // Helper function to get next action button
   const getServiceActionButton = (request: any) => {
+    console.log('Service Request Debug:', {
+      id: request.id,
+      status: request.status,
+      canStart: canStartService(request),
+      canComplete: canCompleteService(request)
+    });
+    
     if (canStartService(request)) {
       return (
         <Button

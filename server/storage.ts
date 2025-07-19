@@ -460,8 +460,8 @@ export class DatabaseStorage implements IStorage {
     return request ? { ...request, provider: request.provider || undefined } : undefined;
   }
 
-  async getServiceRequestsByClient(clientId: number): Promise<(ServiceRequest & { provider?: Provider; category: ServiceCategory })[]> {
-    return await db
+  async getServiceRequestsByClient(clientId: number): Promise<(ServiceRequest & { provider?: Provider & { user: User }; category: ServiceCategory })[]> {
+    const results = await db
       .select({
         id: serviceRequests.id,
         clientId: serviceRequests.clientId,
@@ -483,13 +483,21 @@ export class DatabaseStorage implements IStorage {
         createdAt: serviceRequests.createdAt,
         updatedAt: serviceRequests.updatedAt,
         provider: providers,
+        providerUser: users,
         category: serviceCategories,
       })
       .from(serviceRequests)
       .leftJoin(providers, eq(serviceRequests.providerId, providers.id))
+      .leftJoin(users, eq(providers.userId, users.id))
       .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
       .where(eq(serviceRequests.clientId, clientId))
       .orderBy(desc(serviceRequests.createdAt));
+
+    return results.map(result => ({
+      ...result,
+      provider: result.provider ? { ...result.provider, user: result.providerUser } : undefined,
+      providerUser: undefined, // Remove from final result
+    }));
   }
 
   async getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {

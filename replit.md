@@ -57,6 +57,18 @@ Preferred communication style: Simple, everyday language.
 - ✓ Added comprehensive upload API endpoints
 - ✓ Tested all functionality including limits and virus scanning
 
+### Service Scheduling Control Implementation (January 18, 2025)
+- ✓ Added service status progression control for clients
+- ✓ Implemented "Iniciar Serviço" button for accepted services
+- ✓ Created "Finalizar Serviço" button for in-progress services
+- ✓ Added service control mutations with proper error handling
+- ✓ Integrated scheduled time display in service request cards
+- ✓ Removed time restrictions to allow immediate service testing
+- ✓ Enhanced client dashboard with action buttons based on service status
+- ✓ Added debugging logs to troubleshoot button visibility
+- ✓ Updated storage layer to include provider user information
+- → Currently debugging service request data structure for action buttons
+
 ### Admin Dashboard Improvements (January 15, 2025)
 - ✓ Implemented complete admin dashboard redesign with sidebar navigation
 - ✓ Added proper provider management with approval/rejection functionality
