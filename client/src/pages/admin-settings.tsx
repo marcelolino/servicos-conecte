@@ -79,22 +79,14 @@ export default function AdminSettings() {
   // Mutation to save settings
   const saveSettingMutation = useMutation({
     mutationFn: async (data: { key: string; value: string; description?: string }) => {
-      const token = localStorage.getItem('token');
+      // Get token from the correct localStorage key
+      const token = localStorage.getItem('authToken');
       
-      console.log('Token from localStorage:', token ? 'exists' : 'not found');
+      console.log('Token status:', token ? 'found' : 'not found');
       
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
-
-      const payload = {
-        key: data.key,
-        value: data.value,
-        type: 'number',
-        description: data.description
-      };
-
-      console.log('Sending payload:', payload);
 
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -102,7 +94,13 @@ export default function AdminSettings() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        credentials: 'include',
+        body: JSON.stringify({
+          key: data.key,
+          value: data.value,
+          type: 'number',
+          description: data.description
+        })
       });
 
       console.log('Response status:', response.status);
