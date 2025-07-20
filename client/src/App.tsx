@@ -14,6 +14,8 @@ import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProviderProfile from "@/pages/provider-profile";
 import ProviderServiceFlow from "@/pages/provider-service-flow";
+import ProviderPayments from "@/pages/provider-payments";
+import ProviderBookings from "@/pages/provider-bookings";
 import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
@@ -43,6 +45,8 @@ function Router() {
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/provider-services" component={ProviderServiceFlow} />
+          <Route path="/provider-payments" component={ProviderPayments} />
+          <Route path="/provider-bookings" component={ProviderBookings} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin-settings" component={AdminSettings} />
