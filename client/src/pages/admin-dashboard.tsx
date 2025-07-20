@@ -46,7 +46,8 @@ import {
   ImageIcon,
   Upload,
   Download,
-  Trash2
+  Trash2,
+  Percent
 } from "lucide-react";
 import {
   DropdownMenu,
