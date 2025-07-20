@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,20 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [activeSection, setActiveSection] = useState("dashboard");
+  
+  // Get section from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const sectionFromUrl = urlParams.get('section');
+  const [activeSection, setActiveSection] = useState(sectionFromUrl || "dashboard");
+
+  // Update section when URL changes
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newSection = urlParams.get('section');
+    if (newSection && newSection !== activeSection) {
+      setActiveSection(newSection);
+    }
+  }, [activeSection]);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);

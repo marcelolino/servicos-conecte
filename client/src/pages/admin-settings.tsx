@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Link } from 'wouter';
+import { useLocation } from 'wouter';
 
 interface SystemSetting {
   id: number;
@@ -27,6 +27,7 @@ export default function AdminSettings() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [commissionRate, setCommissionRate] = useState('');
   const [companySettings, setCompanySettings] = useState({
     name: "Qserviços",
@@ -211,46 +212,74 @@ export default function AdminSettings() {
         </div>
         
         <nav className="p-4 space-y-2">
-          <Link href="/admin-dashboard">
-            <a className="block">
-              <Button variant="ghost" className="w-full justify-start">
-                <Home className="h-4 w-4 mr-3" />
-                Dashboard
-              </Button>
-            </a>
-          </Link>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start"
+            onClick={() => setLocation('/admin-dashboard')}
+          >
+            <Home className="h-4 w-4 mr-3" />
+            Dashboard
+          </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=providers')}
+          >
             <Users className="h-4 w-4 mr-3" />
             Prestadores
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=services')}
+          >
             <FileText className="h-4 w-4 mr-3" />
             Serviços
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=bookings')}
+          >
             <BarChart3 className="h-4 w-4 mr-3" />
             Agendamentos
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=categories')}
+          >
             <Users className="h-4 w-4 mr-3" />
             Categorias
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=media')}
+          >
             <ImageIcon className="h-4 w-4 mr-3" />
             Mídia
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=users')}
+          >
             <Users className="h-4 w-4 mr-3" />
             Usuários
           </Button>
           
-          <Button variant="ghost" className="w-full justify-start text-gray-500">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-gray-500"
+            onClick={() => setLocation('/admin-dashboard?section=reports')}
+          >
             <BarChart3 className="h-4 w-4 mr-3" />
             Relatórios
           </Button>
