@@ -23,7 +23,7 @@ import {
 interface ImageUploadProps {
   onUpload: (imageUrl: string) => void;
   onRemove?: (imageUrl: string) => void;
-  category: 'banner' | 'service' | 'category' | 'provider';
+  category: 'banner' | 'service' | 'category' | 'provider' | 'profile';
   multiple?: boolean;
   maxFiles?: number;
   currentImages?: string[];
@@ -148,7 +148,10 @@ export default function ImageUpload({
           throw new Error('Token de autenticação não encontrado. Faça login novamente.');
         }
 
-        const response = await fetch(`/api/upload/${category}`, {
+        // Use advanced endpoint for profile uploads (avatar)
+        const endpoint = category === 'profile' ? '/api/upload/advanced/avatar' : `/api/upload/${category}`;
+        
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${authToken}`
