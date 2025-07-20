@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Percent, Save, RefreshCw, DollarSign, Clock, Shield, Building, Palette } from 'lucide-react';
+import { Settings, Percent, Save, RefreshCw, DollarSign, Clock, Shield, Building, Palette, Users, BarChart3, FileText, ImageIcon, Home, Cog } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Link } from 'wouter';
 
 interface SystemSetting {
   id: number;
@@ -194,18 +195,85 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Settings className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
-            <p className="text-muted-foreground">
-              Gerencie as configurações gerais da plataforma
-            </p>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-sm border-r border-gray-200 fixed h-full overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Admin Panel</h2>
+              <p className="text-sm text-gray-500">Painel</p>
+            </div>
           </div>
         </div>
+        
+        <nav className="p-4 space-y-2">
+          <Link href="/admin-dashboard">
+            <Button variant="ghost" className="w-full justify-start">
+              <Home className="h-4 w-4 mr-3" />
+              Dashboard
+            </Button>
+          </Link>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <Users className="h-4 w-4 mr-3" />
+            Prestadores
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <FileText className="h-4 w-4 mr-3" />
+            Serviços
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <BarChart3 className="h-4 w-4 mr-3" />
+            Agendamentos
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <Users className="h-4 w-4 mr-3" />
+            Categorias
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <ImageIcon className="h-4 w-4 mr-3" />
+            Mídia
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <Users className="h-4 w-4 mr-3" />
+            Usuários
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start text-gray-500">
+            <BarChart3 className="h-4 w-4 mr-3" />
+            Relatórios
+          </Button>
+          
+          <Button variant="ghost" className="w-full justify-start bg-blue-50 text-blue-600">
+            <Cog className="h-4 w-4 mr-3" />
+            Configurações
+          </Button>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 ml-64">
+        <div className="p-6">
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <Settings className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
+                <p className="text-muted-foreground">
+                  Gerencie as configurações gerais da plataforma
+                </p>
+              </div>
+            </div>
 
         <Tabs defaultValue="comissao" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
@@ -672,7 +740,9 @@ export default function AdminSettings() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
