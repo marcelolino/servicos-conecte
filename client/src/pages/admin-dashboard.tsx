@@ -94,12 +94,24 @@ export default function AdminDashboard() {
 
   // Update section when URL changes
   React.useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newSection = urlParams.get('section') || 'dashboard';
+      setActiveSection(newSection);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Also monitor initial load
+  React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const newSection = urlParams.get('section');
-    if (newSection && newSection !== activeSection) {
+    const newSection = urlParams.get('section') || 'dashboard';
+    if (newSection !== activeSection) {
       setActiveSection(newSection);
     }
-  }, [activeSection]);
+  }, []);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
@@ -3015,6 +3027,9 @@ export default function AdminDashboard() {
                     window.history.replaceState({}, '', '/admin-dashboard');
                     setLocation('/admin-settings');
                   } else {
+                    // Update URL with the new section
+                    const newUrl = item.id === 'dashboard' ? '/admin-dashboard' : `/admin-dashboard?section=${item.id}`;
+                    window.history.replaceState({}, '', newUrl);
                     setActiveSection(item.id);
                   }
                 }}
