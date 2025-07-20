@@ -212,10 +212,12 @@ export default function AdminSettings() {
         
         <nav className="p-4 space-y-2">
           <Link href="/admin-dashboard">
-            <Button variant="ghost" className="w-full justify-start">
-              <Home className="h-4 w-4 mr-3" />
-              Dashboard
-            </Button>
+            <a className="block">
+              <Button variant="ghost" className="w-full justify-start">
+                <Home className="h-4 w-4 mr-3" />
+                Dashboard
+              </Button>
+            </a>
           </Link>
           
           <Button variant="ghost" className="w-full justify-start text-gray-500">

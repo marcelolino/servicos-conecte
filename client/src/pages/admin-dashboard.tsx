@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ImageUpload from "@/components/image-upload";
+import { useLocation } from "wouter";
 import { 
   Users, 
   DollarSign, 
@@ -84,6 +85,7 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
@@ -2996,7 +2998,7 @@ export default function AdminDashboard() {
                 key={item.id}
                 onClick={() => {
                   if (item.id === 'settings') {
-                    window.location.href = '/admin-settings';
+                    setLocation('/admin-settings');
                   } else {
                     setActiveSection(item.id);
                   }
