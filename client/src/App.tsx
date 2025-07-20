@@ -12,6 +12,10 @@ import Register from "@/pages/register";
 import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminPayments from "@/pages/admin-payments";
+import AdminCashPayments from "@/pages/admin-cash-payments";
+import AdminEarnings from "@/pages/admin-earnings";
+import AdminWithdrawalRequests from "@/pages/admin-withdrawal-requests";
 import ProviderProfile from "@/pages/provider-profile";
 import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ProviderPayments from "@/pages/provider-payments";
@@ -62,6 +66,10 @@ function Router() {
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin-settings" component={AdminSettings} />
+          <Route path="/admin-payments" component={AdminPayments} />
+          <Route path="/admin-cash-payments" component={AdminCashPayments} />
+          <Route path="/admin-earnings" component={AdminEarnings} />
+          <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
           <Route path="/media-management" component={MediaManagement} />
