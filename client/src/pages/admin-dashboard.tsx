@@ -265,6 +265,12 @@ export default function AdminDashboard() {
     enabled: user?.userType === "admin",
   });
 
+  // Fetch admin settings including commission rate
+  const { data: adminSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    enabled: user?.userType === "admin",
+  });
+
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: (data: CategoryForm) => apiRequest("POST", "/api/categories", {
@@ -517,7 +523,7 @@ export default function AdminDashboard() {
       case "pending":
         return "secondary";
       case "accepted":
-        return "default";
+        return "outline";
       case "in_progress":
         return "default";
       case "completed":
@@ -526,6 +532,23 @@ export default function AdminDashboard() {
         return "destructive";
       default:
         return "secondary";
+    }
+  };
+
+  const getBookingStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "accepted":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "in_progress":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
 
@@ -736,10 +759,25 @@ export default function AdminDashboard() {
     }
   ];
 
+  // Calculate admin commission earnings
+  const calculateAdminCommission = () => {
+    if (!bookings || !adminSettings) return 0;
+    
+    const commissionRate = adminSettings.find((setting: any) => setting.key === 'commission_rate')?.value || 5;
+    const completedBookings = bookings.filter((booking: any) => booking.status === 'completed');
+    
+    const totalCommission = completedBookings.reduce((total: number, booking: any) => {
+      const serviceValue = Number(booking.finalPrice || booking.estimatedPrice || 0);
+      return total + (serviceValue * (Number(commissionRate) / 100));
+    }, 0);
+    
+    return totalCommission;
+  };
+
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         <Card className="dashboard-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -819,6 +857,29 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="dashboard-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Ganhos de Comissão</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {bookingsLoading || settingsLoading ? (
+                    <Skeleton className="h-8 w-20" />
+                  ) : (
+                    `R$ ${calculateAdminCommission().toFixed(2)}`
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Taxa: {adminSettings?.find((s: any) => s.key === 'commission_rate')?.value || 5}%
+                </p>
+              </div>
+              <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full">
+                <Percent className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts and Recent Activity */}
@@ -838,7 +899,31 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Serviços Concluídos</span>
                 <span className="font-semibold text-foreground">
-                  {statsLoading ? <Skeleton className="h-4 w-12" /> : "1,234"}
+                  {bookingsLoading ? (
+                    <Skeleton className="h-4 w-12" />
+                  ) : (
+                    bookings?.filter((b: any) => b.status === 'completed')?.length || 0
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Em Andamento</span>
+                <span className="font-semibold text-orange-600">
+                  {bookingsLoading ? (
+                    <Skeleton className="h-4 w-12" />
+                  ) : (
+                    bookings?.filter((b: any) => b.status === 'in_progress')?.length || 0
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Total de Comissões</span>
+                <span className="font-semibold text-green-600">
+                  {bookingsLoading || settingsLoading ? (
+                    <Skeleton className="h-4 w-16" />
+                  ) : (
+                    `R$ ${calculateAdminCommission().toFixed(2)}`
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -2240,9 +2325,9 @@ export default function AdminDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getBookingStatusVariant(booking.status)}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getBookingStatusColor(booking.status)}`}>
                           {getBookingStatusText(booking.status)}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
