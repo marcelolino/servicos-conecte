@@ -747,6 +747,30 @@ export default function AdminDashboard() {
       description: "Gerenciar usuários"
     },
     {
+      id: "payments",
+      label: "Pagamentos",
+      icon: DollarSign,
+      description: "Gerenciar pagamentos"
+    },
+    {
+      id: "cash-payments",
+      label: "Pagamentos Em Dinheiro", 
+      icon: FileText,
+      description: "Pagamentos em dinheiro"
+    },
+    {
+      id: "earnings",
+      label: "Ganhos",
+      icon: TrendingUp,
+      description: "Ganhos (Imposto não incluído)"
+    },
+    {
+      id: "withdrawal-requests",
+      label: "Solicitações De Retirada",
+      icon: Clock,
+      description: "Solicitações de retirada do provedor"
+    },
+    {
       id: "reports",
       label: "Relatórios",
       icon: BarChart3,
@@ -3057,6 +3081,218 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderPayments = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Pagamentos</h2>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">All</span>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input placeholder="Procurar" className="pl-10" />
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary hover:bg-primary">
+                <TableHead className="text-primary-foreground font-medium">ID</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Serviço de reposição</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Usuário</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Tipo de pagamento</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Status do jogo</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Data e hora</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Quantidade total paga</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-medium">13</TableCell>
+                <TableCell className="font-medium">Saneamento completo (Serviço)</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Pedro Norris (em inglês)</div>
+                      <div className="text-sm text-muted-foreground">demo.user.com</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>Dinheiro em dinheiro</TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    Pendizendo Por Admin
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">20 de julho de 2025</div>
+                  <div className="text-xs text-muted-foreground">1:51 AM</div>
+                </TableCell>
+                <TableCell className="font-medium text-green-600">$99.55 (em inglês)</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderCashPayments = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Pagamentos em dinheiro</h2>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">All</span>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input placeholder="Procurar" className="pl-10" />
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary hover:bg-primary">
+                <TableHead className="text-primary-foreground font-medium">ID</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Serviço de reposição</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Usuário</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Data e hora</TableHead>
+                <TableHead className="text-primary-foreground font-medium">História</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Status do jogo</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Preço</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="hover:bg-muted/50">
+                <TableCell className="font-medium">13</TableCell>
+                <TableCell className="font-medium">Saneamento completo (Serviço)</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Pedro Norris (em inglês)</div>
+                      <div className="text-sm text-muted-foreground">demo.user.com</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">20 de julho de 2025 1:51 AM</div>
+                </TableCell>
+                <TableCell>
+                  <Button variant="link" className="p-0 h-auto text-primary">Ver</Button>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    Pendizendo por admin
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium text-green-600">$99.55 (em inglês)</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderEarnings = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Ganhar (Imposto não incluído)</h2>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input placeholder="Pesquisar" className="pl-10" />
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary hover:bg-primary">
+                <TableHead className="text-primary-foreground font-medium">Fornecedor</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Reservas</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Ganho total</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Ganho de administração</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Provedor de Pagamento devido</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Quantidade de prestadora paga</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Ganho total do Handyman</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-12">
+                  <div className="text-muted-foreground">
+                    <p>Nenhum dado disponível na tabela</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderWithdrawalRequests = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">Solicitações de retirada do provedor</h2>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input placeholder="Pesquisar" className="pl-10" />
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary hover:bg-primary">
+                <TableHead className="text-primary-foreground font-medium">Nome do banco</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Montante</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Tipo de pagamento</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Data de lançamento</TableHead>
+                <TableHead className="text-primary-foreground font-medium">Status do jogo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12">
+                  <div className="text-muted-foreground">
+                    <p>Nenhum dado disponível na tabela</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -3073,6 +3309,14 @@ export default function AdminDashboard() {
         return renderMedia();
       case "users":
         return renderUsers();
+      case "payments":
+        return renderPayments();
+      case "cash-payments":
+        return renderCashPayments();
+      case "earnings":
+        return renderEarnings();
+      case "withdrawal-requests":
+        return renderWithdrawalRequests();
       case "reports":
         return (
           <div className="text-center py-12">
