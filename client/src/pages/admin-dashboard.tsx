@@ -47,7 +47,8 @@ import {
   Upload,
   Download,
   Trash2,
-  Percent
+  Percent,
+  ChevronDown
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -92,6 +93,7 @@ export default function AdminDashboard() {
   const urlParams = new URLSearchParams(window.location.search);
   const sectionFromUrl = urlParams.get('section');
   const [activeSection, setActiveSection] = useState(sectionFromUrl || "dashboard");
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(["transactions"]);
 
   // Update section when URL changes
   React.useEffect(() => {
@@ -747,28 +749,32 @@ export default function AdminDashboard() {
       description: "Gerenciar usuários"
     },
     {
-      id: "payments",
-      label: "Pagamentos",
+      id: "transactions",
+      label: "Transações",
       icon: DollarSign,
-      description: "Gerenciar pagamentos"
-    },
-    {
-      id: "cash-payments",
-      label: "Pagamentos Em Dinheiro", 
-      icon: FileText,
-      description: "Pagamentos em dinheiro"
-    },
-    {
-      id: "earnings",
-      label: "Ganhos",
-      icon: TrendingUp,
-      description: "Ganhos (Imposto não incluído)"
-    },
-    {
-      id: "withdrawal-requests",
-      label: "Solicitações De Retirada",
-      icon: Clock,
-      description: "Solicitações de retirada do provedor"
+      description: "Gerenciar transações",
+      subItems: [
+        {
+          id: "payments",
+          label: "Pagamentos",
+          description: "Gerenciar pagamentos"
+        },
+        {
+          id: "cash-payments",
+          label: "Pagamentos Em Dinheiro",
+          description: "Pagamentos em dinheiro"
+        },
+        {
+          id: "earnings",
+          label: "Ganhos",
+          description: "Ganhos (Imposto não incluído)"
+        },
+        {
+          id: "withdrawal-requests",
+          label: "Solicitações De Retirada",
+          description: "Solicitações de retirada do provedor"
+        }
+      ]
     },
     {
       id: "reports",
@@ -3348,38 +3354,80 @@ export default function AdminDashboard() {
         <nav className="p-4 space-y-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
+            const isExpanded = expandedMenus.includes(item.id);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isSubItemActive = hasSubItems && item.subItems?.some(sub => sub.id === activeSection);
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'settings') {
-                    // Clear any URL parameters when going to settings
-                    window.history.replaceState({}, '', '/admin-dashboard');
-                    setLocation('/admin-settings');
-                  } else {
-                    // Update URL with the new section
-                    const newUrl = item.id === 'dashboard' ? '/admin-dashboard' : `/admin-dashboard?section=${item.id}`;
-                    window.history.replaceState({}, '', newUrl);
-                    setActiveSection(item.id);
-                  }
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                  activeSection === item.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <div className="flex-1">
-                  <div className="font-medium">{item.label}</div>
-                  <div className="text-xs opacity-70">{item.description}</div>
-                </div>
-                {item.badge && item.badge > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1.5 text-xs">
-                    {item.badge}
-                  </Badge>
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    if (hasSubItems) {
+                      // Toggle menu expansion
+                      setExpandedMenus(prev => 
+                        prev.includes(item.id) 
+                          ? prev.filter(id => id !== item.id)
+                          : [...prev, item.id]
+                      );
+                    } else if (item.id === 'settings') {
+                      // Clear any URL parameters when going to settings
+                      window.history.replaceState({}, '', '/admin-dashboard');
+                      setLocation('/admin-settings');
+                    } else {
+                      // Update URL with the new section
+                      const newUrl = item.id === 'dashboard' ? '/admin-dashboard' : `/admin-dashboard?section=${item.id}`;
+                      window.history.replaceState({}, '', newUrl);
+                      setActiveSection(item.id);
+                    }
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    activeSection === item.id || isSubItemActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <div className="flex-1">
+                    <div className="font-medium">{item.label}</div>
+                    <div className="text-xs opacity-70">{item.description}</div>
+                  </div>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                      {item.badge}
+                    </Badge>
+                  )}
+                  {hasSubItems && (
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  )}
+                </button>
+                
+                {/* Render submenu items */}
+                {hasSubItems && isExpanded && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {item.subItems?.map((subItem) => (
+                      <button
+                        key={subItem.id}
+                        onClick={() => {
+                          const newUrl = `/admin-dashboard?section=${subItem.id}`;
+                          window.history.replaceState({}, '', newUrl);
+                          setActiveSection(subItem.id);
+                        }}
+                        className={`w-full flex items-start gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                          activeSection === subItem.id
+                            ? "bg-primary/20 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-current mt-2 opacity-50" />
+                        <div className="flex-1">
+                          <div className="font-medium">{subItem.label}</div>
+                          <div className="text-xs opacity-70">{subItem.description}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
