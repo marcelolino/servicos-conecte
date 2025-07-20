@@ -3011,6 +3011,8 @@ export default function AdminDashboard() {
                 key={item.id}
                 onClick={() => {
                   if (item.id === 'settings') {
+                    // Clear any URL parameters when going to settings
+                    window.history.replaceState({}, '', '/admin-dashboard');
                     setLocation('/admin-settings');
                   } else {
                     setActiveSection(item.id);

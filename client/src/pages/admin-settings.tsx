@@ -215,7 +215,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start"
-            onClick={() => setLocation('/admin-dashboard')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard');
+            }}
           >
             <Home className="h-4 w-4 mr-3" />
             Dashboard
@@ -224,7 +227,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=providers')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=providers');
+            }}
           >
             <Users className="h-4 w-4 mr-3" />
             Prestadores
@@ -233,7 +239,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=services')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=services');
+            }}
           >
             <FileText className="h-4 w-4 mr-3" />
             Serviços
@@ -242,7 +251,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=bookings')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=bookings');
+            }}
           >
             <BarChart3 className="h-4 w-4 mr-3" />
             Agendamentos
@@ -251,7 +263,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=categories')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=categories');
+            }}
           >
             <Users className="h-4 w-4 mr-3" />
             Categorias
@@ -260,7 +275,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=media')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=media');
+            }}
           >
             <ImageIcon className="h-4 w-4 mr-3" />
             Mídia
@@ -269,7 +287,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=users')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=users');
+            }}
           >
             <Users className="h-4 w-4 mr-3" />
             Usuários
@@ -278,7 +299,10 @@ export default function AdminSettings() {
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-500"
-            onClick={() => setLocation('/admin-dashboard?section=reports')}
+            onClick={() => {
+              window.history.replaceState({}, '', '/admin-settings');
+              setLocation('/admin-dashboard?section=reports');
+            }}
           >
             <BarChart3 className="h-4 w-4 mr-3" />
             Relatórios
