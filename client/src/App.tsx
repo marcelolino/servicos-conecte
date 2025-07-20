@@ -16,6 +16,12 @@ import ProviderProfile from "@/pages/provider-profile";
 import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ProviderPayments from "@/pages/provider-payments";
 import ProviderBookings from "@/pages/provider-bookings";
+import ProviderCashPayments from "@/pages/provider-cash-payments";
+import ProviderWithdrawalRequests from "@/pages/provider-withdrawal-requests";
+import ProviderPromotionalBanners from "@/pages/provider-promotional-banners";
+import ProviderAllServices from "@/pages/provider-all-services";
+import ProviderPackages from "@/pages/provider-packages";
+import ProviderAddOns from "@/pages/provider-add-ons";
 import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
@@ -47,6 +53,12 @@ function Router() {
           <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/provider-payments" component={ProviderPayments} />
           <Route path="/provider-bookings" component={ProviderBookings} />
+          <Route path="/provider-cash-payments" component={ProviderCashPayments} />
+          <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
+          <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
+          <Route path="/provider-all-services" component={ProviderAllServices} />
+          <Route path="/provider-packages" component={ProviderPackages} />
+          <Route path="/provider-add-ons" component={ProviderAddOns} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin-settings" component={AdminSettings} />

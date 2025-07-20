@@ -39,12 +39,12 @@ const menuItems = [
       { 
         icon: Package, 
         label: "Serviços", 
-        href: "/provider-services",
+        href: "/provider-all-services",
         subItems: [
-          { label: "Todos Os Serviços", href: "/provider-services" },
-          { label: "Pacotes", href: "/provider-services/packages" },
-          { label: "Complementos", href: "/provider-services/add-ons" },
-          { label: "Lista De Solicitações De Serviço", href: "/provider-services/requests" },
+          { label: "Todos De Serviços", href: "/provider-all-services" },
+          { label: "Pacotes", href: "/provider-packages" },
+          { label: "Complementos", href: "/provider-add-ons" },
+          { label: "Lista De Solicitações De Serviço", href: "/provider-services" },
         ]
       },
     ]
@@ -81,7 +81,7 @@ const menuItems = [
   {
     section: "PROMOÇÃO",
     items: [
-      { icon: BellRing, label: "Banner Promocional Do Provedor", href: "/provider-banner" },
+      { icon: BellRing, label: "Banner Promocional Do Provedor", href: "/provider-promotional-banners" },
     ]
   },
 ];
