@@ -732,7 +732,7 @@ export default function AdminDashboard() {
     },
     {
       id: "bookings",
-      label: "Agendamentos",
+      label: "Reservas",
       icon: Calendar,
       description: "Gerenciar reservas"
     },
@@ -2234,243 +2234,415 @@ export default function AdminDashboard() {
     </div>
   );
 
-  const renderBookings = () => (
-    <div className="space-y-6">
-      {/* Header and Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Agendamentos</h2>
-          <p className="text-muted-foreground">Todas as reservas e agendamentos de serviços</p>
-        </div>
-      </div>
+  const renderBookings = () => {
+    // Functions for filtering bookings by tab
+    const getBookingsByTab = (tab: string) => {
+      if (!bookings) return [];
+      
+      switch (tab) {
+        case "pending":
+          return bookings.filter((booking: any) => booking.status === "pending");
+        case "accepted":
+          return bookings.filter((booking: any) => booking.status === "accepted");
+        case "ongoing":
+          return bookings.filter((booking: any) => booking.status === "in_progress");
+        case "completed":
+          return bookings.filter((booking: any) => booking.status === "completed");
+        case "cancelled":
+          return bookings.filter((booking: any) => booking.status === "cancelled");
+        case "offline":
+          return bookings.filter((booking: any) => booking.paymentMethod === "cash");
+        case "regular":
+          return bookings.filter((booking: any) => !booking.isRepeat);
+        case "repeat":
+          return bookings.filter((booking: any) => booking.isRepeat);
+        default:
+          return bookings;
+      }
+    };
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar agendamentos..."
-            value={bookingSearchTerm}
-            onChange={(e) => setBookingSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={bookingFilterStatus} onValueChange={setBookingFilterStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="accepted">Aceito</SelectItem>
-            <SelectItem value="in_progress">Em Andamento</SelectItem>
-            <SelectItem value="completed">Concluído</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    const getStatusBadge = (status: string) => {
+      const statusConfig = {
+        pending: { label: "Pendente", color: "bg-yellow-100 text-yellow-800" },
+        accepted: { label: "Aceito", color: "bg-blue-100 text-blue-800" },
+        in_progress: { label: "Em Andamento", color: "bg-orange-100 text-orange-800" },
+        completed: { label: "Concluído", color: "bg-green-100 text-green-800" },
+        cancelled: { label: "Cancelado", color: "bg-red-100 text-red-800" },
+      };
 
-      {/* Bookings Table */}
-      <Card className="dashboard-card">
-        <CardContent className="p-0">
-          {bookingsLoading ? (
-            <div className="p-6 space-y-4">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-[200px]" />
-                    <Skeleton className="h-4 w-[150px]" />
-                  </div>
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              ))}
+      const config = statusConfig[status as keyof typeof statusConfig] || {
+        label: status,
+        color: "bg-gray-100 text-gray-800",
+      };
+
+      return (
+        <Badge className={config.color}>
+          {config.label}
+        </Badge>
+      );
+    };
+
+    const getPaymentStatusBadge = (status: string) => {
+      return (
+        <Badge 
+          className={
+            status === 'completed' 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }
+        >
+          {status === 'completed' ? 'Pago' : 'Não Pago'}
+        </Badge>
+      );
+    };
+
+    const formatDate = (dateString: string) => {
+      if (!dateString) return "N/A";
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    };
+
+    const formatTime = (dateString: string) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const currentTabBookings = getBookingsByTab(bookingFilterStatus);
+    const displayBookings = currentTabBookings.filter((booking: any) => {
+      if (!bookingSearchTerm) return true;
+      
+      const searchLower = bookingSearchTerm.toLowerCase();
+      return (
+        booking.id.toString().includes(searchLower) ||
+        booking.client?.name?.toLowerCase().includes(searchLower) ||
+        booking.category?.name?.toLowerCase().includes(searchLower) ||
+        booking.address?.toLowerCase().includes(searchLower) ||
+        booking.provider?.businessName?.toLowerCase().includes(searchLower)
+      );
+    });
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Reservas</h1>
+            <div className="text-sm text-muted-foreground">
+              Total de Reservas: {displayBookings.length}
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Data da Reserva</TableHead>
-                  <TableHead>Onde o serviço será prestado</TableHead>
-                  <TableHead>Data do Agendamento</TableHead>
-                  <TableHead>Informações do Cliente</TableHead>
-                  <TableHead>Informações do Prestador</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings?.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        {bookingSearchTerm || bookingFilterStatus !== "all"
-                          ? "Nenhum agendamento encontrado com os filtros aplicados."
-                          : "Nenhum agendamento cadastrado ainda."}
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBookings?.map((booking: any, index: number) => (
-                    <TableRow key={booking.id}>
-                      <TableCell className="font-medium">{booking.id}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {booking.createdAt ? new Date(booking.createdAt).toLocaleDateString('pt-BR') : "-"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {booking.createdAt ? new Date(booking.createdAt).toLocaleTimeString('pt-BR') : "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm max-w-xs">
-                          <p className="font-medium">{booking.address}</p>
-                          <p className="text-muted-foreground">{booking.city}, {booking.state}</p>
-                          <p className="text-muted-foreground">CEP: {booking.cep}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {booking.scheduledAt ? new Date(booking.scheduledAt).toLocaleDateString('pt-BR') : "A agendar"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {booking.scheduledAt ? new Date(booking.scheduledAt).toLocaleTimeString('pt-BR') : "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p className="font-medium">{booking.client?.name || "N/A"}</p>
-                          <p className="text-muted-foreground">{booking.client?.email || "N/A"}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p className="font-medium">{booking.provider?.user?.name || "Não atribuído"}</p>
-                          <p className="text-muted-foreground">{booking.provider?.user?.email || "N/A"}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            R$ {Number(booking.finalPrice || booking.estimatedPrice || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getBookingStatusColor(booking.status)}`}>
-                          {getBookingStatusText(booking.status)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedBooking(booking)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Calendar className="h-4 w-4 mr-2" />
-                              Reagendar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <AlertCircle className="h-4 w-4 mr-2" />
-                              Cancelar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+          <p className="text-muted-foreground">
+            Gerencie todas as reservas e solicitações de serviços
+          </p>
+        </div>
 
-      {/* Booking Details Dialog */}
-      {selectedBooking && (
-        <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Detalhes do Agendamento #{selectedBooking.id}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Serviço</Label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.title}</p>
+        {/* Tabs */}
+        <Tabs value={bookingFilterStatus} onValueChange={setBookingFilterStatus} className="w-full">
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="all">Todas as Reservas</TabsTrigger>
+            <TabsTrigger value="regular">Reserva Regular</TabsTrigger>
+            <TabsTrigger value="repeat">Repetir Reserva</TabsTrigger>
+            <TabsTrigger value="offline">Lista de Pagamento Offline</TabsTrigger>
+            <TabsTrigger value="accepted">Aceito</TabsTrigger>
+            <TabsTrigger value="ongoing">Em Andamento</TabsTrigger>
+            <TabsTrigger value="completed">Concluído</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelado</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={bookingFilterStatus} className="mt-6">
+            {/* Search and Action Bar */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Pesquisar aqui..."
+                    value={bookingSearchTerm}
+                    onChange={(e) => setBookingSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                  />
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Categoria</Label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.category?.name || "N/A"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Cliente</Label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.client?.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Prestador</Label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.provider?.user?.name || "Não atribuído"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Status</Label>
-                  <Badge variant={getBookingStatusVariant(selectedBooking.status)}>
-                    {getBookingStatusText(selectedBooking.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Valor</Label>
-                  <p className="text-sm text-muted-foreground">
-                    R$ {Number(selectedBooking.finalPrice || selectedBooking.estimatedPrice || 0).toFixed(2)}
-                  </p>
-                </div>
+                <Button variant="default" size="sm">
+                  <Search className="w-4 h-4 mr-2" />
+                  PESQUISAR
+                </Button>
               </div>
               
-              <div>
-                <Label className="text-sm font-medium">Endereço</Label>
-                <p className="text-sm text-muted-foreground">
-                  {selectedBooking.address}, {selectedBooking.city}, {selectedBooking.state} - CEP: {selectedBooking.cep}
-                </p>
-              </div>
-
-              {selectedBooking.description && (
-                <div>
-                  <Label className="text-sm font-medium">Descrição</Label>
-                  <p className="text-sm text-muted-foreground">{selectedBooking.description}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Data de Criação</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString('pt-BR') : "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Data Agendada</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedBooking.scheduledAt ? new Date(selectedBooking.scheduledAt).toLocaleString('pt-BR') : "A agendar"}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Todas as Reservas
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setBookingFilterStatus("all")}>Todas as Reservas</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setBookingFilterStatus("pending")}>Pendentes</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setBookingFilterStatus("accepted")}>Aceitas</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setBookingFilterStatus("ongoing")}>Em Andamento</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setBookingFilterStatus("completed")}>Concluídas</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filtrar {displayBookings.length}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>Todos</DropdownMenuItem>
+                    <DropdownMenuItem>Hoje</DropdownMenuItem>
+                    <DropdownMenuItem>Esta Semana</DropdownMenuItem>
+                    <DropdownMenuItem>Este Mês</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
+
+            {/* Bookings Table */}
+            <Card>
+              <CardContent className="p-0">
+                {bookingsLoading ? (
+                  <div className="p-6 space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="font-semibold">SL</TableHead>
+                        <TableHead className="font-semibold">ID da Reserva</TableHead>
+                        <TableHead className="font-semibold">Data da Reserva</TableHead>
+                        <TableHead className="font-semibold">Onde o Serviço Será Prestado</TableHead>
+                        <TableHead className="font-semibold">Data Agendada</TableHead>
+                        <TableHead className="font-semibold">Informações do Cliente</TableHead>
+                        <TableHead className="font-semibold">Informações do Provedor</TableHead>
+                        <TableHead className="font-semibold">Valor Total</TableHead>
+                        <TableHead className="font-semibold">Status de Pagamento</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Ação</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {displayBookings.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                            <div className="flex flex-col items-center gap-2">
+                              <Search className="w-12 h-12 opacity-50" />
+                              <p>Nenhuma reserva encontrada</p>
+                              <p className="text-sm">Ajuste os filtros ou termos de pesquisa</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        displayBookings.map((booking: any, index: number) => (
+                          <TableRow key={booking.id}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="font-medium">{booking.id.toString().padStart(6, '0')}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {formatDate(booking.createdAt)}
+                                <div className="text-xs text-muted-foreground">
+                                  {formatTime(booking.createdAt)}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-48">
+                                <p className="text-sm font-medium">Local do Cliente</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {booking.address}, {booking.city}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>Próximo Agendado</div>
+                                <div className="font-medium">
+                                  {formatDate(booking.scheduledAt)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatTime(booking.scheduledAt)}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{booking.client?.name || "N/A"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {booking.client?.phone || '+••••••••••'}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                {booking.provider ? (
+                                  <>
+                                    <p className="font-medium">{booking.provider.businessName || booking.provider.user?.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {booking.provider.user?.phone || '+••••••••••'}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Não atribuído</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-semibold text-green-600">
+                                {Number(booking.totalAmount || booking.finalPrice || booking.estimatedPrice || 0).toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL'
+                                })}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {getPaymentStatusBadge(booking.paymentStatus || "pending")}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(booking.status)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-8 h-8 p-0"
+                                  title="Visualizar"
+                                  onClick={() => setSelectedBooking(booking)}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-8 h-8 p-0"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => setSelectedBooking(booking)}>
+                                      Ver Detalhes
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>Editar Status</DropdownMenuItem>
+                                    <DropdownMenuItem>Histórico</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">
+                                      Cancelar Reserva
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Booking Details Dialog */}
+        {selectedBooking && (
+          <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Detalhes da Reserva #{selectedBooking.id}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Serviço</Label>
+                    <p className="text-sm text-muted-foreground">{selectedBooking.category?.name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Cliente</Label>
+                    <p className="text-sm text-muted-foreground">{selectedBooking.client?.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Prestador</Label>
+                    <p className="text-sm text-muted-foreground">{selectedBooking.provider?.user?.name || "Não atribuído"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    {getStatusBadge(selectedBooking.status)}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Valor</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {Number(selectedBooking.totalAmount || selectedBooking.finalPrice || selectedBooking.estimatedPrice || 0).toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Status de Pagamento</Label>
+                    {getPaymentStatusBadge(selectedBooking.paymentStatus || "pending")}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium">Endereço</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.address}, {selectedBooking.city}, {selectedBooking.state} - CEP: {selectedBooking.cep}
+                  </p>
+                </div>
+
+                {selectedBooking.notes && (
+                  <div>
+                    <Label className="text-sm font-medium">Observações</Label>
+                    <p className="text-sm text-muted-foreground">{selectedBooking.notes}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Data de Criação</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString('pt-BR') : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Data Agendada</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedBooking.scheduledAt ? new Date(selectedBooking.scheduledAt).toLocaleString('pt-BR') : "A agendar"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    );
+  };
 
   const renderMedia = () => (
     <div className="space-y-6">
