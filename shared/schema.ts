@@ -11,6 +11,7 @@ export const paymentMethodEnum = pgEnum("payment_method", ["digital", "cash", "c
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 export const bannerStatusEnum = pgEnum("banner_status", ["active", "inactive", "scheduled"]);
 export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment", "confirmed", "in_progress", "completed", "cancelled"]);
+export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected", "completed"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -298,6 +299,40 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Provider earnings table
+export const providerEarnings = pgTable("provider_earnings", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  serviceRequestId: integer("service_request_id").references(() => serviceRequests.id).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).notNull(), // Percentage
+  commissionAmount: decimal("commission_amount", { precision: 10, scale: 2 }).notNull(),
+  providerAmount: decimal("provider_amount", { precision: 10, scale: 2 }).notNull(), // Amount provider receives
+  isWithdrawn: boolean("is_withdrawn").default(false),
+  withdrawnAt: timestamp("withdrawn_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Withdrawal requests table
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  accountNumber: varchar("account_number", { length: 50 }).notNull(),
+  accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
+  cpfCnpj: varchar("cpf_cnpj", { length: 20 }).notNull(),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("bank_transfer"), // 'bank_transfer', 'pix'
+  pixKey: varchar("pix_key", { length: 255 }), // Optional PIX key
+  status: withdrawalStatusEnum("status").default("pending"),
+  requestNotes: text("request_notes"), // Provider notes
+  adminNotes: text("admin_notes"), // Admin response notes
+  processedBy: integer("processed_by").references(() => users.id), // Admin who processed
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -318,6 +353,8 @@ export const providersRelations = relations(providers, ({ one, many }) => ({
   services: many(providerServices),
   serviceRequests: many(serviceRequests),
   reviews: many(reviews),
+  earnings: many(providerEarnings),
+  withdrawalRequests: many(withdrawalRequests),
 }));
 
 export const serviceCategoriesRelations = relations(serviceCategories, ({ many }) => ({
@@ -449,6 +486,28 @@ export const systemSettingsRelations = relations(systemSettings, ({ many }) => (
   // Add relations as needed
 }));
 
+export const providerEarningsRelations = relations(providerEarnings, ({ one }) => ({
+  provider: one(providers, {
+    fields: [providerEarnings.providerId],
+    references: [providers.id],
+  }),
+  serviceRequest: one(serviceRequests, {
+    fields: [providerEarnings.serviceRequestId],
+    references: [serviceRequests.id],
+  }),
+}));
+
+export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
+  provider: one(providers, {
+    fields: [withdrawalRequests.providerId],
+    references: [providers.id],
+  }),
+  processedBy: one(users, {
+    fields: [withdrawalRequests.processedBy],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -555,6 +614,17 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
   updatedAt: true,
 });
 
+export const insertProviderEarningSchema = createInsertSchema(providerEarnings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -592,3 +662,7 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type ProviderEarning = typeof providerEarnings.$inferSelect;
+export type InsertProviderEarning = z.infer<typeof insertProviderEarningSchema>;
+export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSchema>;

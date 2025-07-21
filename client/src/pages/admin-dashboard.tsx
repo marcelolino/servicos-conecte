@@ -59,6 +59,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { ServiceCategory, User, Provider } from "@shared/schema";
 
+// Import transaction pages
+import AdminPayments from "@/pages/admin/payments";
+import AdminCashPayments from "@/pages/admin/cash-payments";
+import AdminEarnings from "@/pages/admin/earnings";
+import AdminWithdrawalRequests from "@/pages/admin/withdrawal-requests";
+
 const categorySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
@@ -3316,13 +3322,13 @@ export default function AdminDashboard() {
       case "users":
         return renderUsers();
       case "payments":
-        return renderPayments();
+        return <AdminPayments />;
       case "cash-payments":
-        return renderCashPayments();
+        return <AdminCashPayments />;
       case "earnings":
-        return renderEarnings();
+        return <AdminEarnings />;
       case "withdrawal-requests":
-        return renderWithdrawalRequests();
+        return <AdminWithdrawalRequests />;
       case "reports":
         return (
           <div className="text-center py-12">

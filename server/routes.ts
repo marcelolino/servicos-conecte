@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema } from "@shared/schema";
 import { 
   upload, 
   uploadBannerImage, 
@@ -1441,6 +1441,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting media file:', error);
       res.status(500).json({ message: "Failed to delete file", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Provider earnings routes
+  app.get('/api/provider/earnings', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const earnings = await storage.getProviderEarnings(provider.id);
+      const availableBalance = await storage.getProviderAvailableBalance(provider.id);
+
+      res.json({ earnings, availableBalance });
+    } catch (error) {
+      console.error('Error fetching provider earnings:', error);
+      res.status(500).json({ message: "Failed to fetch earnings" });
+    }
+  });
+
+  app.get('/api/admin/earnings', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const earnings = await storage.getAllEarnings();
+      res.json(earnings);
+    } catch (error) {
+      console.error('Error fetching all earnings:', error);
+      res.status(500).json({ message: "Failed to fetch earnings" });
+    }
+  });
+
+  // Withdrawal request routes
+  app.get('/api/provider/withdrawal-requests', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const requests = await storage.getWithdrawalRequests(provider.id);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error fetching withdrawal requests:', error);
+      res.status(500).json({ message: "Failed to fetch withdrawal requests" });
+    }
+  });
+
+  app.post('/api/provider/withdrawal-requests', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const requestData = insertWithdrawalRequestSchema.parse({
+        ...req.body,
+        providerId: provider.id,
+        status: 'pending'
+      });
+
+      // Check if provider has enough balance
+      const availableBalance = await storage.getProviderAvailableBalance(provider.id);
+      const requestAmount = parseFloat(requestData.amount);
+
+      if (requestAmount > availableBalance) {
+        return res.status(400).json({ 
+          message: `Insufficient balance. Available: R$ ${availableBalance.toFixed(2)}` 
+        });
+      }
+
+      const newRequest = await storage.createWithdrawalRequest(requestData);
+      res.json(newRequest);
+    } catch (error) {
+      console.error('Error creating withdrawal request:', error);
+      res.status(500).json({ message: "Failed to create withdrawal request" });
+    }
+  });
+
+  app.get('/api/admin/withdrawal-requests', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const requests = await storage.getWithdrawalRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error('Error fetching all withdrawal requests:', error);
+      res.status(500).json({ message: "Failed to fetch withdrawal requests" });
+    }
+  });
+
+  app.put('/api/admin/withdrawal-requests/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes } = req.body;
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const updatedRequest = await storage.processWithdrawalRequest(
+        parseInt(id),
+        status,
+        req.user!.id,
+        adminNotes
+      );
+
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error('Error processing withdrawal request:', error);
+      res.status(500).json({ message: "Failed to process withdrawal request" });
     }
   });
 

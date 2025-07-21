@@ -53,6 +53,12 @@ import {
   type InsertOrder,
   type OrderItem,
   type InsertOrderItem,
+  providerEarnings,
+  withdrawalRequests,
+  type ProviderEarning,
+  type InsertProviderEarning,
+  type WithdrawalRequest,
+  type InsertWithdrawalRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -186,6 +192,18 @@ export interface IStorage {
   removeCartItem(itemId: number): Promise<void>;
   clearCart(clientId: number): Promise<void>;
   convertCartToOrder(clientId: number, orderData: Partial<InsertOrder>): Promise<Order>;
+
+  // Provider earnings
+  getProviderEarnings(providerId: number): Promise<ProviderEarning[]>;
+  createProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning>;
+  getProviderAvailableBalance(providerId: number): Promise<number>;
+  getAllEarnings(): Promise<(ProviderEarning & { provider: Provider & { user: User }; serviceRequest: ServiceRequest })[]>;
+
+  // Withdrawal requests
+  getWithdrawalRequests(providerId?: number): Promise<(WithdrawalRequest & { provider: Provider & { user: User } })[]>;
+  createWithdrawalRequest(request: InsertWithdrawalRequest): Promise<WithdrawalRequest>;
+  updateWithdrawalRequest(id: number, request: Partial<InsertWithdrawalRequest>): Promise<WithdrawalRequest>;
+  processWithdrawalRequest(id: number, status: 'approved' | 'rejected', adminId: number, adminNotes?: string): Promise<WithdrawalRequest>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1632,6 +1650,159 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updatedOrder;
+  }
+
+  // Provider earnings methods
+  async getProviderEarnings(providerId: number): Promise<ProviderEarning[]> {
+    return await db
+      .select()
+      .from(providerEarnings)
+      .where(eq(providerEarnings.providerId, providerId))
+      .orderBy(desc(providerEarnings.createdAt));
+  }
+
+  async createProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning> {
+    const [newEarning] = await db
+      .insert(providerEarnings)
+      .values(earning)
+      .returning();
+    return newEarning;
+  }
+
+  async getProviderAvailableBalance(providerId: number): Promise<number> {
+    const earnings = await db
+      .select()
+      .from(providerEarnings)
+      .where(and(
+        eq(providerEarnings.providerId, providerId),
+        eq(providerEarnings.isWithdrawn, false)
+      ));
+    
+    return earnings.reduce((sum, earning) => sum + parseFloat(earning.providerAmount), 0);
+  }
+
+  async getAllEarnings(): Promise<(ProviderEarning & { provider: Provider & { user: User }; serviceRequest: ServiceRequest })[]> {
+    const earningsData = await db
+      .select({
+        earning: providerEarnings,
+        provider: providers,
+        user: users,
+        serviceRequest: serviceRequests
+      })
+      .from(providerEarnings)
+      .innerJoin(providers, eq(providerEarnings.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id))
+      .innerJoin(serviceRequests, eq(providerEarnings.serviceRequestId, serviceRequests.id))
+      .orderBy(desc(providerEarnings.createdAt));
+
+    return earningsData.map(row => ({
+      ...row.earning,
+      provider: {
+        ...row.provider,
+        user: row.user
+      },
+      serviceRequest: row.serviceRequest
+    }));
+  }
+
+  // Withdrawal requests methods
+  async getWithdrawalRequests(providerId?: number): Promise<(WithdrawalRequest & { provider: Provider & { user: User } })[]> {
+    let query = db
+      .select({
+        request: withdrawalRequests,
+        provider: providers,
+        user: users
+      })
+      .from(withdrawalRequests)
+      .innerJoin(providers, eq(withdrawalRequests.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id));
+
+    if (providerId) {
+      query = query.where(eq(withdrawalRequests.providerId, providerId));
+    }
+
+    const requestsData = await query.orderBy(desc(withdrawalRequests.createdAt));
+
+    return requestsData.map(row => ({
+      ...row.request,
+      provider: {
+        ...row.provider,
+        user: row.user
+      }
+    }));
+  }
+
+  async createWithdrawalRequest(request: InsertWithdrawalRequest): Promise<WithdrawalRequest> {
+    const [newRequest] = await db
+      .insert(withdrawalRequests)
+      .values(request)
+      .returning();
+    return newRequest;
+  }
+
+  async updateWithdrawalRequest(id: number, request: Partial<InsertWithdrawalRequest>): Promise<WithdrawalRequest> {
+    const [updatedRequest] = await db
+      .update(withdrawalRequests)
+      .set({ ...request, updatedAt: new Date() })
+      .where(eq(withdrawalRequests.id, id))
+      .returning();
+    return updatedRequest;
+  }
+
+  async processWithdrawalRequest(id: number, status: 'approved' | 'rejected', adminId: number, adminNotes?: string): Promise<WithdrawalRequest> {
+    const updateData: Partial<InsertWithdrawalRequest> = {
+      status,
+      processedBy: adminId,
+      processedAt: new Date(),
+      adminNotes,
+      updatedAt: new Date()
+    };
+
+    if (status === 'approved') {
+      // When approved, mark related earnings as withdrawn
+      const request = await db
+        .select()
+        .from(withdrawalRequests)
+        .where(eq(withdrawalRequests.id, id))
+        .limit(1);
+
+      if (request.length > 0) {
+        const requestAmount = parseFloat(request[0].amount);
+        
+        // Get available earnings for this provider
+        const availableEarnings = await db
+          .select()
+          .from(providerEarnings)
+          .where(and(
+            eq(providerEarnings.providerId, request[0].providerId),
+            eq(providerEarnings.isWithdrawn, false)
+          ))
+          .orderBy(asc(providerEarnings.createdAt));
+
+        // Mark earnings as withdrawn up to the request amount
+        let remainingAmount = requestAmount;
+        for (const earning of availableEarnings) {
+          if (remainingAmount <= 0) break;
+          
+          const earningAmount = parseFloat(earning.providerAmount);
+          if (earningAmount <= remainingAmount) {
+            await db
+              .update(providerEarnings)
+              .set({ isWithdrawn: true, withdrawnAt: new Date() })
+              .where(eq(providerEarnings.id, earning.id));
+            remainingAmount -= earningAmount;
+          }
+        }
+      }
+    }
+
+    const [updatedRequest] = await db
+      .update(withdrawalRequests)
+      .set(updateData)
+      .where(eq(withdrawalRequests.id, id))
+      .returning();
+    
+    return updatedRequest;
   }
 }
 
