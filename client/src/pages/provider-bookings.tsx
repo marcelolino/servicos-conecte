@@ -80,11 +80,16 @@ interface BookingData {
 }
 
 export default function ProviderBookingsPage() {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Navigation function
+  const navigate = (path: string) => {
+    window.location.href = path;
+  };
   
   // Determine selected tab based on URL
   const getSelectedTab = () => {
