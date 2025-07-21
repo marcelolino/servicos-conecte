@@ -48,7 +48,7 @@ export default function WithdrawalRequestsPage() {
 
   const processRequestMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: 'approved' | 'rejected'; notes?: string }) => {
-      return apiRequest(`/api/admin/withdrawal-requests/${id}`, "PUT", { status, adminNotes: notes });
+      return apiRequest("PUT", `/api/admin/withdrawal-requests/${id}`, { status, adminNotes: notes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawal-requests"] });
