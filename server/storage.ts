@@ -626,6 +626,12 @@ export class DatabaseStorage implements IStorage {
       .set({ ...cleanRequest, updatedAt: new Date() })
       .where(eq(serviceRequests.id, id))
       .returning();
+
+    // If service is completed, create earnings record for provider
+    if (cleanRequest.status === 'completed' && updatedRequest.providerId && updatedRequest.totalAmount) {
+      await this.createProviderEarning(updatedRequest);
+    }
+
     return updatedRequest;
   }
 
@@ -884,6 +890,45 @@ export class DatabaseStorage implements IStorage {
     );
 
     return enrichedResults;
+  }
+
+  async createProviderEarning(serviceRequest: ServiceRequest): Promise<void> {
+    try {
+      // Get commission rate from system settings (default 4%)
+      const commissionSetting = await db
+        .select()
+        .from(systemSettings)
+        .where(eq(systemSettings.key, "commission_rate"))
+        .limit(1);
+      
+      const commissionRate = commissionSetting[0] ? parseFloat(commissionSetting[0].value) : 4;
+      const totalAmount = parseFloat(serviceRequest.totalAmount || "0");
+      const commissionAmount = (totalAmount * commissionRate) / 100;
+      const providerAmount = totalAmount - commissionAmount;
+
+      // Check if earnings record already exists for this service
+      const existingEarning = await db
+        .select()
+        .from(providerEarnings)
+        .where(eq(providerEarnings.serviceRequestId, serviceRequest.id))
+        .limit(1);
+
+      if (!existingEarning.length) {
+        await db.insert(providerEarnings).values({
+          providerId: serviceRequest.providerId!,
+          serviceRequestId: serviceRequest.id,
+          totalAmount: totalAmount.toString(),
+          commissionRate: commissionRate,
+          commissionAmount: commissionAmount.toString(),
+          providerAmount: providerAmount.toString(),
+          isWithdrawn: false,
+        });
+
+        console.log(`Created earning record for provider ${serviceRequest.providerId}: R$ ${providerAmount.toFixed(2)} (total: R$ ${totalAmount.toFixed(2)}, commission: ${commissionRate}%)`);
+      }
+    } catch (error) {
+      console.error('Error creating provider earning:', error);
+    }
   }
 
   async getAdminStats(): Promise<{
