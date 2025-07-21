@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   Card,
@@ -40,11 +40,16 @@ import {
   Eye,
   Calendar,
   MapPin,
-  DollarSign
+  DollarSign,
+  Printer,
+  Check,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ProviderLayout from "@/components/layout/provider-layout";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BookingData {
   id: number;
@@ -78,6 +83,8 @@ export default function ProviderBookingsPage() {
   const [location, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Determine selected tab based on URL
   const getSelectedTab = () => {
@@ -89,11 +96,40 @@ export default function ProviderBookingsPage() {
     return 'all';
   };
   
-  const [selectedTab, setSelectedTab] = useState(getSelectedTab());
+  const selectedTab = getSelectedTab();
   
   const { data: bookings, isLoading } = useQuery<BookingData[]>({
     queryKey: ["/api/service-requests/provider"],
   });
+
+  // Mutation for accepting/rejecting bookings
+  const updateBookingMutation = useMutation({
+    mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
+      return apiRequest("PUT", `/api/service-requests/${id}`, { status, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
+      toast({
+        title: "Reserva atualizada",
+        description: "O status da reserva foi atualizado com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar a reserva.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAcceptBooking = (bookingId: number) => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'accepted' });
+  };
+
+  const handleRejectBooking = (bookingId: number) => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'cancelled', notes: 'Rejeitado pelo provedor' });
+  };
 
   if (isLoading) {
     return (
@@ -303,7 +339,6 @@ export default function ProviderBookingsPage() {
 
         {/* Tabs Navigation */}
         <Tabs value={selectedTab} onValueChange={(value) => {
-          setSelectedTab(value);
           // Navigate to corresponding URL
           const urlMap: Record<string, string> = {
             'all': '/provider-bookings',
@@ -495,17 +530,47 @@ function BookingsTable({ bookings }: BookingsTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={() => navigate(`/provider-bookings/details/${booking.id}`)}
+                        title="Visualizar Detalhes"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline">
-                        R$
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.print()}
+                        title="Imprimir"
+                      >
+                        <Printer className="w-4 h-4" />
                       </Button>
+                      {booking.status === 'pending' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-green-600 hover:text-green-700"
+                            title="Aceitar"
+                            onClick={() => handleAcceptBooking(booking.id)}
+                            disabled={updateBookingMutation.isPending}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700"
+                            title="Ignorar/Rejeitar"
+                            onClick={() => handleRejectBooking(booking.id)}
+                            disabled={updateBookingMutation.isPending}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

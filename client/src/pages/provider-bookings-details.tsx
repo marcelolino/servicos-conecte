@@ -227,21 +227,28 @@ export default function ProviderBookingDetailsPage() {
               </Button>
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Detalhes da Reserva #{booking.id.toString().padStart(5, '0')}
+              Reserva #{booking.id.toString().padStart(5, '0')}
             </h1>
             <p className="text-muted-foreground">
-              Informações detalhadas da solicitação de serviço
+              Período da Reserva: {format(new Date(booking.scheduledAt), 'dd-MMM-yyyy HH:mm', { locale: ptBR })}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge className={getStatusColor(booking.status)}>
               {getStatusText(booking.status)}
             </Badge>
-            {booking.paymentStatus === 'completed' && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Pagamento Confirmado
-              </Badge>
-            )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              Status de Pagamento: 
+              <span className={booking.paymentStatus === 'completed' ? 'text-green-600 font-medium' : 'text-yellow-600 font-medium'}>
+                {booking.paymentStatus === 'completed' ? 'Pago' : 'Não Pago'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              Data Agendada: {format(new Date(booking.scheduledAt), 'dd-MMM-yyyy', { locale: ptBR })}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              Data da Reserva: {format(new Date(booking.createdAt), 'dd-MMM-yyyy HH:mm', { locale: ptBR })}
+            </div>
           </div>
         </div>
 
@@ -253,66 +260,127 @@ export default function ProviderBookingDetailsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" />
-                  Informações do Serviço
+                  Resumo da Reserva
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Categoria</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Serviço</Label>
                     <p className="text-base font-medium">{booking.category.name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Valor Total</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Preço</Label>
                     <div className="flex items-center gap-1">
-                      <DollarSign className="w-4 h-4 text-green-600" />
-                      <span className="text-base font-semibold text-green-600">
-                        R$ {parseFloat(booking.totalAmount).toFixed(2)}
+                      <span className="text-base font-semibold">
+                        {parseFloat(booking.totalAmount).toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        })}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Método de Pagamento</Label>
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      <span className="capitalize">{booking.paymentMethod}</span>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground">Quantidade</Label>
+                    <span className="text-base">1</span>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Data/Hora Agendada</Label>
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4" />
-                      <div>
-                        <p>{format(new Date(booking.scheduledAt), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(booking.scheduledAt), 'HH:mm')}
-                        </p>
-                      </div>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground">Desconto</Label>
+                    <span className="text-base">
+                      {(0).toLocaleString('pt-BR', { 
+                        style: 'currency', 
+                        currency: 'BRL' 
+                      })}
+                    </span>
                   </div>
                 </div>
 
+                
                 <Separator />
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Valor do Serviço (Não Incluído):</span>
+                    <span>{(parseFloat(booking.totalAmount) * 0.9).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Desconto de Serviço:</span>
+                    <span>{(0).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Desconto de Cupom:</span>
+                    <span>-{(0).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Desconto de Campanha:</span>
+                    <span>-{(0).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Desconto de Referência:</span>
+                    <span>{(0).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>IVA / Taxa:</span>
+                    <span>+{(parseFloat(booking.totalAmount) * 0.1).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Taxa de Serviço:</span>
+                    <span>+{(0).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total Geral:</span>
+                    <span>{parseFloat(booking.totalAmount).toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    })}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
+            {/* Service Location */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Local do Serviço
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm font-medium text-yellow-800">
+                    Você precisa ir ao Local do Cliente para fornecer este serviço
+                  </p>
+                </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Local do Serviço</Label>
-                  <div className="flex items-start gap-2 mt-1">
-                    <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-medium">{booking.address}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.city}, {booking.state} - CEP: {booking.cep}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="font-medium">{booking.address}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.city}, {booking.state} - {booking.cep}
+                  </p>
                 </div>
-
-                {booking.notes && (
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Observações do Cliente</Label>
-                    <p className="mt-1 p-3 bg-muted rounded-md text-sm">{booking.notes}</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -325,28 +393,38 @@ export default function ProviderBookingDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{booking.client.name}</p>
-                      <p className="text-sm text-muted-foreground">Cliente</p>
-                    </div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span>{booking.client.email}</span>
-                    </div>
-                    {booking.client.phone && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <span>{booking.client.phone}</span>
-                      </div>
-                    )}
+                  <div>
+                    <p className="font-medium">{booking.client.name}</p>
+                    <p className="text-xs text-muted-foreground">+••••••••••</p>
                   </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {booking.address}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Serviceman Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Informações do Prestador
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm">Sem informações do prestador</p>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    ATRIBUIR PRESTADOR
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -354,166 +432,47 @@ export default function ProviderBookingDetailsPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Booking Status */}
+            {/* Booking Setup */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Status da Reserva</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="text-lg">Configuração da Reserva</span>
+                  <Button size="sm" variant="outline" className="bg-blue-600 text-white hover:bg-blue-700">
+                    FATURA
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <Badge className={getStatusColor(booking.status)} size="lg">
-                    {getStatusText(booking.status)}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Status de Pagamento:</span>
+                  <Badge className={booking.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                    {booking.paymentStatus === 'completed' ? 'Pago' : 'Não Pago'}
                   </Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Criada em {format(new Date(booking.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                  </p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Data Agendada:</span>
+                  <span className="text-sm">{format(new Date(booking.scheduledAt), 'dd-MMM-yyyy HH:mm', { locale: ptBR })}</span>
                 </div>
                 
                 <Separator />
 
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  {canAccept && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" variant="default">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Aceitar Reserva
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Aceitar Reserva</DialogTitle>
-                          <DialogDescription>
-                            Confirme que você pode realizar este serviço na data e horário solicitados.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Label htmlFor="accept-notes">Observações (opcional)</Label>
-                          <Textarea
-                            id="accept-notes"
-                            placeholder="Adicione observações sobre a aceitação..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                          />
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            onClick={() => handleStatusUpdate('accepted')}
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? "Processando..." : "Confirmar Aceitação"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-
-                  {canStart && (
-                    <Button
-                      className="w-full"
-                      variant="default"
-                      onClick={() => handleStatusUpdate('in_progress')}
-                      disabled={isProcessing}
-                    >
-                      <Clock className="w-4 h-4 mr-2" />
-                      Iniciar Serviço
-                    </Button>
-                  )}
-
-                  {canComplete && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" variant="default">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Finalizar Serviço
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Finalizar Serviço</DialogTitle>
-                          <DialogDescription>
-                            Confirme a conclusão do serviço. Esta ação não poderá ser desfeita.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Label htmlFor="complete-notes">Observações finais (opcional)</Label>
-                          <Textarea
-                            id="complete-notes"
-                            placeholder="Descreva os trabalhos realizados..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                          />
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            onClick={() => handleStatusUpdate('completed')}
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? "Processando..." : "Finalizar Serviço"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-
-                  {canCancel && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="w-full" variant="destructive">
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Cancelar Reserva
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Cancelar Reserva</DialogTitle>
-                          <DialogDescription>
-                            Tem certeza que deseja cancelar esta reserva? Esta ação não poderá ser desfeita.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <Label htmlFor="cancel-notes">Motivo do cancelamento</Label>
-                          <Textarea
-                            id="cancel-notes"
-                            placeholder="Explique o motivo do cancelamento..."
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                          />
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleStatusUpdate('cancelled')}
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? "Processando..." : "Confirmar Cancelamento"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Service Location */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Localização</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <MapPin className="w-8 h-8 mx-auto mb-2" />
-                    <p className="text-sm">Mapa da localização</p>
-                    <p className="text-xs">Você precisa ir para o local do cliente para realizar este serviço</p>
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1">
-                  <p className="font-medium text-sm">{booking.address}</p>
-                  <p className="text-xs text-muted-foreground">{booking.city}, {booking.state}</p>
-                  <p className="text-xs text-muted-foreground">CEP: {booking.cep}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    disabled={booking.status !== 'pending'}
+                  >
+                    IGNORAR
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={booking.status !== 'pending'}
+                    onClick={() => handleStatusUpdate('accepted')}
+                  >
+                    ACEITAR
+                  </Button>
                 </div>
               </CardContent>
             </Card>

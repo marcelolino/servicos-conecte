@@ -107,7 +107,13 @@ const menuItems = [
 export default function ProviderLayout({ children }: ProviderLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
+    // Auto-expand Reservas menu if on any booking page
+    if (location.startsWith('/provider-bookings')) {
+      return ['Reservas'];
+    }
+    return [];
+  });
 
   const toggleMenu = (label: string) => {
     setExpandedMenus(prev => 
