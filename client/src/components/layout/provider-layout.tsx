@@ -17,7 +17,13 @@ import {
   ChevronDown,
   ChevronRight,
   BellRing,
-  Wrench
+  Wrench,
+  BookOpen,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Eye,
+  AlertTriangle
 } from "lucide-react";
 import { useState } from "react";
 
@@ -30,7 +36,19 @@ const menuItems = [
     section: "PRINCIPAL",
     items: [
       { icon: Home, label: "Painel", href: "/provider-dashboard", exact: true },
-      { icon: Calendar, label: "Reservas", href: "/provider-bookings" },
+      {
+        icon: Calendar,
+        label: "Reservas",
+        href: "/provider-bookings",
+        subItems: [
+          { icon: BookOpen, label: "Todas Reservas", href: "/provider-bookings" },
+          { icon: Clock, label: "Solicitações Pendentes", href: "/provider-bookings/pending" },
+          { icon: CheckCircle, label: "Reservas Aceitas", href: "/provider-bookings/accepted" },
+          { icon: AlertTriangle, label: "Em Andamento", href: "/provider-bookings/ongoing" },
+          { icon: CheckCircle, label: "Concluídas", href: "/provider-bookings/completed" },
+          { icon: XCircle, label: "Canceladas", href: "/provider-bookings/cancelled" }
+        ]
+      },
     ]
   },
   {

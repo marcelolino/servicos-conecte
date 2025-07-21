@@ -20,6 +20,7 @@ import ProviderProfile from "@/pages/provider-profile";
 import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ProviderPayments from "@/pages/provider-payments";
 import ProviderBookings from "@/pages/provider-bookings";
+import ProviderBookingDetails from "@/pages/provider-bookings-details";
 import ProviderCashPayments from "@/pages/provider-cash-payments";
 import ProviderWithdrawalRequests from "@/pages/provider-withdrawal-requests";
 import ProviderPromotionalBanners from "@/pages/provider-promotional-banners";
@@ -57,6 +58,12 @@ function Router() {
           <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/provider-payments" component={ProviderPayments} />
           <Route path="/provider-bookings" component={ProviderBookings} />
+          <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
+          <Route path="/provider-bookings/pending" component={ProviderBookings} />
+          <Route path="/provider-bookings/accepted" component={ProviderBookings} />
+          <Route path="/provider-bookings/ongoing" component={ProviderBookings} />
+          <Route path="/provider-bookings/completed" component={ProviderBookings} />
+          <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
           <Route path="/provider-cash-payments" component={ProviderCashPayments} />
           <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
           <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
