@@ -623,6 +623,11 @@ export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalReques
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  amount: z.union([z.string(), z.number()]).transform(val => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return num.toString();
+  }),
 });
 
 // Types

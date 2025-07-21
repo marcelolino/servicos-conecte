@@ -31,7 +31,13 @@ import {
 } from "lucide-react";
 
 const withdrawalRequestSchema = z.object({
-  amount: z.string().min(1, "Valor é obrigatório"),
+  amount: z.union([z.string(), z.number()]).transform(val => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num) || num <= 0) {
+      throw new Error("Valor deve ser maior que zero");
+    }
+    return num;
+  }),
   paymentMethod: z.enum(["bank_transfer", "pix"], {
     required_error: "Método de pagamento é obrigatório",
   }),
