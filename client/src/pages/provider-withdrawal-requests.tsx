@@ -31,13 +31,10 @@ import {
 } from "lucide-react";
 
 const withdrawalRequestSchema = z.object({
-  amount: z.union([z.string(), z.number()]).transform(val => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    if (isNaN(num) || num <= 0) {
-      throw new Error("Valor deve ser maior que zero");
-    }
-    return num;
-  }),
+  amount: z.string().min(1, "Valor é obrigatório").refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num > 0;
+  }, "Valor deve ser maior que zero"),
   paymentMethod: z.enum(["bank_transfer", "pix"], {
     required_error: "Método de pagamento é obrigatório",
   }),
@@ -166,9 +163,9 @@ export default function ProviderWithdrawalRequests() {
     createRequestMutation.mutate(data);
   };
 
-  const availableBalance = earnings?.availableBalance || 0;
-  const totalEarnings = earnings?.earnings?.reduce((sum: number, earning: any) => sum + earning.amount, 0) || 0;
-  const withdrawnAmount = earnings?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + earning.amount, 0) || 0;
+  const availableBalance = (earnings as any)?.availableBalance || 0;
+  const totalEarnings = (earnings as any)?.earnings?.reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount || 0), 0) || 0;
+  const withdrawnAmount = (earnings as any)?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount || 0), 0) || 0;
 
   return (
     <ProviderLayout>
@@ -402,7 +399,7 @@ export default function ProviderWithdrawalRequests() {
                   <Skeleton key={i} className="h-16 w-full" />
                 ))}
               </div>
-            ) : !withdrawalRequests?.length ? (
+            ) : !(withdrawalRequests as any[])?.length ? (
               <div className="text-center py-12">
                 <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -427,7 +424,7 @@ export default function ProviderWithdrawalRequests() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {withdrawalRequests.map((request: any) => {
+                  {(withdrawalRequests as any[]).map((request: any) => {
                     const StatusIcon = getStatusIcon(request.status);
                     const PaymentIcon = getPaymentMethodIcon(request.paymentMethod);
                     
@@ -437,7 +434,7 @@ export default function ProviderWithdrawalRequests() {
                           {new Date(request.createdAt).toLocaleDateString("pt-BR")}
                         </TableCell>
                         <TableCell className="font-medium">
-                          R$ {request.amount.toFixed(2)}
+                          R$ {parseFloat(request.amount || '0').toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
