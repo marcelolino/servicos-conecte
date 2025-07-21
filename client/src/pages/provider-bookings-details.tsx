@@ -78,8 +78,8 @@ interface BookingDetailsData {
 }
 
 export default function ProviderBookingDetailsPage() {
-  const [match] = useRoute("/provider-bookings/details/:id");
-  const bookingId = match?.id;
+  const [match, params] = useRoute("/provider-bookings/details/:id");
+  const bookingId = match && params ? parseInt(params.id) : null;
   const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
@@ -461,6 +461,7 @@ export default function ProviderBookingDetailsPage() {
                     size="sm" 
                     variant="destructive"
                     disabled={booking.status !== 'pending'}
+                    onClick={() => handleStatusUpdate('cancelled')}
                   >
                     IGNORAR
                   </Button>
