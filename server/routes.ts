@@ -1534,6 +1534,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status, adminNotes } = req.body;
 
+      console.log('Processing withdrawal request:', { id, status, adminNotes, userId: req.user!.id });
+
       if (!['approved', 'rejected'].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
@@ -1542,13 +1544,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(id),
         status,
         req.user!.id,
-        adminNotes
+        adminNotes || undefined
       );
 
+      console.log('Withdrawal request processed successfully:', updatedRequest);
       res.json(updatedRequest);
     } catch (error) {
       console.error('Error processing withdrawal request:', error);
-      res.status(500).json({ message: "Failed to process withdrawal request" });
+      res.status(500).json({ message: "Failed to process withdrawal request", error: error.message });
     }
   });
 
