@@ -22,6 +22,7 @@ import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ProviderPayments from "@/pages/provider-payments";
 import ProviderBookings from "@/pages/provider-bookings";
 import ProviderBookingDetails from "@/pages/provider-bookings-details";
+import ProviderBookingsOngoing from "@/pages/provider-bookings-ongoing";
 import ProviderCashPayments from "@/pages/provider-cash-payments";
 import ProviderWithdrawalRequests from "@/pages/provider-withdrawal-requests";
 import ProviderPromotionalBanners from "@/pages/provider-promotional-banners";
@@ -62,7 +63,7 @@ function Router() {
           <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
           <Route path="/provider-bookings/pending" component={ProviderBookings} />
           <Route path="/provider-bookings/accepted" component={ProviderBookings} />
-          <Route path="/provider-bookings/ongoing" component={lazy(() => import("@/pages/provider-bookings-ongoing"))} />
+          <Route path="/provider-bookings/ongoing" component={ProviderBookingsOngoing} />
           <Route path="/provider-bookings/completed" component={ProviderBookings} />
           <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
           <Route path="/provider-cash-payments" component={ProviderCashPayments} />
