@@ -13,6 +13,7 @@ import Register from "@/pages/register";
 import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminBookings from "@/pages/admin-bookings";
 import AdminPayments from "@/pages/admin/payments";
 import AdminCashPayments from "@/pages/admin/cash-payments";
 import AdminEarnings from "@/pages/admin/earnings";
@@ -74,6 +75,7 @@ function Router() {
           <Route path="/provider-add-ons" component={ProviderAddOns} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin-bookings" component={AdminBookings} />
           <Route path="/admin-settings" component={AdminSettings} />
           <Route path="/admin-payments" component={AdminPayments} />
           <Route path="/admin-cash-payments" component={AdminCashPayments} />

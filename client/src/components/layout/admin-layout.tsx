@@ -10,7 +10,8 @@ import {
   FileText, 
   DollarSign,
   TrendingUp,
-  LogOut
+  LogOut,
+  Calendar
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -24,6 +25,12 @@ const menuItems = [
       { icon: Home, label: "Dashboard", href: "/admin-dashboard", exact: true },
       { icon: Users, label: "Os Clientes", href: "/admin-clients" },
       { icon: Users, label: "Todos Os Usuários", href: "/admin-users" },
+    ]
+  },
+  {
+    section: "GERENCIAMENTO DE RESERVAS",
+    items: [
+      { icon: Calendar, label: "Reservas", href: "/admin-bookings" },
     ]
   },
   {
