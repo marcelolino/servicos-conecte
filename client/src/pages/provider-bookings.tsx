@@ -365,27 +365,63 @@ export default function ProviderBookingsPage() {
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
-            <BookingsTable bookings={filteredBookings} />
+            <BookingsTable 
+              bookings={filteredBookings} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
           
           <TabsContent value="pending" className="mt-6">
-            <BookingsTable bookings={getBookingsByStatus('pending')} />
+            <BookingsTable 
+              bookings={getBookingsByStatus('pending')} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
           
           <TabsContent value="accepted" className="mt-6">
-            <BookingsTable bookings={getBookingsByStatus('accepted')} />
+            <BookingsTable 
+              bookings={getBookingsByStatus('accepted')} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
           
           <TabsContent value="in_progress" className="mt-6">
-            <BookingsTable bookings={getBookingsByStatus('in_progress')} />
+            <BookingsTable 
+              bookings={getBookingsByStatus('in_progress')} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
           
           <TabsContent value="completed" className="mt-6">
-            <BookingsTable bookings={getBookingsByStatus('completed')} />
+            <BookingsTable 
+              bookings={getBookingsByStatus('completed')} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
           
           <TabsContent value="cancelled" className="mt-6">
-            <BookingsTable bookings={getBookingsByStatus('cancelled')} />
+            <BookingsTable 
+              bookings={getBookingsByStatus('cancelled')} 
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              isUpdating={updateBookingMutation.isPending}
+              navigate={navigate}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -395,9 +431,13 @@ export default function ProviderBookingsPage() {
 
 interface BookingsTableProps {
   bookings: BookingData[];
+  onAcceptBooking: (id: number) => void;
+  onRejectBooking: (id: number) => void;
+  isUpdating: boolean;
+  navigate: (path: string) => void;
 }
 
-function BookingsTable({ bookings }: BookingsTableProps) {
+function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating, navigate }: BookingsTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -559,8 +599,8 @@ function BookingsTable({ bookings }: BookingsTableProps) {
                             variant="outline"
                             className="text-green-600 hover:text-green-700"
                             title="Aceitar"
-                            onClick={() => handleAcceptBooking(booking.id)}
-                            disabled={updateBookingMutation.isPending}
+                            onClick={() => onAcceptBooking(booking.id)}
+                            disabled={isUpdating}
                           >
                             <Check className="w-4 h-4" />
                           </Button>
@@ -569,8 +609,8 @@ function BookingsTable({ bookings }: BookingsTableProps) {
                             variant="outline"
                             className="text-red-600 hover:text-red-700"
                             title="Ignorar/Rejeitar"
-                            onClick={() => handleRejectBooking(booking.id)}
-                            disabled={updateBookingMutation.isPending}
+                            onClick={() => onRejectBooking(booking.id)}
+                            disabled={isUpdating}
                           >
                             <X className="w-4 h-4" />
                           </Button>
