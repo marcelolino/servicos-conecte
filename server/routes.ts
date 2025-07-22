@@ -558,7 +558,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // Service must be in progress to be completed
+      // Check service status
+      if (request.status === "completed") {
+        return res.status(400).json({ message: "Serviço já foi finalizado" });
+      }
+      
       if (request.status !== "in_progress") {
         return res.status(400).json({ message: "Service must be in progress before it can be completed" });
       }
