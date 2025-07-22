@@ -30,12 +30,7 @@ const sidebarItems: SidebarItem[] = [
   {
     label: "Reservas",
     icon: Calendar,
-    children: [
-      { label: "Todas", icon: Calendar, path: "/client-dashboard" },
-      { label: "Pendentes", icon: Calendar, path: "/client-dashboard?status=pending" },
-      { label: "Aceitas", icon: Calendar, path: "/client-dashboard?status=accepted" },
-      { label: "Concluídas", icon: Calendar, path: "/client-dashboard?status=completed" },
-    ]
+    path: "/client-reservas",
   },
   {
     label: "Ofertas",
