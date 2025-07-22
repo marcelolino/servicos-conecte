@@ -513,6 +513,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service request control endpoints for clients
+  app.put("/api/service-requests/:id/start", authenticateToken, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const request = await storage.getServiceRequest(requestId);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Service request not found" });
+      }
+      
+      // Only the client can start their service
+      if (request.clientId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Service must be accepted to be started
+      if (request.status !== "accepted") {
+        return res.status(400).json({ message: "Service must be accepted before it can be started" });
+      }
+      
+      const updatedRequest = await storage.updateServiceRequest(requestId, { 
+        status: "in_progress",
+        updatedAt: new Date()
+      });
+      
+      res.json(updatedRequest);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to start service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/service-requests/:id/complete", authenticateToken, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const request = await storage.getServiceRequest(requestId);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Service request not found" });
+      }
+      
+      // Only the client can complete their service
+      if (request.clientId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Service must be in progress to be completed
+      if (request.status !== "in_progress") {
+        return res.status(400).json({ message: "Service must be in progress before it can be completed" });
+      }
+      
+      const updatedRequest = await storage.updateServiceRequest(requestId, { 
+        status: "completed",
+        completedAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      res.json(updatedRequest);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to complete service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Reviews routes
   app.post("/api/reviews", authenticateToken, async (req, res) => {
     try {
