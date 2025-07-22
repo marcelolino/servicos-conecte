@@ -85,8 +85,10 @@ export default function ProviderPaymentMethods() {
 
   // Mutations
   const createBankMutation = useMutation({
-    mutationFn: (data: BankAccountData) =>
-      apiRequest("/api/provider/bank-accounts", "POST", data),
+    mutationFn: async (data: BankAccountData) => {
+      const response = await apiRequest("POST", "/api/provider/bank-accounts", data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       setBankDialogOpen(false);
@@ -100,8 +102,10 @@ export default function ProviderPaymentMethods() {
   });
 
   const updateBankMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: BankAccountData }) =>
-      apiRequest(`/api/provider/bank-accounts/${id}`, "PUT", data),
+    mutationFn: async ({ id, data }: { id: number; data: BankAccountData }) => {
+      const response = await apiRequest("PUT", `/api/provider/bank-accounts/${id}`, data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       setBankDialogOpen(false);
@@ -115,8 +119,10 @@ export default function ProviderPaymentMethods() {
   });
 
   const deleteBankMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest(`/api/provider/bank-accounts/${id}`, "DELETE"),
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/provider/bank-accounts/${id}`);
+      return { success: true };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       toast({
@@ -127,8 +133,10 @@ export default function ProviderPaymentMethods() {
   });
 
   const createPixMutation = useMutation({
-    mutationFn: (data: PixKeyData) =>
-      apiRequest("/api/provider/pix-keys", "POST", data),
+    mutationFn: async (data: PixKeyData) => {
+      const response = await apiRequest("POST", "/api/provider/pix-keys", data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       setPixDialogOpen(false);
@@ -142,8 +150,10 @@ export default function ProviderPaymentMethods() {
   });
 
   const updatePixMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: PixKeyData }) =>
-      apiRequest(`/api/provider/pix-keys/${id}`, "PUT", data),
+    mutationFn: async ({ id, data }: { id: number; data: PixKeyData }) => {
+      const response = await apiRequest("PUT", `/api/provider/pix-keys/${id}`, data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       setPixDialogOpen(false);
@@ -157,8 +167,10 @@ export default function ProviderPaymentMethods() {
   });
 
   const deletePixMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest(`/api/provider/pix-keys/${id}`, "DELETE"),
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/provider/pix-keys/${id}`);
+      return { success: true };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       toast({
