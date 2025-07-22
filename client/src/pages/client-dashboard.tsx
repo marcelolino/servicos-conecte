@@ -95,10 +95,7 @@ export default function ClientDashboard() {
   // Create service request mutation
   const createRequestMutation = useMutation({
     mutationFn: (data: ServiceRequestForm) =>
-      apiRequest("/api/service-requests", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("POST", "/api/service-requests", data),
     onSuccess: () => {
       toast({
         title: "Sucesso!",
@@ -120,9 +117,7 @@ export default function ClientDashboard() {
   // Start service mutation
   const startServiceMutation = useMutation({
     mutationFn: (requestId: string) =>
-      apiRequest(`/api/service-requests/${requestId}/start`, {
-        method: "PUT",
-      }),
+      apiRequest("PUT", `/api/service-requests/${requestId}/start`),
     onSuccess: () => {
       toast({
         title: "Sucesso!",
@@ -142,9 +137,7 @@ export default function ClientDashboard() {
   // Complete service mutation
   const completeServiceMutation = useMutation({
     mutationFn: (requestId: string) =>
-      apiRequest(`/api/service-requests/${requestId}/complete`, {
-        method: "PUT",
-      }),
+      apiRequest("PUT", `/api/service-requests/${requestId}/complete`),
     onSuccess: () => {
       toast({
         title: "Sucesso!",
