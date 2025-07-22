@@ -9,8 +9,7 @@ export interface AuthResponse {
 }
 
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
-  const response = await apiRequest("POST", "/api/auth/login", { email, password });
-  return response.json();
+  return await apiRequest("POST", "/api/auth/login", { email, password });
 };
 
 export const register = async (userData: {
@@ -20,13 +19,11 @@ export const register = async (userData: {
   phone?: string;
   userType: "client" | "provider";
 }): Promise<AuthResponse> => {
-  const response = await apiRequest("POST", "/api/auth/register", userData);
-  return response.json();
+  return await apiRequest("POST", "/api/auth/register", userData);
 };
 
 export const getCurrentUser = async (): Promise<AuthUser> => {
-  const response = await apiRequest("GET", "/api/auth/me");
-  return response.json();
+  return await apiRequest("GET", "/api/auth/me");
 };
 
 export const setAuthToken = (token: string) => {
