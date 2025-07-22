@@ -308,7 +308,7 @@ export default function OrderDetailsPage() {
                             {item.providerService.name || item.providerService.category.name}
                           </h4>
                           <p className="text-sm text-muted-foreground">
-                            Por {item.providerService.provider.user.name}
+                            Por {item.providerService.provider?.user?.name || "Prestador"}
                           </p>
                           <Badge variant="secondary" className="mt-1">
                             {item.providerService.category.name}
