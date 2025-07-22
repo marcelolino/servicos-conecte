@@ -317,17 +317,39 @@ export const providerEarnings = pgTable("provider_earnings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Provider bank accounts table
+export const providerBankAccounts = pgTable("provider_bank_accounts", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  bankName: varchar("bank_name", { length: 255 }).notNull(),
+  agency: varchar("agency", { length: 20 }).notNull(),
+  accountNumber: varchar("account_number", { length: 50 }).notNull(),
+  accountHolder: varchar("account_holder", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Provider PIX keys table
+export const providerPixKeys = pgTable("provider_pix_keys", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  pixKey: varchar("pix_key", { length: 255 }).notNull(),
+  pixType: varchar("pix_type", { length: 20 }).notNull(), // "cpf", "email", "phone", "random"
+  accountHolder: varchar("account_holder", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Withdrawal requests table
 export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: serial("id").primaryKey(),
   providerId: integer("provider_id").references(() => providers.id).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  bankName: varchar("bank_name", { length: 255 }).notNull(),
-  accountNumber: varchar("account_number", { length: 50 }).notNull(),
-  accountHolderName: varchar("account_holder_name", { length: 255 }).notNull(),
-  cpfCnpj: varchar("cpf_cnpj", { length: 20 }).notNull(),
-  paymentMethod: varchar("payment_method", { length: 50 }).default("bank_transfer"), // 'bank_transfer', 'pix'
-  pixKey: varchar("pix_key", { length: 255 }), // Optional PIX key
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // 'bank', 'pix'
+  bankAccountId: integer("bank_account_id").references(() => providerBankAccounts.id),
+  pixKeyId: integer("pix_key_id").references(() => providerPixKeys.id),
   status: withdrawalStatusEnum("status").default("pending"),
   requestNotes: text("request_notes"), // Provider notes
   adminNotes: text("admin_notes"), // Admin response notes
@@ -359,6 +381,8 @@ export const providersRelations = relations(providers, ({ one, many }) => ({
   reviews: many(reviews),
   earnings: many(providerEarnings),
   withdrawalRequests: many(withdrawalRequests),
+  bankAccounts: many(providerBankAccounts),
+  pixKeys: many(providerPixKeys),
 }));
 
 export const serviceCategoriesRelations = relations(serviceCategories, ({ many }) => ({
@@ -501,10 +525,34 @@ export const providerEarningsRelations = relations(providerEarnings, ({ one }) =
   }),
 }));
 
+export const providerBankAccountsRelations = relations(providerBankAccounts, ({ one, many }) => ({
+  provider: one(providers, {
+    fields: [providerBankAccounts.providerId],
+    references: [providers.id],
+  }),
+  withdrawalRequests: many(withdrawalRequests),
+}));
+
+export const providerPixKeysRelations = relations(providerPixKeys, ({ one, many }) => ({
+  provider: one(providers, {
+    fields: [providerPixKeys.providerId],
+    references: [providers.id],
+  }),
+  withdrawalRequests: many(withdrawalRequests),
+}));
+
 export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one }) => ({
   provider: one(providers, {
     fields: [withdrawalRequests.providerId],
     references: [providers.id],
+  }),
+  bankAccount: one(providerBankAccounts, {
+    fields: [withdrawalRequests.bankAccountId],
+    references: [providerBankAccounts.id],
+  }),
+  pixKey: one(providerPixKeys, {
+    fields: [withdrawalRequests.pixKeyId],
+    references: [providerPixKeys.id],
   }),
   processedBy: one(users, {
     fields: [withdrawalRequests.processedBy],
@@ -600,6 +648,18 @@ export const insertFileUploadSchema = createInsertSchema(fileUploads).omit({
   updatedAt: true,
 });
 
+export const insertProviderBankAccountSchema = createInsertSchema(providerBankAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProviderPixKeySchema = createInsertSchema(providerPixKeys).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserUploadStatsSchema = createInsertSchema(userUploadStats).omit({
   id: true,
   createdAt: true,
@@ -675,3 +735,7 @@ export type ProviderEarning = typeof providerEarnings.$inferSelect;
 export type InsertProviderEarning = z.infer<typeof insertProviderEarningSchema>;
 export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSchema>;
+export type ProviderBankAccount = typeof providerBankAccounts.$inferSelect;
+export type InsertProviderBankAccount = z.infer<typeof insertProviderBankAccountSchema>;
+export type ProviderPixKey = typeof providerPixKeys.$inferSelect;
+export type InsertProviderPixKey = z.infer<typeof insertProviderPixKeySchema>;

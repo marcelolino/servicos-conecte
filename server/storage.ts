@@ -55,10 +55,16 @@ import {
   type InsertOrderItem,
   providerEarnings,
   withdrawalRequests,
+  providerBankAccounts,
+  providerPixKeys,
   type ProviderEarning,
   type InsertProviderEarning,
   type WithdrawalRequest,
   type InsertWithdrawalRequest,
+  type ProviderBankAccount,
+  type InsertProviderBankAccount,
+  type ProviderPixKey,
+  type InsertProviderPixKey,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -204,6 +210,18 @@ export interface IStorage {
   createWithdrawalRequest(request: InsertWithdrawalRequest): Promise<WithdrawalRequest>;
   updateWithdrawalRequest(id: number, request: Partial<InsertWithdrawalRequest>): Promise<WithdrawalRequest>;
   processWithdrawalRequest(id: number, status: 'approved' | 'rejected', adminId: number, adminNotes?: string): Promise<WithdrawalRequest>;
+
+  // Provider bank accounts
+  getProviderBankAccounts(providerId: number): Promise<ProviderBankAccount[]>;
+  createProviderBankAccount(account: InsertProviderBankAccount): Promise<ProviderBankAccount>;
+  updateProviderBankAccount(id: number, account: Partial<InsertProviderBankAccount>): Promise<ProviderBankAccount>;
+  deleteProviderBankAccount(id: number): Promise<void>;
+
+  // Provider PIX keys
+  getProviderPixKeys(providerId: number): Promise<ProviderPixKey[]>;
+  createProviderPixKey(pixKey: InsertProviderPixKey): Promise<ProviderPixKey>;
+  updateProviderPixKey(id: number, pixKey: Partial<InsertProviderPixKey>): Promise<ProviderPixKey>;
+  deleteProviderPixKey(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1864,6 +1882,66 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedRequest;
+  }
+
+  // Provider bank accounts methods
+  async getProviderBankAccounts(providerId: number): Promise<ProviderBankAccount[]> {
+    return await db
+      .select()
+      .from(providerBankAccounts)
+      .where(eq(providerBankAccounts.providerId, providerId))
+      .orderBy(desc(providerBankAccounts.createdAt));
+  }
+
+  async createProviderBankAccount(account: InsertProviderBankAccount): Promise<ProviderBankAccount> {
+    const [newAccount] = await db
+      .insert(providerBankAccounts)
+      .values(account)
+      .returning();
+    return newAccount;
+  }
+
+  async updateProviderBankAccount(id: number, account: Partial<InsertProviderBankAccount>): Promise<ProviderBankAccount> {
+    const [updatedAccount] = await db
+      .update(providerBankAccounts)
+      .set({ ...account, updatedAt: new Date() })
+      .where(eq(providerBankAccounts.id, id))
+      .returning();
+    return updatedAccount;
+  }
+
+  async deleteProviderBankAccount(id: number): Promise<void> {
+    await db.delete(providerBankAccounts).where(eq(providerBankAccounts.id, id));
+  }
+
+  // Provider PIX keys methods
+  async getProviderPixKeys(providerId: number): Promise<ProviderPixKey[]> {
+    return await db
+      .select()
+      .from(providerPixKeys)
+      .where(eq(providerPixKeys.providerId, providerId))
+      .orderBy(desc(providerPixKeys.createdAt));
+  }
+
+  async createProviderPixKey(pixKey: InsertProviderPixKey): Promise<ProviderPixKey> {
+    const [newPixKey] = await db
+      .insert(providerPixKeys)
+      .values(pixKey)
+      .returning();
+    return newPixKey;
+  }
+
+  async updateProviderPixKey(id: number, pixKey: Partial<InsertProviderPixKey>): Promise<ProviderPixKey> {
+    const [updatedPixKey] = await db
+      .update(providerPixKeys)
+      .set({ ...pixKey, updatedAt: new Date() })
+      .where(eq(providerPixKeys.id, id))
+      .returning();
+    return updatedPixKey;
+  }
+
+  async deleteProviderPixKey(id: number): Promise<void> {
+    await db.delete(providerPixKeys).where(eq(providerPixKeys.id, id));
   }
 }
 

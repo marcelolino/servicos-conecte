@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema } from "@shared/schema";
 import { 
   upload, 
   uploadBannerImage, 
@@ -1618,6 +1618,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error processing withdrawal request:', error);
       res.status(500).json({ message: "Failed to process withdrawal request", error: error.message });
+    }
+  });
+
+  // Provider bank accounts routes
+  app.get("/api/provider/bank-accounts", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const bankAccounts = await storage.getProviderBankAccounts(provider.id);
+      res.json(bankAccounts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get bank accounts", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/provider/bank-accounts", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const accountData = insertProviderBankAccountSchema.parse({
+        ...req.body,
+        providerId: provider.id
+      });
+
+      const bankAccount = await storage.createProviderBankAccount(accountData);
+      res.json(bankAccount);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create bank account", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/provider/bank-accounts/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const updateData = req.body;
+
+      const updatedAccount = await storage.updateProviderBankAccount(accountId, updateData);
+      res.json(updatedAccount);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update bank account", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/provider/bank-accounts/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      await storage.deleteProviderBankAccount(accountId);
+      res.json({ message: "Bank account deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete bank account", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Provider PIX keys routes
+  app.get("/api/provider/pix-keys", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const pixKeys = await storage.getProviderPixKeys(provider.id);
+      res.json(pixKeys);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get PIX keys", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/provider/pix-keys", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const pixKeyData = insertProviderPixKeySchema.parse({
+        ...req.body,
+        providerId: provider.id
+      });
+
+      const pixKey = await storage.createProviderPixKey(pixKeyData);
+      res.json(pixKey);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create PIX key", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/provider/pix-keys/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const pixKeyId = parseInt(req.params.id);
+      const updateData = req.body;
+
+      const updatedPixKey = await storage.updateProviderPixKey(pixKeyId, updateData);
+      res.json(updatedPixKey);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update PIX key", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/provider/pix-keys/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const pixKeyId = parseInt(req.params.id);
+      await storage.deleteProviderPixKey(pixKeyId);
+      res.json({ message: "PIX key deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete PIX key", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
