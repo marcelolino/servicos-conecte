@@ -86,10 +86,7 @@ export default function ProviderPaymentMethods() {
   // Mutations
   const createBankMutation = useMutation({
     mutationFn: (data: BankAccountData) =>
-      apiRequest("/api/provider/bank-accounts", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("/api/provider/bank-accounts", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       setBankDialogOpen(false);
@@ -104,10 +101,7 @@ export default function ProviderPaymentMethods() {
 
   const updateBankMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: BankAccountData }) =>
-      apiRequest(`/api/provider/bank-accounts/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest(`/api/provider/bank-accounts/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       setBankDialogOpen(false);
@@ -122,9 +116,7 @@ export default function ProviderPaymentMethods() {
 
   const deleteBankMutation = useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/provider/bank-accounts/${id}`, {
-        method: "DELETE",
-      }),
+      apiRequest(`/api/provider/bank-accounts/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/bank-accounts"] });
       toast({
@@ -136,10 +128,7 @@ export default function ProviderPaymentMethods() {
 
   const createPixMutation = useMutation({
     mutationFn: (data: PixKeyData) =>
-      apiRequest("/api/provider/pix-keys", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("/api/provider/pix-keys", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       setPixDialogOpen(false);
@@ -154,10 +143,7 @@ export default function ProviderPaymentMethods() {
 
   const updatePixMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: PixKeyData }) =>
-      apiRequest(`/api/provider/pix-keys/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest(`/api/provider/pix-keys/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       setPixDialogOpen(false);
@@ -172,9 +158,7 @@ export default function ProviderPaymentMethods() {
 
   const deletePixMutation = useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/provider/pix-keys/${id}`, {
-        method: "DELETE",
-      }),
+      apiRequest(`/api/provider/pix-keys/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/pix-keys"] });
       toast({
@@ -358,7 +342,7 @@ export default function ProviderPaymentMethods() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-muted-foreground">Carregando contas...</p>
               </div>
-            ) : bankAccounts.length === 0 ? (
+            ) : !bankAccounts || bankAccounts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Building2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhuma conta bancária cadastrada</p>
@@ -366,7 +350,7 @@ export default function ProviderPaymentMethods() {
               </div>
             ) : (
               <div className="space-y-4">
-                {bankAccounts.map((account: any) => (
+                {(bankAccounts as any[]).map((account: any) => (
                   <div
                     key={account.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -517,7 +501,7 @@ export default function ProviderPaymentMethods() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-muted-foreground">Carregando chaves PIX...</p>
               </div>
-            ) : pixKeys.length === 0 ? (
+            ) : !pixKeys || pixKeys.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhuma chave PIX cadastrada</p>
@@ -525,7 +509,7 @@ export default function ProviderPaymentMethods() {
               </div>
             ) : (
               <div className="space-y-4">
-                {pixKeys.map((key: any) => (
+                {(pixKeys as any[]).map((key: any) => (
                   <div
                     key={key.id}
                     className="flex items-center justify-between p-4 border rounded-lg"
