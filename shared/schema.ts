@@ -12,6 +12,8 @@ export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processin
 export const bannerStatusEnum = pgEnum("banner_status", ["active", "inactive", "scheduled"]);
 export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment", "confirmed", "in_progress", "completed", "cancelled"]);
 export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected", "completed"]);
+export const chatStatusEnum = pgEnum("chat_status", ["active", "closed", "archived"]);
+export const messageStatusEnum = pgEnum("message_status", ["sent", "delivered", "read"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -364,6 +366,32 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   pixKeyId: integer("pix_key_id").references(() => providerPixKeys.id),
 });
 
+// Chat conversations table
+export const chatConversations = pgTable("chat_conversations", {
+  id: serial("id").primaryKey(),
+  participantOneId: integer("participant_one_id").references(() => users.id).notNull(),
+  participantTwoId: integer("participant_two_id").references(() => users.id).notNull(),
+  serviceRequestId: integer("service_request_id").references(() => serviceRequests.id), // Optional link to service
+  title: varchar("title", { length: 255 }),
+  status: chatStatusEnum("status").default("active"),
+  lastMessageAt: timestamp("last_message_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Chat messages table
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").references(() => chatConversations.id).notNull(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  messageType: varchar("message_type", { length: 20 }).default("text"), // text, image, file, system
+  attachmentUrl: text("attachment_url"), // For images/files
+  status: messageStatusEnum("status").default("sent"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -565,6 +593,33 @@ export const withdrawalRequestsRelations = relations(withdrawalRequests, ({ one 
   }),
 }));
 
+export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
+  participantOne: one(users, {
+    fields: [chatConversations.participantOneId],
+    references: [users.id],
+  }),
+  participantTwo: one(users, {
+    fields: [chatConversations.participantTwoId],
+    references: [users.id],
+  }),
+  serviceRequest: one(serviceRequests, {
+    fields: [chatConversations.serviceRequestId],
+    references: [serviceRequests.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  conversation: one(chatConversations, {
+    fields: [chatMessages.conversationId],
+    references: [chatConversations.id],
+  }),
+  sender: one(users, {
+    fields: [chatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -699,6 +754,18 @@ export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalReques
   }),
 });
 
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -744,3 +811,7 @@ export type ProviderBankAccount = typeof providerBankAccounts.$inferSelect;
 export type InsertProviderBankAccount = z.infer<typeof insertProviderBankAccountSchema>;
 export type ProviderPixKey = typeof providerPixKeys.$inferSelect;
 export type InsertProviderPixKey = z.infer<typeof insertProviderPixKeySchema>;
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;

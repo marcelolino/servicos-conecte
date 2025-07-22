@@ -65,6 +65,12 @@ import {
   type InsertProviderBankAccount,
   type ProviderPixKey,
   type InsertProviderPixKey,
+  chatConversations,
+  chatMessages,
+  type ChatConversation,
+  type InsertChatConversation,
+  type ChatMessage,
+  type InsertChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -222,6 +228,19 @@ export interface IStorage {
   createProviderPixKey(pixKey: InsertProviderPixKey): Promise<ProviderPixKey>;
   updateProviderPixKey(id: number, pixKey: Partial<InsertProviderPixKey>): Promise<ProviderPixKey>;
   deleteProviderPixKey(id: number): Promise<void>;
+
+  // Chat conversations
+  getChatConversationsByUser(userId: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; lastMessage?: ChatMessage })[]>;
+  getChatConversation(id: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; messages: (ChatMessage & { sender: User })[] }) | undefined>;
+  findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number): Promise<ChatConversation>;
+  createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  updateChatConversation(id: number, conversation: Partial<InsertChatConversation>): Promise<ChatConversation>;
+
+  // Chat messages
+  getChatMessages(conversationId: number): Promise<(ChatMessage & { sender: User })[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  markMessageAsRead(messageId: number): Promise<ChatMessage>;
+  getUnreadMessageCount(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1942,6 +1961,222 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProviderPixKey(id: number): Promise<void> {
     await db.delete(providerPixKeys).where(eq(providerPixKeys.id, id));
+  }
+
+  // Chat conversation methods
+  async getChatConversationsByUser(userId: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; lastMessage?: ChatMessage })[]> {
+    const conversations = await db
+      .select({
+        id: chatConversations.id,
+        participantOneId: chatConversations.participantOneId,
+        participantTwoId: chatConversations.participantTwoId,
+        serviceRequestId: chatConversations.serviceRequestId,
+        title: chatConversations.title,
+        status: chatConversations.status,
+        lastMessageAt: chatConversations.lastMessageAt,
+        createdAt: chatConversations.createdAt,
+        updatedAt: chatConversations.updatedAt,
+        participantOne: users,
+      })
+      .from(chatConversations)
+      .innerJoin(users, eq(users.id, chatConversations.participantOneId))
+      .where(or(
+        eq(chatConversations.participantOneId, userId),
+        eq(chatConversations.participantTwoId, userId)
+      ))
+      .orderBy(desc(chatConversations.lastMessageAt));
+
+    // Get participant two and last message for each conversation
+    const conversationsWithDetails = await Promise.all(
+      conversations.map(async (conversation) => {
+        const participantTwoId = conversation.participantOneId === userId 
+          ? conversation.participantTwoId 
+          : conversation.participantOneId;
+        
+        const [participantTwo] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, participantTwoId));
+
+        const [lastMessage] = await db
+          .select()
+          .from(chatMessages)
+          .where(eq(chatMessages.conversationId, conversation.id))
+          .orderBy(desc(chatMessages.createdAt))
+          .limit(1);
+
+        return {
+          ...conversation,
+          participantTwo,
+          lastMessage,
+        };
+      })
+    );
+
+    return conversationsWithDetails;
+  }
+
+  async getChatConversation(id: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; messages: (ChatMessage & { sender: User })[] }) | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(chatConversations)
+      .where(eq(chatConversations.id, id));
+
+    if (!conversation) return undefined;
+
+    const [participantOne, participantTwo] = await Promise.all([
+      db.select().from(users).where(eq(users.id, conversation.participantOneId)).then(r => r[0]),
+      db.select().from(users).where(eq(users.id, conversation.participantTwoId)).then(r => r[0])
+    ]);
+
+    const messages = await db
+      .select({
+        id: chatMessages.id,
+        conversationId: chatMessages.conversationId,
+        senderId: chatMessages.senderId,
+        content: chatMessages.content,
+        messageType: chatMessages.messageType,
+        attachmentUrl: chatMessages.attachmentUrl,
+        status: chatMessages.status,
+        createdAt: chatMessages.createdAt,
+        updatedAt: chatMessages.updatedAt,
+        sender: users,
+      })
+      .from(chatMessages)
+      .innerJoin(users, eq(users.id, chatMessages.senderId))
+      .where(eq(chatMessages.conversationId, id))
+      .orderBy(asc(chatMessages.createdAt));
+
+    return {
+      ...conversation,
+      participantOne,
+      participantTwo,
+      messages,
+    };
+  }
+
+  async findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number): Promise<ChatConversation> {
+    // Try to find existing conversation
+    const [existingConversation] = await db
+      .select()
+      .from(chatConversations)
+      .where(or(
+        and(
+          eq(chatConversations.participantOneId, participantOneId),
+          eq(chatConversations.participantTwoId, participantTwoId)
+        ),
+        and(
+          eq(chatConversations.participantOneId, participantTwoId),
+          eq(chatConversations.participantTwoId, participantOneId)
+        )
+      ));
+
+    if (existingConversation) {
+      return existingConversation;
+    }
+
+    // Create new conversation
+    const [newConversation] = await db
+      .insert(chatConversations)
+      .values({
+        participantOneId,
+        participantTwoId,
+        serviceRequestId,
+        status: "active",
+        lastMessageAt: new Date(),
+      })
+      .returning();
+
+    return newConversation;
+  }
+
+  async createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation> {
+    const [newConversation] = await db
+      .insert(chatConversations)
+      .values(conversation)
+      .returning();
+    return newConversation;
+  }
+
+  async updateChatConversation(id: number, conversation: Partial<InsertChatConversation>): Promise<ChatConversation> {
+    const [updatedConversation] = await db
+      .update(chatConversations)
+      .set({ ...conversation, updatedAt: new Date() })
+      .where(eq(chatConversations.id, id))
+      .returning();
+    return updatedConversation;
+  }
+
+  // Chat message methods
+  async getChatMessages(conversationId: number): Promise<(ChatMessage & { sender: User })[]> {
+    return await db
+      .select({
+        id: chatMessages.id,
+        conversationId: chatMessages.conversationId,
+        senderId: chatMessages.senderId,
+        content: chatMessages.content,
+        messageType: chatMessages.messageType,
+        attachmentUrl: chatMessages.attachmentUrl,
+        status: chatMessages.status,
+        createdAt: chatMessages.createdAt,
+        updatedAt: chatMessages.updatedAt,
+        sender: users,
+      })
+      .from(chatMessages)
+      .innerJoin(users, eq(users.id, chatMessages.senderId))
+      .where(eq(chatMessages.conversationId, conversationId))
+      .orderBy(asc(chatMessages.createdAt));
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db
+      .insert(chatMessages)
+      .values(message)
+      .returning();
+
+    // Update conversation's last message time
+    await db
+      .update(chatConversations)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(chatConversations.id, message.conversationId));
+
+    return newMessage;
+  }
+
+  async markMessageAsRead(messageId: number): Promise<ChatMessage> {
+    const [updatedMessage] = await db
+      .update(chatMessages)
+      .set({ status: "read" })
+      .where(eq(chatMessages.id, messageId))
+      .returning();
+    return updatedMessage;
+  }
+
+  async getUnreadMessageCount(userId: number): Promise<number> {
+    // Get conversations where user is a participant
+    const userConversations = await db
+      .select({ id: chatConversations.id })
+      .from(chatConversations)
+      .where(or(
+        eq(chatConversations.participantOneId, userId),
+        eq(chatConversations.participantTwoId, userId)
+      ));
+
+    if (userConversations.length === 0) return 0;
+
+    const conversationIds = userConversations.map(c => c.id);
+
+    // Count unread messages in these conversations that are not sent by the user
+    const [result] = await db
+      .select({ count: count() })
+      .from(chatMessages)
+      .where(and(
+        inArray(chatMessages.conversationId, conversationIds),
+        eq(chatMessages.status, "sent"),
+        sql`${chatMessages.senderId} != ${userId}`
+      ));
+
+    return result.count;
   }
 }
 

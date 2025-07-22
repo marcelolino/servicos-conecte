@@ -11,7 +11,8 @@ import {
   DollarSign,
   TrendingUp,
   LogOut,
-  Calendar
+  Calendar,
+  MessageCircle
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -31,6 +32,12 @@ const menuItems = [
     section: "GERENCIAMENTO DE RESERVAS",
     items: [
       { icon: Calendar, label: "Reservas", href: "/admin-bookings" },
+    ]
+  },
+  {
+    section: "COMUNICAÇÃO",
+    items: [
+      { icon: MessageCircle, label: "Mensagens", href: "/admin-chat" },
     ]
   },
   {
@@ -58,7 +65,7 @@ const menuItems = [
   },
 ];
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
 
@@ -158,3 +165,5 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
+
+export default AdminLayout;

@@ -50,6 +50,9 @@ import OrderSuccess from "@/pages/order-success";
 import ClientBookingDetails from "@/pages/client-booking-details";
 import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
+import ProviderChat from "@/pages/provider-chat";
+import ClientChat from "@/pages/client-chat";
+import AdminChat from "@/pages/admin-chat";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -66,6 +69,7 @@ function Router() {
           <Route path="/client-reservas" component={ClientReservas} />
           <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
           <Route path="/client-offers" component={ClientOffers} />
+          <Route path="/client-chat" component={ClientChat} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/provider-payments" component={ProviderPayments} />
@@ -84,6 +88,7 @@ function Router() {
           <Route path="/provider-all-services" component={ProviderAllServices} />
           <Route path="/provider-packages" component={ProviderPackages} />
           <Route path="/provider-add-ons" component={ProviderAddOns} />
+          <Route path="/provider-chat" component={ProviderChat} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin-bookings" component={AdminBookings} />
@@ -92,6 +97,7 @@ function Router() {
           <Route path="/admin-cash-payments" component={AdminCashPayments} />
           <Route path="/admin-earnings" component={AdminEarnings} />
           <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
+          <Route path="/admin-chat" component={AdminChat} />
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
           <Route path="/media-management" component={MediaManagement} />

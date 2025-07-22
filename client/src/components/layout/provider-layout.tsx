@@ -24,7 +24,8 @@ import {
   XCircle,
   Eye,
   AlertTriangle,
-  Wallet
+  Wallet,
+  MessageCircle
 } from "lucide-react";
 import { useState } from "react";
 
@@ -82,6 +83,12 @@ const menuItems = [
     ]
   },
   {
+    section: "COMUNICAÇÃO",
+    items: [
+      { icon: MessageCircle, label: "Mensagens", href: "/provider-chat" },
+    ]
+  },
+  {
     section: "CARTEIRA DO PROVEDOR",
     items: [
       { icon: Wallet, label: "Carteira", href: "/provider-wallet" },
@@ -96,7 +103,7 @@ const menuItems = [
   },
 ];
 
-export default function ProviderLayout({ children }: ProviderLayoutProps) {
+export function ProviderLayout({ children }: ProviderLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
@@ -234,3 +241,5 @@ export default function ProviderLayout({ children }: ProviderLayoutProps) {
     </div>
   );
 }
+
+export default ProviderLayout;

@@ -6,7 +6,7 @@ interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
-export default function ClientLayout({ children }: ClientLayoutProps) {
+export function ClientLayout({ children }: ClientLayoutProps) {
   const { user, loading: authLoading, isLoggingOut } = useAuth();
 
   // Show loading while checking authentication or logging out
@@ -38,3 +38,5 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     </div>
   );
 }
+
+export default ClientLayout;

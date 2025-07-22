@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema } from "@shared/schema";
 import { 
   upload, 
   uploadBannerImage, 
@@ -1866,6 +1866,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "PIX key deleted successfully" });
     } catch (error) {
       res.status(400).json({ message: "Failed to delete PIX key", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Chat conversation routes
+  app.get('/api/chat/conversations', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const conversations = await storage.getChatConversationsByUser(req.user!.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get('/api/chat/conversations/:id', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const conversation = await storage.getChatConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      // Check if user is participant
+      if (conversation.participantOneId !== req.user!.id && conversation.participantTwoId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(conversation);
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  app.post('/api/chat/conversations', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const { participantId, serviceRequestId, title } = req.body;
+
+      if (!participantId) {
+        return res.status(400).json({ message: "Participant ID is required" });
+      }
+
+      const conversation = await storage.findOrCreateConversation(
+        req.user!.id,
+        participantId,
+        serviceRequestId
+      );
+
+      if (title && !conversation.title) {
+        await storage.updateChatConversation(conversation.id, { title });
+      }
+
+      res.json(conversation);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+
+  // Chat message routes
+  app.get('/api/chat/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      
+      // Verify user has access to this conversation
+      const conversation = await storage.getChatConversation(conversationId);
+      if (!conversation || 
+          (conversation.participantOneId !== req.user!.id && conversation.participantTwoId !== req.user!.id)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const messages = await storage.getChatMessages(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/chat/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { content, messageType, attachmentUrl } = req.body;
+
+      if (!content && !attachmentUrl) {
+        return res.status(400).json({ message: "Message content or attachment is required" });
+      }
+
+      // Verify user has access to this conversation
+      const conversation = await storage.getChatConversation(conversationId);
+      if (!conversation || 
+          (conversation.participantOneId !== req.user!.id && conversation.participantTwoId !== req.user!.id)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const messageData = insertChatMessageSchema.parse({
+        conversationId,
+        senderId: req.user!.id,
+        content: content || '',
+        messageType: messageType || 'text',
+        attachmentUrl: attachmentUrl || null
+      });
+
+      const newMessage = await storage.createChatMessage(messageData);
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error creating message:', error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.put('/api/chat/messages/:id/read', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      const updatedMessage = await storage.markMessageAsRead(messageId);
+      res.json(updatedMessage);
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      res.status(500).json({ message: "Failed to mark message as read" });
+    }
+  });
+
+  app.get('/api/chat/unread-count', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ unreadCount });
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      res.status(500).json({ message: "Failed to fetch unread count" });
     }
   });
 
