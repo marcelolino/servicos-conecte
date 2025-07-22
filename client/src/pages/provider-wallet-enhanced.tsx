@@ -102,14 +102,13 @@ export default function ProviderWalletEnhanced() {
 
   // Withdrawal mutation
   const withdrawalMutation = useMutation({
-    mutationFn: (data: WithdrawalData) =>
-      apiRequest("/api/provider/withdrawal-requests", {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          amount: parseFloat(data.amount).toFixed(2),
-        }),
-      }),
+    mutationFn: async (data: WithdrawalData) => {
+      const response = await apiRequest("POST", "/api/provider/withdrawal-requests", {
+        ...data,
+        amount: parseFloat(data.amount).toFixed(2),
+      });
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/withdrawal-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/provider/earnings"] });
