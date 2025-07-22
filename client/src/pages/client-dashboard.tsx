@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default function ClientDashboard() {
   const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("requests");
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -597,6 +599,13 @@ export default function ClientDashboard() {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLocation(`/client-booking-details/${request.id}`)}
+                          >
+                            Ver Detalhes
+                          </Button>
                           {getServiceActionButton(request)}
                         </div>
                       </div>
