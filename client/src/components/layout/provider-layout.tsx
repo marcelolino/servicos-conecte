@@ -23,7 +23,8 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Wallet
 } from "lucide-react";
 import { useState } from "react";
 
@@ -81,19 +82,9 @@ const menuItems = [
     ]
   },
   {
-    section: "TRANSAÇÕES",
+    section: "CARTEIRA DO PROVEDOR",
     items: [
-      { icon: CreditCard, label: "Pagamentos", href: "/provider-payments" },
-      { 
-        icon: FileText, 
-        label: "Pagamentos Em Dinheiro", 
-        href: "/provider-cash-payments",
-      },
-      { 
-        icon: DollarSign, 
-        label: "Solicitações De Retirada Do Provedor", 
-        href: "/provider-withdrawal-requests",
-      },
+      { icon: Wallet, label: "Carteira", href: "/provider-wallet" },
     ]
   },
   {
