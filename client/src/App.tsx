@@ -45,6 +45,7 @@ import Orders from "@/pages/orders";
 import OrderDetails from "@/pages/order-details";
 import OrderSuccess from "@/pages/order-success";
 import ClientBookingDetails from "@/pages/client-booking-details";
+import ClientOffers from "@/pages/client-offers";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -59,6 +60,7 @@ function Router() {
           <Route path="/register" component={Register} />
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
+          <Route path="/client-offers" component={ClientOffers} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/provider-services" component={ProviderServiceFlow} />
           <Route path="/provider-payments" component={ProviderPayments} />

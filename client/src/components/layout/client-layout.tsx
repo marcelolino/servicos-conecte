@@ -1,0 +1,40 @@
+import { useAuth } from "@/hooks/use-auth";
+import ClientSidebar from "./client-sidebar";
+import { Loader2 } from "lucide-react";
+
+interface ClientLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function ClientLayout({ children }: ClientLayoutProps) {
+  const { user, loading: authLoading, isLoggingOut } = useAuth();
+
+  // Show loading while checking authentication or logging out
+  if (authLoading || isLoggingOut) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">{isLoggingOut ? "Saindo..." : "Carregando..."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+      <ClientSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
