@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ClientChatPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuth();
 
   // Fetch unread message count
   const { data: unreadData } = useQuery({
@@ -57,8 +57,8 @@ export default function ClientChatPage() {
     );
   }
 
-  const totalConversations = conversations.length;
-  const activeConversations = conversations.filter((conv: any) => conv.status === 'active').length;
+  const totalConversations = conversations?.length || 0;
+  const activeConversations = conversations?.filter((conv: any) => conv.status === 'active').length || 0;
   const unreadCount = unreadData?.unreadCount || 0;
 
   return (

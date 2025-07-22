@@ -103,6 +103,8 @@
 - Criar/editar categorias de serviços
 - Ver estatísticas completas
 - Monitorar todas as transações
+- Central de chat administrativa para comunicação com prestadores e clientes
+- Visualização de todas as conversas do sistema
 
 ### Cliente
 - Buscar serviços por categoria
@@ -110,13 +112,37 @@
 - Acompanhar status dos pedidos
 - Avaliar prestadores
 - Ver histórico de serviços
+- Sistema de chat para comunicação com prestadores e suporte
+- Interface de mensagens integrada
 
 ### Prestador
 - Gerenciar perfil e serviços oferecidos
 - Receber e aceitar solicitações
 - Definir preços e raio de atendimento
 - Ver estatísticas de performance
-- Comunicar com clientes
+- Sistema de chat completo para comunicação com clientes e admin
+- Notificações de mensagens não lidas
+
+## 💬 Sistema de Chat Completo
+
+### Funcionalidades do Chat
+- **Conversas em tempo real** entre todos os tipos de usuários
+- **Contadores de mensagens não lidas** atualizados automaticamente
+- **Interface moderna e responsiva** com busca de conversas
+- **Histórico completo** de todas as mensagens
+- **Notificações visuais** para novas mensagens
+
+### Rotas do Chat por Tipo de Usuário
+- **Cliente:** `/client-chat` - Chat integrado ao painel do cliente
+- **Prestador:** `/provider-chat` - Central de mensagens do prestador
+- **Admin:** `/admin-chat` - Supervisão e comunicação administrativa
+
+### Como Testar o Chat
+1. **Faça login** como prestador (joaomoura49@outlook.com)
+2. **Acesse** a página de Chat no menu lateral
+3. **Visualize** estatísticas de conversas e mensagens
+4. **Inicie** uma nova conversa ou continue uma existente
+5. **Troque** de usuário e teste a comunicação bilateral
 
 ## 📱 Teste o Fluxo Completo
 
@@ -124,3 +150,4 @@
 2. **Como Prestador:** Aceite a solicitação
 3. **Como Admin:** Monitore as transações
 4. **Como Cliente:** Avalie o serviço após conclusão
+5. **Chat:** Use o sistema de mensagens para comunicação durante todo o processo

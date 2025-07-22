@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminChatPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: isLoading } = useAuth();
 
   // Fetch unread message count
   const { data: unreadData } = useQuery({
@@ -58,20 +58,20 @@ export default function AdminChatPage() {
     );
   }
 
-  const totalConversations = conversations.length;
-  const activeConversations = conversations.filter((conv: any) => conv.status === 'active').length;
+  const totalConversations = conversations?.length || 0;
+  const activeConversations = conversations?.filter((conv: any) => conv.status === 'active').length || 0;
   const unreadCount = unreadData?.unreadCount || 0;
 
   // Count conversations by user type
-  const providerConversations = conversations.filter((conv: any) => {
+  const providerConversations = conversations?.filter((conv: any) => {
     const otherParticipant = conv.participantOneId === user.id ? conv.participantTwo : conv.participantOne;
-    return otherParticipant.userType === 'provider';
-  }).length;
+    return otherParticipant?.userType === 'provider';
+  }).length || 0;
 
-  const clientConversations = conversations.filter((conv: any) => {
+  const clientConversations = conversations?.filter((conv: any) => {
     const otherParticipant = conv.participantOneId === user.id ? conv.participantTwo : conv.participantOne;
-    return otherParticipant.userType === 'client';
-  }).length;
+    return otherParticipant?.userType === 'client';
+  }).length || 0;
 
   return (
     <AdminLayout>
