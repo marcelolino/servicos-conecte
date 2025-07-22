@@ -347,9 +347,12 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: serial("id").primaryKey(),
   providerId: integer("provider_id").references(() => providers.id).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // 'bank', 'pix'
-  bankAccountId: integer("bank_account_id").references(() => providerBankAccounts.id),
-  pixKeyId: integer("pix_key_id").references(() => providerPixKeys.id),
+  bankName: varchar("bank_name", { length: 255 }),
+  accountNumber: varchar("account_number", { length: 50 }),
+  accountHolderName: varchar("account_holder_name", { length: 255 }),
+  cpfCnpj: varchar("cpf_cnpj", { length: 20 }),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  pixKey: varchar("pix_key", { length: 255 }),
   status: withdrawalStatusEnum("status").default("pending"),
   requestNotes: text("request_notes"), // Provider notes
   adminNotes: text("admin_notes"), // Admin response notes
@@ -357,6 +360,8 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   processedAt: timestamp("processed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  bankAccountId: integer("bank_account_id").references(() => providerBankAccounts.id),
+  pixKeyId: integer("pix_key_id").references(() => providerPixKeys.id),
 });
 
 // Relations

@@ -103,10 +103,40 @@ export default function ProviderWalletEnhanced() {
   // Withdrawal mutation
   const withdrawalMutation = useMutation({
     mutationFn: async (data: WithdrawalData) => {
-      const response = await apiRequest("POST", "/api/provider/withdrawal-requests", {
-        ...data,
+      // Prepare request data based on payment method
+      let requestPayload: any = {
         amount: parseFloat(data.amount).toFixed(2),
-      });
+        paymentMethod: data.paymentMethod,
+        requestNotes: data.requestNotes || "",
+        // Initialize all optional fields as null
+        bankName: null,
+        accountNumber: null,
+        accountHolderName: null,
+        cpfCnpj: null,
+        pixKey: null,
+        bankAccountId: null,
+        pixKeyId: null,
+      };
+
+      if (data.paymentMethod === "bank" && data.bankAccountId) {
+        // For bank transfers, get bank account details
+        const selectedBank = (bankAccounts as any[])?.find(acc => acc.id === data.bankAccountId);
+        if (selectedBank) {
+          requestPayload.bankName = selectedBank.bankName;
+          requestPayload.accountNumber = selectedBank.accountNumber;
+          requestPayload.accountHolderName = selectedBank.accountHolder;
+          requestPayload.bankAccountId = data.bankAccountId;
+        }
+      } else if (data.paymentMethod === "pix" && data.pixKeyId) {
+        // For PIX transfers, get PIX key details
+        const selectedPix = (pixKeys as any[])?.find(key => key.id === data.pixKeyId);
+        if (selectedPix) {
+          requestPayload.pixKey = selectedPix.pixKey;
+          requestPayload.pixKeyId = data.pixKeyId;
+        }
+      }
+
+      const response = await apiRequest("POST", "/api/provider/withdrawal-requests", requestPayload);
       return response.json();
     },
     onSuccess: () => {
