@@ -27,6 +27,8 @@ import ProviderBookingsOngoing from "@/pages/provider-bookings-ongoing";
 import ProviderCashPayments from "@/pages/provider-cash-payments";
 import ProviderWithdrawalRequests from "@/pages/provider-withdrawal-requests";
 import ProviderWallet from "@/pages/provider-wallet";
+import ProviderWalletEnhanced from "@/pages/provider-wallet-enhanced";
+import ProviderPaymentMethods from "@/pages/provider-payment-methods";
 import ProviderPromotionalBanners from "@/pages/provider-promotional-banners";
 import ProviderAllServices from "@/pages/provider-all-services";
 import ProviderPackages from "@/pages/provider-packages";
@@ -76,7 +78,8 @@ function Router() {
           <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
           <Route path="/provider-cash-payments" component={ProviderCashPayments} />
           <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
-          <Route path="/provider-wallet" component={ProviderWallet} />
+          <Route path="/provider-wallet" component={ProviderWalletEnhanced} />
+          <Route path="/provider-payment-methods" component={ProviderPaymentMethods} />
           <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
           <Route path="/provider-all-services" component={ProviderAllServices} />
           <Route path="/provider-packages" component={ProviderPackages} />

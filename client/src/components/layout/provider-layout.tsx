@@ -85,6 +85,7 @@ const menuItems = [
     section: "CARTEIRA DO PROVEDOR",
     items: [
       { icon: Wallet, label: "Carteira", href: "/provider-wallet" },
+      { icon: CreditCard, label: "Métodos de Pagamento", href: "/provider-payment-methods" },
     ]
   },
   {

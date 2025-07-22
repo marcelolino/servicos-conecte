@@ -1595,6 +1595,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Provider bank accounts routes
+  app.get('/api/provider/bank-accounts', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const accounts = await storage.getProviderBankAccounts(provider.id);
+      res.json(accounts);
+    } catch (error) {
+      console.error('Error fetching bank accounts:', error);
+      res.status(500).json({ message: "Failed to fetch bank accounts" });
+    }
+  });
+
+  app.post('/api/provider/bank-accounts', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const accountData = {
+        ...req.body,
+        providerId: provider.id,
+      };
+
+      const newAccount = await storage.createProviderBankAccount(accountData);
+      res.json(newAccount);
+    } catch (error) {
+      console.error('Error creating bank account:', error);
+      res.status(500).json({ message: "Failed to create bank account" });
+    }
+  });
+
+  app.put('/api/provider/bank-accounts/:id', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const updatedAccount = await storage.updateProviderBankAccount(parseInt(id), req.body);
+      res.json(updatedAccount);
+    } catch (error) {
+      console.error('Error updating bank account:', error);
+      res.status(500).json({ message: "Failed to update bank account" });
+    }
+  });
+
+  app.delete('/api/provider/bank-accounts/:id', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      await storage.deleteProviderBankAccount(parseInt(id));
+      res.json({ message: "Bank account deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting bank account:', error);
+      res.status(500).json({ message: "Failed to delete bank account" });
+    }
+  });
+
+  // Provider PIX keys routes
+  app.get('/api/provider/pix-keys', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const pixKeys = await storage.getProviderPixKeys(provider.id);
+      res.json(pixKeys);
+    } catch (error) {
+      console.error('Error fetching PIX keys:', error);
+      res.status(500).json({ message: "Failed to fetch PIX keys" });
+    }
+  });
+
+  app.post('/api/provider/pix-keys', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const pixKeyData = {
+        ...req.body,
+        providerId: provider.id,
+      };
+
+      const newPixKey = await storage.createProviderPixKey(pixKeyData);
+      res.json(newPixKey);
+    } catch (error) {
+      console.error('Error creating PIX key:', error);
+      res.status(500).json({ message: "Failed to create PIX key" });
+    }
+  });
+
+  app.put('/api/provider/pix-keys/:id', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const updatedPixKey = await storage.updateProviderPixKey(parseInt(id), req.body);
+      res.json(updatedPixKey);
+    } catch (error) {
+      console.error('Error updating PIX key:', error);
+      res.status(500).json({ message: "Failed to update PIX key" });
+    }
+  });
+
+  app.delete('/api/provider/pix-keys/:id', authenticateToken, requireProvider, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      await storage.deleteProviderPixKey(parseInt(id));
+      res.json({ message: "PIX key deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting PIX key:', error);
+      res.status(500).json({ message: "Failed to delete PIX key" });
+    }
+  });
+
   app.put('/api/admin/withdrawal-requests/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
