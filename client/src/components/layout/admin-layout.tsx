@@ -37,7 +37,7 @@ const menuItems = [
   {
     section: "COMUNICAÇÃO",
     items: [
-      { icon: MessageCircle, label: "Mensagens", href: "/admin-chat" },
+      { icon: MessageCircle, label: "Chat com Usuários", href: "/admin-chat-management" },
     ]
   },
   {
