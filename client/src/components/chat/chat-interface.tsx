@@ -113,6 +113,18 @@ export function ChatInterface({ currentUserId, userType }: ChatInterfaceProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationDetails?.messages]);
 
+  // Auto-refresh conversations and messages every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      if (selectedConversation) {
+        queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations', selectedConversation] });
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [queryClient, selectedConversation]);
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversation) return;
