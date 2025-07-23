@@ -28,7 +28,8 @@ import {
   Calendar,
   DollarSign,
   Play,
-  XCircle
+  XCircle,
+  MessageCircle
 } from "lucide-react";
 import type { ServiceRequest, ServiceCategory } from "@shared/schema";
 
@@ -51,6 +52,38 @@ export default function ClientReservas() {
   const [location, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("todas");
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+
+  const createChatMutation = useMutation({
+    mutationFn: async ({ participantId, serviceRequestId }: { participantId: number; serviceRequestId: number }) => {
+      return apiRequest('/api/chat/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          participantId, 
+          serviceRequestId,
+          title: `Serviço #${serviceRequestId}`
+        }),
+      });
+    },
+    onSuccess: (conversation) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      setLocation('/client-chat');
+      toast({
+        title: "Chat iniciado",
+        description: "Conversa iniciada com o prestador. Você foi redirecionado para o chat.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível iniciar o chat",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartChat = (providerId: number, serviceRequestId: number) => {
+    createChatMutation.mutate({ participantId: providerId, serviceRequestId });
+  };
 
   // Get tab from URL params
   useEffect(() => {
@@ -357,6 +390,18 @@ export default function ClientReservas() {
                   >
                     Ver Detalhes
                   </Button>
+                  {(request.status === 'accepted' || request.status === 'in_progress' || request.status === 'completed') && request.provider && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700"
+                      onClick={() => handleStartChat(request.provider.userId, request.id)}
+                      disabled={createChatMutation.isPending}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                  )}
                   {getServiceActionButton(request)}
                 </div>
               </div>

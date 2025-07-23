@@ -43,7 +43,8 @@ import {
   DollarSign,
   Printer,
   Check,
-  X
+  X,
+  MessageCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -438,6 +439,41 @@ interface BookingsTableProps {
 }
 
 function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating, navigate }: BookingsTableProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const createChatMutation = useMutation({
+    mutationFn: async ({ participantId, serviceRequestId }: { participantId: number; serviceRequestId: number }) => {
+      return apiRequest('/api/chat/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          participantId, 
+          serviceRequestId,
+          title: `Serviço #${serviceRequestId}`
+        }),
+      });
+    },
+    onSuccess: (conversation) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      navigate('/provider-chat');
+      toast({
+        title: "Chat iniciado",
+        description: "Conversa iniciada com o cliente. Você foi redirecionado para o chat.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível iniciar o chat",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartChat = (clientId: number, serviceRequestId: number) => {
+    createChatMutation.mutate({ participantId: clientId, serviceRequestId });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -592,6 +628,18 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       >
                         <Printer className="w-4 h-4" />
                       </Button>
+                      {(booking.status === 'accepted' || booking.status === 'in_progress' || booking.status === 'completed') && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-blue-600 hover:text-blue-700"
+                          title="Conversar com Cliente"
+                          onClick={() => handleStartChat(booking.clientId, booking.id)}
+                          disabled={createChatMutation.isPending}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                       {booking.status === 'pending' && (
                         <>
                           <Button 
