@@ -455,7 +455,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
     },
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-      navigate('/provider-chat');
+      window.location.href = '/provider-chat';
       toast({
         title: "Chat iniciado",
         description: "Conversa iniciada com o cliente. Você foi redirecionado para o chat.",

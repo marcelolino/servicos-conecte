@@ -66,7 +66,7 @@ export default function ClientReservas() {
     },
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-      setLocation('/client-chat');
+      window.location.href = '/client-chat';
       toast({
         title: "Chat iniciado",
         description: "Conversa iniciada com o prestador. Você foi redirecionado para o chat.",
