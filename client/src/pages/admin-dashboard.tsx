@@ -3515,7 +3515,7 @@ export default function AdminDashboard() {
     const handleStartChat = async (targetUserId: number) => {
       try {
         console.log('Iniciando chat com usuário:', targetUserId);
-        const response = await apiRequest('/api/chat/conversations', 'POST', { targetUserId });
+        const response = await apiRequest('POST', '/api/chat/conversations', { targetUserId });
         console.log('Resposta da API:', response);
         
         if (response.conversationId) {
