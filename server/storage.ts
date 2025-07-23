@@ -207,7 +207,8 @@ export interface IStorage {
 
   // Provider earnings
   getProviderEarnings(providerId: number): Promise<ProviderEarning[]>;
-  createProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning>;
+  insertProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning>;
+  createProviderEarning(serviceRequest: ServiceRequest): Promise<void>;
   getProviderAvailableBalance(providerId: number): Promise<number>;
   getAllEarnings(): Promise<(ProviderEarning & { provider: Provider & { user: User }; serviceRequest: ServiceRequest })[]>;
 
@@ -1781,7 +1782,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(providerEarnings.createdAt));
   }
 
-  async createProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning> {
+  async insertProviderEarning(earning: InsertProviderEarning): Promise<ProviderEarning> {
     const [newEarning] = await db
       .insert(providerEarnings)
       .values(earning)
