@@ -142,6 +142,11 @@ export default function AdminDashboard() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [categoryImage, setCategoryImage] = useState<string>("");
   const [serviceImages, setServiceImages] = useState<string[]>([]);
+  
+  // Chat states
+  const [chatSearchTerm, setChatSearchTerm] = useState("");
+  const [chatUserTypeFilter, setChatUserTypeFilter] = useState<string>("all");
+  
   const [companySettings, setCompanySettings] = useState({
     name: "",
     description: "",
@@ -279,6 +284,17 @@ export default function AdminDashboard() {
   const { data: adminSettings, isLoading: settingsLoading } = useQuery({
     queryKey: ["/api/admin/settings"],
     enabled: user?.userType === "admin",
+  });
+
+  // Chat queries - only fetch when chat section is active
+  const { data: chatUsers = [], isLoading: chatUsersLoading } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
+    enabled: user?.userType === 'admin' && activeSection === 'chat'
+  });
+
+  const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
+    queryKey: ['/api/chat/conversations'],
+    enabled: user?.userType === 'admin' && activeSection === 'chat'
   });
 
   // Create category mutation
@@ -3485,19 +3501,6 @@ export default function AdminDashboard() {
   );
 
   const renderChat = () => {
-    const [chatSearchTerm, setChatSearchTerm] = useState("");
-    const [chatUserTypeFilter, setChatUserTypeFilter] = useState<string>("all");
-
-    const { data: chatUsers = [], isLoading: chatUsersLoading } = useQuery<User[]>({
-      queryKey: ['/api/admin/users'],
-      enabled: user?.userType === 'admin'
-    });
-
-    const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
-      queryKey: ['/api/chat/conversations'],
-      enabled: user?.userType === 'admin'
-    });
-
     const filteredChatUsers = chatUsers.filter((u) => {
       if (u.id === user.id) return false; // Don't show admin themselves
       
