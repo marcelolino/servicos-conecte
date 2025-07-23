@@ -49,6 +49,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ProviderLayout from "@/components/layout/provider-layout";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -81,6 +82,7 @@ interface BookingData {
 }
 
 export default function ProviderBookingsPage() {
+  const { user } = useAuth();
   const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -439,6 +441,7 @@ interface BookingsTableProps {
 }
 
 function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating, navigate }: BookingsTableProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
