@@ -80,8 +80,6 @@ export default function ClientReservas() {
   });
 
   const handleStartChat = (providerId: number, serviceRequestId: number) => {
-    console.log('Starting chat with provider:', providerId, 'for service:', serviceRequestId);
-    console.log('Current user:', user);
     createChatMutation.mutate({ participantId: providerId, serviceRequestId });
   };
 

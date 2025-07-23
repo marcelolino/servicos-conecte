@@ -1921,23 +1921,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/chat/conversations', authenticateToken, async (req: Request, res: Response) => {
     try {
-      console.log('Chat conversation request:', {
-        user: req.user,
-        body: req.body
-      });
-      
       const { participantId, serviceRequestId, title } = req.body;
 
       if (!participantId) {
-        console.log('Missing participantId');
         return res.status(400).json({ message: "Participant ID is required" });
       }
 
       // Check if users can chat (admin can chat with anyone)
       if (req.user!.userType !== "admin") {
-        console.log('Checking if users can chat:', req.user!.id, participantId);
         const canChat = await storage.canUsersChat(req.user!.id, participantId);
-        console.log('Can chat result:', canChat);
         if (!canChat) {
           return res.status(403).json({ message: "Chat só é permitido após o prestador aceitar um pedido de serviço" });
         }

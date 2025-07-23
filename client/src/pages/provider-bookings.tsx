@@ -472,8 +472,6 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
   });
 
   const handleStartChat = (clientId: number, serviceRequestId: number) => {
-    console.log('Starting chat with client:', clientId, 'for service:', serviceRequestId);
-    console.log('Current user:', user);
     createChatMutation.mutate({ participantId: clientId, serviceRequestId });
   };
 
