@@ -573,6 +573,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date()
       });
       
+      // Create provider earning record after completing the service
+      if (updatedRequest) {
+        await storage.createProviderEarning(updatedRequest);
+      }
+      
       res.json(updatedRequest);
     } catch (error) {
       res.status(400).json({ message: "Failed to complete service", error: error instanceof Error ? error.message : "Unknown error" });
