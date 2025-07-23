@@ -17,6 +17,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { getAuthToken } from "@/lib/auth";
 import ClientLayout from "@/components/layout/client-layout";
 import { 
   Search, 
@@ -55,25 +56,11 @@ export default function ClientReservas() {
 
   const createChatMutation = useMutation({
     mutationFn: async ({ participantId, serviceRequestId }: { participantId: number; serviceRequestId: number }) => {
-      const response = await fetch('/api/chat/conversations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ 
-          participantId, 
-          serviceRequestId,
-          title: `Serviço #${serviceRequestId}`
-        }),
+      return apiRequest('POST', '/api/chat/conversations', { 
+        participantId, 
+        serviceRequestId,
+        title: `Serviço #${serviceRequestId}`
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao criar conversa');
-      }
-      
-      return response.json();
     },
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
