@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChatInterface } from "@/components/chat/chat-interface";
 import type { ServiceCategory, User, Provider } from "@shared/schema";
 
 // Import transaction pages
@@ -101,6 +102,7 @@ export default function AdminDashboard() {
   const sectionFromUrl = urlParams.get('section');
   const [activeSection, setActiveSection] = useState(sectionFromUrl || "dashboard");
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["transactions"]);
+  const [selectedChatConversation, setSelectedChatConversation] = useState<number | null>(null);
 
   // Update section when URL changes
   React.useEffect(() => {
@@ -3519,8 +3521,8 @@ export default function AdminDashboard() {
         console.log('Resposta da API:', response);
         
         if (response.id) {
-          // Open chat in new window/tab or navigate to chat interface
-          window.open(`/admin-chat/${response.id}`, '_blank');
+          // Set the selected conversation to show inline chat
+          setSelectedChatConversation(response.id);
         } else {
           console.error('ID da conversa não encontrado na resposta');
           toast({
@@ -3609,6 +3611,29 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Inline Chat Interface */}
+        {selectedChatConversation && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Chat em Andamento</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedChatConversation(null)}
+                >
+                  Fechar Chat
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="h-[600px]">
+                <ChatInterface currentUserId={user.id} userType={user.userType} initialConversation={selectedChatConversation} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Existing Conversations */}
         {chatConversations.length > 0 && (
           <Card>
@@ -3645,7 +3670,7 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                       <Button 
-                        onClick={() => window.open(`/admin-chat/${conversation.id}`, '_blank')}
+                        onClick={() => setSelectedChatConversation(conversation.id)}
                         variant="outline"
                         size="sm"
                       >
@@ -3719,7 +3744,7 @@ export default function AdminDashboard() {
                       <div className="flex space-x-2">
                         {existingConv ? (
                           <Button 
-                            onClick={() => window.open(`/admin-chat/${existingConv.id}`, '_blank')}
+                            onClick={() => setSelectedChatConversation(existingConv.id)}
                             variant="outline"
                             size="sm"
                           >

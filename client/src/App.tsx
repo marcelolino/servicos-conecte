@@ -52,7 +52,7 @@ import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
 import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
-import AdminChat from "@/pages/admin-chat";
+
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -97,7 +97,7 @@ function Router() {
           <Route path="/admin-cash-payments" component={AdminCashPayments} />
           <Route path="/admin-earnings" component={AdminEarnings} />
           <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
-          <Route path="/admin-chat/:conversationId" component={AdminChat} />
+
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
           <Route path="/media-management" component={MediaManagement} />

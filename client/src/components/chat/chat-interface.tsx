@@ -75,10 +75,11 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   currentUserId: number;
   userType: string;
+  initialConversation?: number | null;
 }
 
-export function ChatInterface({ currentUserId, userType }: ChatInterfaceProps) {
-  const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
+export function ChatInterface({ currentUserId, userType, initialConversation }: ChatInterfaceProps) {
+  const [selectedConversation, setSelectedConversation] = useState<number | null>(initialConversation || null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,6 +113,13 @@ export function ChatInterface({ currentUserId, userType }: ChatInterfaceProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationDetails?.messages]);
+
+  // Update selected conversation when initialConversation changes
+  useEffect(() => {
+    if (initialConversation) {
+      setSelectedConversation(initialConversation);
+    }
+  }, [initialConversation]);
 
   // Auto-refresh conversations and messages every 3 seconds
   useEffect(() => {
