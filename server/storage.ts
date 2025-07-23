@@ -932,6 +932,18 @@ export class DatabaseStorage implements IStorage {
 
   async createProviderEarning(serviceRequest: ServiceRequest): Promise<void> {
     try {
+      console.log('Starting createProviderEarning for service request:', serviceRequest.id);
+      console.log('Service request data:', JSON.stringify(serviceRequest, null, 2));
+      
+      // Validate required fields
+      if (!serviceRequest.providerId) {
+        throw new Error('Provider ID is required for earning calculation');
+      }
+      
+      if (!serviceRequest.totalAmount) {
+        throw new Error('Total amount is required for earning calculation');
+      }
+
       // Get commission rate from system settings (default 4%)
       const commissionSetting = await db
         .select()
@@ -944,6 +956,8 @@ export class DatabaseStorage implements IStorage {
       const commissionAmount = (totalAmount * commissionRate) / 100;
       const providerAmount = totalAmount - commissionAmount;
 
+      console.log(`Calculated values - Total: ${totalAmount}, Commission Rate: ${commissionRate}%, Commission Amount: ${commissionAmount}, Provider Amount: ${providerAmount}`);
+
       // Check if earnings record already exists for this service
       const existingEarning = await db
         .select()
@@ -952,20 +966,27 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       if (!existingEarning.length) {
-        await db.insert(providerEarnings).values({
-          providerId: serviceRequest.providerId!,
+        const earningData = {
+          providerId: serviceRequest.providerId,
           serviceRequestId: serviceRequest.id,
           totalAmount: totalAmount.toString(),
           commissionRate: commissionRate,
           commissionAmount: commissionAmount.toString(),
           providerAmount: providerAmount.toString(),
           isWithdrawn: false,
-        });
+        };
+        
+        console.log('Inserting earning data:', JSON.stringify(earningData, null, 2));
+        
+        await db.insert(providerEarnings).values(earningData);
 
         console.log(`Created earning record for provider ${serviceRequest.providerId}: R$ ${providerAmount.toFixed(2)} (total: R$ ${totalAmount.toFixed(2)}, commission: ${commissionRate}%)`);
+      } else {
+        console.log('Earning record already exists for service request:', serviceRequest.id);
       }
     } catch (error) {
       console.error('Error creating provider earning:', error);
+      throw error; // Re-throw the error so it can be caught in the calling function
     }
   }
 

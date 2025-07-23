@@ -1,0 +1,29 @@
+react-dom.development.js:86  Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at Skeleton (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/components/ui/skeleton.tsx:19:3)
+    at p
+    at div
+    at div
+    at div
+    at _c9 (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at div
+    at main
+    at div
+    at div
+    at ClientLayout (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/components/layout/client-layout.tsx:21:32)
+    at ClientDashboard (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/pages/client-dashboard.tsx:62:20)
+    at Route (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=ee217e7d:323:16)
+    at Switch (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=ee217e7d:379:17)
+    at main
+    at div
+    at Router
+    at Provider (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=ee217e7d:38:15)
+    at TooltipProvider (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=ee217e7d:66:5)
+    at AuthProvider (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/hooks/use-auth.ts:12:32)
+    at ThemeProvider (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/src/components/theme-provider.tsx:20:33)
+    at QueryClientProvider (https://dfd0bfbf-9e29-4f5b-a7d9-111f236f51db-00-2t6flz86tm90v.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=ee217e7d:2805:3)
+    at App

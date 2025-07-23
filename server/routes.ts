@@ -575,11 +575,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create provider earning record after completing the service
       if (updatedRequest) {
+        console.log('Creating provider earning for request:', updatedRequest.id);
         await storage.createProviderEarning(updatedRequest);
+        console.log('Provider earning created successfully');
       }
       
       res.json(updatedRequest);
     } catch (error) {
+      console.error('Error in complete service endpoint:', error);
       res.status(400).json({ message: "Failed to complete service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
