@@ -3514,14 +3514,28 @@ export default function AdminDashboard() {
 
     const handleStartChat = async (targetUserId: number) => {
       try {
+        console.log('Iniciando chat com usuário:', targetUserId);
         const response = await apiRequest('/api/chat/conversations', 'POST', { targetUserId });
+        console.log('Resposta da API:', response);
         
         if (response.conversationId) {
           // Open chat in new window/tab or navigate to chat interface
           window.open(`/admin-chat/${response.conversationId}`, '_blank');
+        } else {
+          console.error('conversationId não encontrado na resposta');
+          toast({
+            title: "Erro ao iniciar conversa",
+            description: "Não foi possível criar a conversa",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error('Erro ao iniciar conversa:', error);
+        toast({
+          title: "Erro ao iniciar conversa",
+          description: error.message || "Erro desconhecido",
+          variant: "destructive",
+        });
       }
     };
 
