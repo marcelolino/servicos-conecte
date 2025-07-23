@@ -2155,6 +2155,16 @@ export class DatabaseStorage implements IStorage {
 
   // Check if two users can chat (have accepted service request between them)
   async canUsersChat(userOneId: number, userTwoId: number): Promise<boolean> {
+    // Admin users can chat with anyone
+    const [userOne, userTwo] = await Promise.all([
+      db.select({ userType: users.userType }).from(users).where(eq(users.id, userOneId)).limit(1),
+      db.select({ userType: users.userType }).from(users).where(eq(users.id, userTwoId)).limit(1)
+    ]);
+
+    if (userOne[0]?.userType === "admin" || userTwo[0]?.userType === "admin") {
+      return true;
+    }
+
     // Check if there's an accepted service request between these users
     const acceptedRequests = await db
       .select({ id: serviceRequests.id })
