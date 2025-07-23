@@ -3823,9 +3823,9 @@ export default function AdminDashboard() {
                           : [...prev, item.id]
                       );
                     } else if (item.id === 'settings') {
-                      // Clear any URL parameters when going to settings
-                      window.history.replaceState({}, '', '/admin-dashboard');
-                      setLocation('/admin-settings');
+                      // Stay in admin dashboard and show settings section
+                      window.history.replaceState({}, '', '/admin-dashboard?section=settings');
+                      setActiveSection('settings');
                     } else {
                       // Update URL with the new section
                       const newUrl = item.id === 'dashboard' ? '/admin-dashboard' : `/admin-dashboard?section=${item.id}`;
