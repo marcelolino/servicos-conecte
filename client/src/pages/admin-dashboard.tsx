@@ -3633,7 +3633,10 @@ export default function AdminDashboard() {
                           <p className="text-sm text-gray-500">{otherUser?.email || ''}</p>
                           {conversation.lastMessage && (
                             <p className="text-sm text-gray-400 truncate max-w-xs">
-                              {conversation.lastMessage}
+                              {typeof conversation.lastMessage === 'string' 
+                                ? conversation.lastMessage 
+                                : conversation.lastMessage.content || 'Mensagem sem conteúdo'
+                              }
                             </p>
                           )}
                         </div>

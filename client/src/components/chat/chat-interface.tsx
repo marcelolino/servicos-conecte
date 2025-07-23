@@ -308,7 +308,12 @@ export function ChatInterface({ currentUserId, userType }: ChatInterfaceProps) {
                               : "bg-gray-200 text-gray-900"
                           )}
                         >
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm">
+                            {typeof message.content === 'string' 
+                              ? message.content 
+                              : JSON.stringify(message.content)
+                            }
+                          </p>
                           <p className={cn(
                             "text-xs mt-1",
                             isOwnMessage ? "text-blue-100" : "text-gray-500"
