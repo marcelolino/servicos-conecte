@@ -48,7 +48,8 @@ import {
   Download,
   Trash2,
   Percent,
-  ChevronDown
+  ChevronDown,
+  MessageCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -753,6 +754,12 @@ export default function AdminDashboard() {
       label: "Usuários",
       icon: Users,
       description: "Gerenciar usuários"
+    },
+    {
+      id: "chat",  
+      label: "Chat com Usuários",
+      icon: MessageCircle,
+      description: "Comunicar com clientes e prestadores"
     },
     {
       id: "transactions",
@@ -3477,6 +3484,255 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderChat = () => {
+    const [chatSearchTerm, setChatSearchTerm] = useState("");
+    const [chatUserTypeFilter, setChatUserTypeFilter] = useState<string>("all");
+
+    const { data: chatUsers = [], isLoading: chatUsersLoading } = useQuery<User[]>({
+      queryKey: ['/api/admin/users'],
+      enabled: user?.userType === 'admin'
+    });
+
+    const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
+      queryKey: ['/api/chat/conversations'],
+      enabled: user?.userType === 'admin'
+    });
+
+    const filteredChatUsers = chatUsers.filter((u) => {
+      if (u.id === user.id) return false; // Don't show admin themselves
+      
+      const matchesSearch = u.name.toLowerCase().includes(chatSearchTerm.toLowerCase()) ||
+                           u.email.toLowerCase().includes(chatSearchTerm.toLowerCase());
+      
+      const matchesType = chatUserTypeFilter === "all" || u.userType === chatUserTypeFilter;
+      
+      return matchesSearch && matchesType;
+    });
+
+    const handleStartChat = async (targetUserId: number) => {
+      try {
+        const response = await apiRequest('/api/chat/conversations', 'POST', { targetUserId });
+        
+        if (response.conversationId) {
+          // Open chat in new window/tab or navigate to chat interface
+          window.open(`/admin-chat/${response.conversationId}`, '_blank');
+        }
+      } catch (error) {
+        console.error('Erro ao iniciar conversa:', error);
+      }
+    };
+
+    const getExistingConversation = (targetUserId: number) => {
+      return chatConversations.find((conv) => 
+        conv.participantOneId === targetUserId || conv.participantTwoId === targetUserId
+      );
+    };
+
+    const getUserTypeLabel = (userType: string) => {
+      switch (userType) {
+        case 'client': return 'Cliente';
+        case 'provider': return 'Prestador';
+        case 'admin': return 'Admin';
+        default: return userType;
+      }
+    };
+
+    const getUserTypeColor = (userType: string) => {
+      switch (userType) {
+        case 'client': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        case 'provider': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        case 'admin': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+        default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Chat com Usuários</h1>
+          <p className="text-gray-600 dark:text-gray-400">Comunique-se com clientes e prestadores</p>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total de Usuários</p>
+                  <p className="text-2xl font-bold">{chatUsers.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Conversas Ativas</p>
+                  <p className="text-2xl font-bold">{chatConversations.length}</p>
+                </div>
+                <MessageCircle className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Usuários Online</p>
+                  <p className="text-2xl font-bold">{chatUsers.filter((u) => u.isActive).length}</p>
+                </div>
+                <UserCheck className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Existing Conversations */}
+        {chatConversations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Conversas Existentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {chatConversations.map((conversation) => {
+                  const otherUser = conversation.participantOneId === user.id 
+                    ? conversation.participantTwo 
+                    : conversation.participantOne;
+                  
+                  return (
+                    <div key={conversation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                          {otherUser?.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-medium">{otherUser?.name || 'Usuário'}</p>
+                          <p className="text-sm text-gray-500">{otherUser?.email || ''}</p>
+                          {conversation.lastMessage && (
+                            <p className="text-sm text-gray-400 truncate max-w-xs">
+                              {conversation.lastMessage}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={getUserTypeColor(otherUser?.userType || 'client')}>
+                          {getUserTypeLabel(otherUser?.userType || 'client')}
+                        </Badge>
+                      </div>
+                      <Button 
+                        onClick={() => window.open(`/admin-chat/${conversation.id}`, '_blank')}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Abrir Chat
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* User Search and Filter */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Iniciar Nova Conversa</CardTitle>
+            <div className="flex space-x-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar usuários por nome ou email..."
+                  value={chatSearchTerm}
+                  onChange={(e) => setChatSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={chatUserTypeFilter} onValueChange={setChatUserTypeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrar por tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os usuários</SelectItem>
+                  <SelectItem value="client">Clientes</SelectItem>
+                  <SelectItem value="provider">Prestadores</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {chatUsersLoading || chatConversationsLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredChatUsers.map((targetUser) => {
+                  const existingConv = getExistingConversation(targetUser.id);
+                  
+                  return (
+                    <div key={targetUser.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                          {targetUser.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium">{targetUser.name}</p>
+                          <p className="text-sm text-gray-500">{targetUser.email}</p>
+                          {targetUser.phone && (
+                            <p className="text-sm text-gray-400">{targetUser.phone}</p>
+                          )}
+                        </div>
+                        <Badge className={getUserTypeColor(targetUser.userType)}>
+                          {getUserTypeLabel(targetUser.userType)}
+                        </Badge>
+                        {!targetUser.isActive && (
+                          <Badge variant="secondary">Inativo</Badge>
+                        )}
+                      </div>
+                      <div className="flex space-x-2">
+                        {existingConv ? (
+                          <Button 
+                            onClick={() => window.open(`/admin-chat/${existingConv.id}`, '_blank')}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Continuar Chat
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => handleStartChat(targetUser.id)}
+                            size="sm"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Iniciar Chat
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {filteredChatUsers.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    {chatSearchTerm ? 'Nenhum usuário encontrado com os critérios de busca.' : 'Nenhum usuário disponível.'}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -3513,6 +3769,8 @@ export default function AdminDashboard() {
             </p>
           </div>
         );
+      case "chat":
+        return renderChat();
       case "settings":
         return renderSettings();
       default:
