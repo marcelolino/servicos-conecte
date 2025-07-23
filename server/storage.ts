@@ -241,6 +241,7 @@ export interface IStorage {
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   markMessageAsRead(messageId: number): Promise<ChatMessage>;
   getUnreadMessageCount(userId: number): Promise<number>;
+  canUsersChat(userOneId: number, userTwoId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2150,6 +2151,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(chatMessages.id, messageId))
       .returning();
     return updatedMessage;
+  }
+
+  // Check if two users can chat (have accepted service request between them)
+  async canUsersChat(userOneId: number, userTwoId: number): Promise<boolean> {
+    // Check if there's an accepted service request between these users
+    const acceptedRequests = await db
+      .select({ id: serviceRequests.id })
+      .from(serviceRequests)
+      .innerJoin(providers, eq(providers.id, serviceRequests.providerId))
+      .where(and(
+        eq(serviceRequests.status, "accepted"),
+        or(
+          and(
+            eq(serviceRequests.clientId, userOneId),
+            eq(providers.userId, userTwoId)
+          ),
+          and(
+            eq(serviceRequests.clientId, userTwoId),
+            eq(providers.userId, userOneId)
+          )
+        )
+      ))
+      .limit(1);
+
+    return acceptedRequests.length > 0;
   }
 
   async getUnreadMessageCount(userId: number): Promise<number> {

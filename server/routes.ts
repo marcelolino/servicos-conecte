@@ -1873,7 +1873,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chat/conversations', authenticateToken, async (req: Request, res: Response) => {
     try {
       const conversations = await storage.getChatConversationsByUser(req.user!.id);
-      res.json(conversations);
+      
+      // Filter conversations based on chat permissions (admin can see all)
+      if (req.user!.userType === "admin") {
+        res.json(conversations);
+      } else {
+        // For non-admin users, filter conversations where they can still chat
+        const allowedConversations = [];
+        for (const conv of conversations) {
+          const otherParticipantId = conv.participantOneId === req.user!.id 
+            ? conv.participantTwoId 
+            : conv.participantOneId;
+          
+          const canChat = await storage.canUsersChat(req.user!.id, otherParticipantId);
+          if (canChat) {
+            allowedConversations.push(conv);
+          }
+        }
+        res.json(allowedConversations);
+      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
       res.status(500).json({ message: "Failed to fetch conversations" });
@@ -1907,6 +1925,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!participantId) {
         return res.status(400).json({ message: "Participant ID is required" });
+      }
+
+      // Check if users can chat (admin can chat with anyone)
+      if (req.user!.userType !== "admin") {
+        const canChat = await storage.canUsersChat(req.user!.id, participantId);
+        if (!canChat) {
+          return res.status(403).json({ message: "Chat só é permitido após o prestador aceitar um pedido de serviço" });
+        }
       }
 
       const conversation = await storage.findOrCreateConversation(
@@ -1960,6 +1986,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!conversation || 
           (conversation.participantOneId !== req.user!.id && conversation.participantTwoId !== req.user!.id)) {
         return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Additional check: verify users can still chat (admin can always chat)
+      if (req.user!.userType !== "admin") {
+        const otherParticipantId = conversation.participantOneId === req.user!.id 
+          ? conversation.participantTwoId 
+          : conversation.participantOneId;
+        
+        const canChat = await storage.canUsersChat(req.user!.id, otherParticipantId);
+        if (!canChat) {
+          return res.status(403).json({ message: "Chat só é permitido após o prestador aceitar um pedido de serviço" });
+        }
       }
 
       const messageData = insertChatMessageSchema.parse({

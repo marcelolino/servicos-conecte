@@ -119,7 +119,7 @@ Preferred communication style: Simple, everyday language.
 - ✓ Applied loading state fix to all protected pages (admin, profile, service-management, etc.)
 - ✓ Improved logout flow with proper redirection and loading states
 
-### Provider Wallet Implementation (January 22, 2025)
+### Provider Wallet Implementation (January 22, 2025)  
 - ✓ Replaced "Transações" menu with unified "Carteira do Provedor" section
 - ✓ Created comprehensive provider wallet page with 6 key statistics cards
 - ✓ Implemented wallet layout matching reference design with cash balance, withdrawal balance, and total earnings
@@ -128,6 +128,16 @@ Preferred communication style: Simple, everyday language.
 - ✓ Added proper currency formatting and status badge displays
 - ✓ Created responsive card layout with action buttons for balance adjustment and withdrawal requests
 - ✓ Unified all transaction-related functionality into single wallet interface
+
+### Chat Authorization Rules Implementation (July 23, 2025)
+- ✓ Implemented business rule that chat is only allowed after provider accepts service request
+- ✓ Added canUsersChat function to verify accepted service requests between users
+- ✓ Enhanced chat conversation creation with service request validation  
+- ✓ Added validation to message sending to ensure continued chat permissions
+- ✓ Filtered conversation lists to show only authorized chats for clients and providers
+- ✓ Admin users maintain full chat access with all users regardless of service status
+- ✓ Applied Portuguese error messages for unauthorized chat attempts
+- ✓ Updated all chat endpoints with comprehensive authorization checks
 
 ### Admin Dashboard Improvements (January 15, 2025)
 - ✓ Implemented complete admin dashboard redesign with sidebar navigation
