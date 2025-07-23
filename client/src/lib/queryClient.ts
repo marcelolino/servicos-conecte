@@ -26,10 +26,11 @@ async function throwIfResNotOk(res: Response) {
         }
       } catch (e) {
         // If not JSON, use original text
+        throw new Error(text);
       }
       
       if (res.status === 401) {
-        throw new Error("Sessão expirada. Faça login novamente.");
+        throw new Error("Credenciais inválidas");
       } else {
         throw new Error("Permissão insuficiente para esta operação.");
       }
