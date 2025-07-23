@@ -2187,13 +2187,17 @@ export class DatabaseStorage implements IStorage {
       return true;
     }
 
-    // Check if there's an accepted service request between these users
-    const acceptedRequests = await db
+    // Check if there's an accepted, in_progress, or completed service request between these users
+    const validRequests = await db
       .select({ id: serviceRequests.id })
       .from(serviceRequests)
       .innerJoin(providers, eq(providers.id, serviceRequests.providerId))
       .where(and(
-        eq(serviceRequests.status, "accepted"),
+        or(
+          eq(serviceRequests.status, "accepted"),
+          eq(serviceRequests.status, "in_progress"),
+          eq(serviceRequests.status, "completed")
+        ),
         or(
           and(
             eq(serviceRequests.clientId, userOneId),
@@ -2207,7 +2211,7 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
 
-    return acceptedRequests.length > 0;
+    return validRequests.length > 0;
   }
 
   async getUnreadMessageCount(userId: number): Promise<number> {
