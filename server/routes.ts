@@ -2037,8 +2037,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/chat/unread-count', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const unreadCount = await storage.getUnreadMessageCount(req.user!.id);
-      res.json({ unreadCount });
+      const count = await storage.getUnreadMessageCount(req.user!.id);
+      res.json({ count });
     } catch (error) {
       console.error('Error fetching unread count:', error);
       res.status(500).json({ message: "Failed to fetch unread count" });

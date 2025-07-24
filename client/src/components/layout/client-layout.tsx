@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import ClientSidebar from "./client-sidebar";
 import { Loader2 } from "lucide-react";
+import { ChatNotification } from "@/components/chat/chat-notification";
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
       <ClientSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with notifications */}
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Painel do Cliente
+            </h1>
+            <ChatNotification userType="client" />
+          </div>
+        </header>
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

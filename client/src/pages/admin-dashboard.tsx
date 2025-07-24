@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatInterface } from "@/components/chat/chat-interface";
+import { ChatNotification } from "@/components/chat/chat-notification";
 import type { ServiceCategory, User, Provider } from "@shared/schema";
 
 // Import transaction pages
@@ -3916,6 +3917,31 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
+        {/* Header with notifications */}
+        <div className="p-6 border-b border-border bg-background">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {sidebarItems.find(item => item.id === activeSection)?.label || "Dashboard"}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {sidebarItems.find(item => item.id === activeSection)?.description || "Visão geral do sistema"}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <ChatNotification userType="admin" />
+              <Button 
+                onClick={() => logout()}
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </div>
         <div className="p-8">
           {renderContent()}
         </div>

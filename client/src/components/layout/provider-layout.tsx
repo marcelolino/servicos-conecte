@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { ChatNotification } from "@/components/chat/chat-notification";
 import {
   Home,
   Calendar,
@@ -234,6 +235,15 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
 
       {/* Main Content */}
       <main className="ml-64">
+        {/* Header with notifications */}
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Painel do Prestador
+            </h1>
+            <ChatNotification userType="provider" />
+          </div>
+        </header>
         <div className="p-8">
           {children}
         </div>
