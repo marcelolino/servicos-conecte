@@ -43,15 +43,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
               Painel do Cliente
             </h1>
-            <div className="flex items-center gap-3">
-              <Link href="/client-bookings">
-                <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Reservas
-                </Button>
-              </Link>
-              <ChatNotification userType="client" />
-            </div>
+            <ChatNotification userType="client" />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">

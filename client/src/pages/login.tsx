@@ -46,7 +46,7 @@ export default function Login() {
       // Redirect based on user type
       switch (data.user.userType) {
         case "client":
-          setLocation("/client-dashboard");
+          setLocation("/"); // Clients go to home page
           break;
         case "provider":
           setLocation("/provider-dashboard");

@@ -13,7 +13,8 @@ import {
   Bell,
   User,
   LogOut,
-  ShoppingCart
+  ShoppingCart,
+  Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -238,6 +239,14 @@ export default function Header() {
 
                 {isAuthenticated ? (
                   <div className="flex items-center space-x-2">
+                    {user?.userType === "client" && (
+                      <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
+                        <Link href="/client-bookings">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Reservas
+                        </Link>
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={getDashboardLink()}>Dashboard</Link>
                     </Button>
