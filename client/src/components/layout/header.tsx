@@ -93,6 +93,11 @@ export default function Header() {
             <Link href="/support" className="text-foreground hover:text-primary transition-colors">
               Suporte
             </Link>
+            {isAuthenticated && user?.userType === "client" && (
+              <Link href="/client-bookings" className="text-foreground hover:text-primary transition-colors">
+                Reservas
+              </Link>
+            )}
           </nav>
 
           {/* Desktop Actions */}
@@ -153,19 +158,11 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
                     {user?.userType === "client" && (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <Link href="/client-bookings">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Reservas
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/orders">
-                            Meus Pedidos
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
+                      <DropdownMenuItem asChild>
+                        <Link href="/orders">
+                          Meus Pedidos
+                        </Link>
+                      </DropdownMenuItem>
                     )}
                     <DropdownMenuItem asChild>
                       <Link href="/profile">
