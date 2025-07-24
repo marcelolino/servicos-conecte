@@ -94,7 +94,7 @@ export default function Header() {
               Suporte
             </Link>
             {isAuthenticated && user?.userType === "client" && (
-              <Link href="/client-bookings" className="text-foreground hover:text-primary transition-colors">
+              <Link href="/client-reservas" className="text-foreground hover:text-primary transition-colors">
                 Reservas
               </Link>
             )}
@@ -212,7 +212,7 @@ export default function Header() {
               </Link>
               {isAuthenticated && user?.userType === "client" && (
                 <>
-                  <Link href="/client-bookings" className="text-foreground hover:text-primary transition-colors flex items-center">
+                  <Link href="/client-reservas" className="text-foreground hover:text-primary transition-colors flex items-center">
                     <Calendar className="h-4 w-4 mr-2" />
                     Reservas
                   </Link>
@@ -252,7 +252,7 @@ export default function Header() {
                   <div className="flex items-center space-x-2">
                     {user?.userType === "client" && (
                       <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
-                        <Link href="/client-bookings">
+                        <Link href="/client-reservas">
                           <Calendar className="h-4 w-4 mr-2" />
                           Reservas
                         </Link>
