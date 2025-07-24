@@ -38,7 +38,7 @@ export default function Header() {
     refetchOnWindowFocus: false,
   });
 
-  const cartItemCount = cart?.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+  const cartItemCount = cart?.items ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -153,11 +153,19 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
                     {user?.userType === "client" && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/orders">
-                          Meus Pedidos
-                        </Link>
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/client-bookings">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Reservas
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/orders">
+                            Meus Pedidos
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuItem asChild>
                       <Link href="/profile">
@@ -206,9 +214,15 @@ export default function Header() {
                 Serviços
               </Link>
               {isAuthenticated && user?.userType === "client" && (
-                <Link href="/orders" className="text-foreground hover:text-primary transition-colors">
-                  Meus Pedidos
-                </Link>
+                <>
+                  <Link href="/client-bookings" className="text-foreground hover:text-primary transition-colors flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Reservas
+                  </Link>
+                  <Link href="/orders" className="text-foreground hover:text-primary transition-colors">
+                    Meus Pedidos
+                  </Link>
+                </>
               )}
               <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
                 Seja um prestador
