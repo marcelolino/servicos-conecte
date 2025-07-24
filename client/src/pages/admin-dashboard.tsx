@@ -49,7 +49,8 @@ import {
   Trash2,
   Percent,
   ChevronDown,
-  MessageCircle
+  MessageCircle,
+  LogOut
 } from "lucide-react";
 import {
   DropdownMenu,
