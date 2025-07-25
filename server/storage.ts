@@ -2312,11 +2312,27 @@ export class DatabaseStorage implements IStorage {
   // PIX payment integration with MercadoPago
   async createPixPayment(data: { amount: number; description: string; payerEmail: string }): Promise<any> {
     try {
-      // Get MercadoPago credentials from environment
-      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-      if (!accessToken) {
+      console.log('Creating PIX payment with data:', data);
+      
+      // Get MercadoPago credentials from database
+      const mercadoPagoConfig = await db
+        .select()
+        .from(paymentGatewayConfigs)
+        .where(and(
+          eq(paymentGatewayConfigs.gatewayName, 'mercadopago'),
+          eq(paymentGatewayConfigs.isActive, true)
+        ))
+        .limit(1);
+
+      console.log('MercadoPago config:', mercadoPagoConfig);
+
+      if (!mercadoPagoConfig.length || !mercadoPagoConfig[0].accessToken) {
+        console.error('MercadoPago config missing or access token empty');
         throw new Error('MercadoPago access token not configured');
       }
+
+      const accessToken = mercadoPagoConfig[0].accessToken;
+      console.log('Using access token:', accessToken?.substring(0, 20) + '...');
 
       // Initialize MercadoPago client
       const client = new MercadoPagoConfig({ 
