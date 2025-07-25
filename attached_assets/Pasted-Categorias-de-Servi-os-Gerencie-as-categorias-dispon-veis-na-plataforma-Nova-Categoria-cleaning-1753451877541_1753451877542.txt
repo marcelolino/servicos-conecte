@@ -1,0 +1,241 @@
+Categorias de Serviços
+Gerencie as categorias disponíveis na plataforma
+
+Nova Categoria
+cleaning
+Sem imagem
+Limpeza
+Ativo
+Serviços de limpeza residencial e comercial
+
+ID: 1
+22/07/2025
+Editar
+Excluir
+electrician
+Sem imagem
+Eletricista
+Ativo
+Serviços elétricos e instalações
+
+ID: 2
+22/07/2025
+Editar
+Excluir
+plumber
+Sem imagem
+Encanador
+Ativo
+Serviços hidráulicos e encanamento
+
+ID: 3
+22/07/2025
+Editar
+Excluir
+painter
+Sem imagem
+Pintor
+Ativo
+Serviços de pintura residencial e comercial
+
+ID: 4
+22/07/2025
+Editar
+Excluir
+gardening
+Sem imagem
+Jardineiro
+Ativo
+Cuidados com jardins e plantas
+
+ID: 5
+22/07/2025
+Editar
+Excluir
+carpenter
+Sem imagem
+Marceneiro
+Ativo
+Serviços de marcenaria e móveis sob medida
+
+ID: 6
+22/07/2025
+Editar
+Excluir
+driver
+Sem imagem
+Motorista
+Ativo
+Serviços de transporte e condução
+
+ID: 7
+22/07/2025
+Editar
+Excluir
+mechanic
+Sem imagem
+Mecânico
+Ativo
+Serviços de manutenção automotiva
+
+ID: 8
+22/07/2025
+Editar
+Excluir
+caregiver
+Sem imagem
+Cuidador
+Ativo
+Cuidados pessoais e acompanhamento
+
+ID: 9
+22/07/2025
+Editar
+Excluir
+delivery
+Sem imagem
+Entregador
+Ativo
+Serviços de entrega e logística
+
+ID: 10
+22/07/2025
+Editar
+Excluir
+welder
+Sem imagem
+Soldador
+Ativo
+Serviços de soldagem e metalurgia
+
+ID: 11
+22/07/2025
+Editar
+Excluir
+construction
+Sem imagem
+Pedreiro
+Ativo
+Serviços de construção civil
+
+ID: 12
+22/07/2025
+Editar
+Excluir
+computer
+Sem imagem
+Técnico em Informática
+Ativo
+Suporte e manutenção de computadores
+
+ID: 13
+22/07/2025
+Editar
+Excluir
+fitness
+Sem imagem
+Personal Trainer
+Ativo
+Treinamento físico personalizado
+
+ID: 14
+22/07/2025
+Editar
+Excluir
+massage
+Sem imagem
+Massagista
+Ativo
+Massagens terapêuticas e relaxantes
+
+ID: 15
+22/07/2025
+Editar
+Excluir
+tutor
+Sem imagem
+Professor Particular
+Ativo
+Aulas particulares diversas
+
+ID: 16
+22/07/2025
+Editar
+Excluir
+camera
+Sem imagem
+Fotógrafo
+Ativo
+Serviços fotográficos profissionais
+
+ID: 17
+22/07/2025
+Editar
+Excluir
+design
+Sem imagem
+Designer
+Ativo
+Design gráfico e criação visual
+
+ID: 18
+22/07/2025
+Editar
+Excluir
+legal
+Sem imagem
+Advogado
+Ativo
+Consultoria e serviços jurídicos
+
+ID: 19
+22/07/2025
+Editar
+Excluir
+accounting
+Sem imagem
+Contador
+Ativo
+Serviços contábeis e fiscais
+
+ID: 20
+22/07/2025
+Editar
+Excluir
+veterinary
+Sem imagem
+Veterinário
+Ativo
+Cuidados veterinários para animais
+
+ID: 21
+22/07/2025
+Editar
+Excluir
+psychology
+Sem imagem
+Psicólogo
+Ativo
+Atendimento psicológico
+
+ID: 22
+22/07/2025
+Editar
+Excluir
+dental
+Sem imagem
+Dentista
+Ativo
+Serviços odontológicos
+
+ID: 23
+22/07/2025
+Editar
+Excluir
+medical
+Sem imagem
+Médico
+Ativo
+Consultas médicas domiciliares
+
+ID: 24
