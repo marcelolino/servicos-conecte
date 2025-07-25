@@ -184,6 +184,7 @@ export interface IStorage {
   updatePaymentGatewayConfig(id: number, config: Partial<InsertPaymentGatewayConfig>): Promise<PaymentGatewayConfig>;
   deletePaymentGatewayConfig(id: number): Promise<void>;
   getActivePaymentMethods(): Promise<PaymentGatewayConfig[]>;
+  createPixPayment(data: { amount: number; description: string; payerEmail: string }): Promise<any>;
   
   // Coupons
   getCoupons(): Promise<Coupon[]>;
@@ -2302,6 +2303,58 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error in getActivePaymentMethods:', error);
+      throw error;
+    }
+  }
+
+  // PIX payment integration with MercadoPago
+  async createPixPayment(data: { amount: number; description: string; payerEmail: string }): Promise<any> {
+    try {
+      // Get MercadoPago credentials from environment
+      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+      if (!accessToken) {
+        throw new Error('MercadoPago access token not configured');
+      }
+
+      // Initialize MercadoPago client
+      const client = new MercadoPagoConfig({ 
+        accessToken: accessToken,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+
+      // Create PIX payment
+      const paymentRequest = {
+        transaction_amount: data.amount,
+        description: data.description,
+        payment_method_id: 'pix',
+        payer: {
+          email: data.payerEmail
+        }
+      };
+
+      const response = await payment.create({ body: paymentRequest });
+      
+      // Generate QR Code from PIX code
+      let qrCodeDataURL = null;
+      if (response.point_of_interaction?.transaction_data?.qr_code) {
+        qrCodeDataURL = await QRCode.toDataURL(response.point_of_interaction.transaction_data.qr_code);
+      }
+
+      return {
+        id: response.id,
+        status: response.status,
+        qr_code: response.point_of_interaction?.transaction_data?.qr_code,
+        qr_code_base64: response.point_of_interaction?.transaction_data?.qr_code_base64,
+        qr_code_image: qrCodeDataURL,
+        ticket_url: response.point_of_interaction?.transaction_data?.ticket_url,
+        amount: response.transaction_amount,
+        currency: response.currency_id,
+        expires_at: response.date_of_expiration
+      };
+    } catch (error) {
+      console.error('Error creating PIX payment:', error);
       throw error;
     }
   }

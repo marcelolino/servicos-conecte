@@ -2109,6 +2109,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PIX payment route
+  app.post('/api/payments/pix', async (req: Request, res: Response) => {
+    try {
+      const { amount, description, payerEmail } = req.body;
+      
+      const pixPayment = await storage.createPixPayment({
+        amount: parseFloat(amount),
+        description,
+        payerEmail
+      });
+      
+      res.json(pixPayment);
+    } catch (error) {
+      console.error('Error creating PIX payment:', error);
+      res.status(500).json({ message: 'Failed to create PIX payment' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

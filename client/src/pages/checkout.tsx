@@ -21,6 +21,7 @@ import {
   Banknote,
   Smartphone
 } from "lucide-react";
+import { PixPaymentModal } from "@/components/PixPaymentModal";
 
 interface PaymentGateway {
   id: number;
@@ -64,6 +65,11 @@ const CheckoutPage = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [notes, setNotes] = useState("");
+  
+  // PIX Payment Modal State
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixPaymentData, setPixPaymentData] = useState<any>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Mock cart data - In real app this would come from cart state/API
   const [cartItems] = useState<CartItem[]>([
@@ -95,18 +101,34 @@ const CheckoutPage = () => {
 
   // Define available payment methods based on active gateways
   const availablePaymentMethods: PaymentMethod[] = React.useMemo(() => {
-    if (!paymentGateways || paymentGateways.length === 0) return [];
+    if (!paymentGateways || paymentGateways.length === 0) {
+      // Always show cash when no gateways are available
+      return [{
+        id: 'cash',
+        name: 'Dinheiro',
+        description: 'Pagamento em espécie',
+        icon: <Banknote className="h-5 w-5" />
+      }];
+    }
     
     const methods: PaymentMethod[] = [];
     const hasStripe = paymentGateways.some(g => g.gatewayName === 'stripe');
     const hasMercadoPago = paymentGateways.some(g => g.gatewayName === 'mercadopago');
+
+    // Cash - always available
+    methods.push({
+      id: 'cash',
+      name: 'Dinheiro',
+      description: 'Pagamento em espécie',
+      icon: <Banknote className="h-5 w-5" />
+    });
 
     // PIX - available with MercadoPago
     if (hasMercadoPago) {
       methods.push({
         id: 'pix',
         name: 'PIX',
-        description: 'Pagamento instantâneo via PIX',
+        description: 'Transferência instantânea',
         icon: <Smartphone className="h-5 w-5" />,
         gateway: 'mercadopago'
       });
@@ -116,20 +138,23 @@ const CheckoutPage = () => {
     if (hasStripe || hasMercadoPago) {
       methods.push({
         id: 'credit_card',
-        name: 'Cartão de Crédito',
-        description: 'Visa, Mastercard, Elo e outros',
+        name: 'Cartão Crédito',
+        description: 'À vista ou parcelado',
         icon: <CreditCard className="h-5 w-5" />,
         gateway: hasStripe ? 'stripe' : 'mercadopago'
       });
     }
 
-    // Cash - always available
-    methods.push({
-      id: 'cash',
-      name: 'Dinheiro',
-      description: 'Pagamento em dinheiro na entrega',
-      icon: <Banknote className="h-5 w-5" />
-    });
+    // Debit Card - available when credit card is available
+    if (hasStripe || hasMercadoPago) {
+      methods.push({
+        id: 'debit_card',
+        name: 'Cartão Débito',
+        description: 'À vista',
+        icon: <CreditCard className="h-5 w-5" />,
+        gateway: hasStripe ? 'stripe' : 'mercadopago'
+      });
+    }
 
     return methods;
   }, [paymentGateways]);
@@ -160,6 +185,38 @@ const CheckoutPage = () => {
     }
   });
 
+  const handlePixPayment = async () => {
+    if (!user?.email) {
+      toast({
+        title: "Erro",
+        description: "Email do usuário não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    try {
+      const response = await apiRequest('POST', '/api/payments/pix', {
+        amount: totalAmount,
+        description: `Pagamento de serviços - ${cartItems[0]?.name}`,
+        payerEmail: user.email
+      });
+      
+      const pixData = await response.json();
+      setPixPaymentData(pixData);
+      setShowPixModal(true);
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar PIX",
+        description: "Não foi possível gerar o pagamento PIX. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handleSubmitOrder = () => {
     if (!selectedPaymentMethod) {
       toast({
@@ -185,6 +242,12 @@ const CheckoutPage = () => {
         description: "Por favor, selecione data e horário para o serviço.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Handle PIX payment differently
+    if (selectedPaymentMethod === 'pix') {
+      handlePixPayment();
       return;
     }
 
@@ -276,42 +339,47 @@ const CheckoutPage = () => {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
                   {availablePaymentMethods.map((method) => (
                     <div
                       key={method.id}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         selectedPaymentMethod === method.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-yellow-400 bg-yellow-50'
+                          : 'border-gray-600 bg-gray-800 hover:border-yellow-400'
                       }`}
                       onClick={() => setSelectedPaymentMethod(method.id)}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white">
-                            {method.icon}
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{method.name}</h4>
-                            <p className="text-sm text-gray-500">{method.description}</p>
-                          </div>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 ${
-                          selectedPaymentMethod === method.id
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300'
+                      <div className="flex flex-col items-center text-center gap-2">
+                        <div className={`h-8 w-8 flex items-center justify-center rounded ${
+                          selectedPaymentMethod === method.id 
+                            ? 'text-yellow-600' 
+                            : 'text-yellow-400'
                         }`}>
-                          {selectedPaymentMethod === method.id && (
-                            <Check className="h-3 w-3 text-white m-0.5" />
-                          )}
+                          {method.icon}
+                        </div>
+                        <div>
+                          <h4 className={`font-medium text-sm ${
+                            selectedPaymentMethod === method.id 
+                              ? 'text-gray-900' 
+                              : 'text-yellow-400'
+                          }`}>
+                            {method.name}
+                          </h4>
+                          <p className={`text-xs ${
+                            selectedPaymentMethod === method.id 
+                              ? 'text-gray-600' 
+                              : 'text-gray-400'
+                          }`}>
+                            {method.description}
+                          </p>
                         </div>
                       </div>
                     </div>
                   ))}
                   
                   {availablePaymentMethods.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="col-span-2 text-center py-8 text-gray-500">
                       <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p>Nenhum método de pagamento configurado.</p>
                       <p className="text-sm">Entre em contato com o administrador.</p>
@@ -443,9 +511,9 @@ const CheckoutPage = () => {
                 onClick={handleSubmitOrder}
                 className="w-full"
                 size="lg"
-                disabled={createOrderMutation.isPending}
+                disabled={createOrderMutation.isPending || isProcessingPayment}
               >
-                {createOrderMutation.isPending ? 'Processando...' : 'Finalizar Pedido'}
+                {createOrderMutation.isPending || isProcessingPayment ? 'Processando...' : 'Finalizar Pedido'}
               </Button>
 
               <div className="text-sm text-gray-500 text-center">
@@ -460,6 +528,17 @@ const CheckoutPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* PIX Payment Modal */}
+      <PixPaymentModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        paymentData={pixPaymentData}
+        orderSummary={{
+          serviceName: cartItems[0]?.name || "Serviço",
+          total: totalAmount
+        }}
+      />
     </div>
   );
 };
