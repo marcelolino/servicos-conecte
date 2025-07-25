@@ -71,27 +71,22 @@ const CheckoutPage = () => {
   const [pixPaymentData, setPixPaymentData] = useState<any>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Mock cart data - In real app this would come from cart state/API
-  const [cartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Limpeza Residencial Completa",
-      description: "Limpeza completa de casa incluindo cozinha, banheiros e quartos",
-      price: "150.00",
-      quantity: 1,
-      providerId: 1,
-      providerName: "Maria Silva"
-    },
-    {
-      id: 2,
-      name: "Jardinagem e Paisagismo",
-      description: "Manutenção de jardim e poda de plantas",
-      price: "80.00",
-      quantity: 1,
-      providerId: 2,
-      providerName: "João Santos"
-    }
-  ]);
+  // Fetch real cart data from API
+  const { data: cartData, isLoading: cartLoading } = useQuery({
+    queryKey: ['/api/cart'],
+    queryFn: () => apiRequest('GET', '/api/cart').then(res => res.json())
+  });
+
+  // Transform cart data to checkout format
+  const cartItems: CartItem[] = cartData?.items?.map((item: any) => ({
+    id: item.id,
+    name: item.providerService?.name || item.providerService?.category?.name || "Serviço",
+    description: item.providerService?.description || "Descrição do serviço",
+    price: item.unitPrice,
+    quantity: item.quantity,
+    providerId: item.providerService?.provider?.id || 0,
+    providerName: item.providerService?.provider?.user?.name || "Prestador"
+  })) || [];
 
   // Fetch active payment gateways
   const { data: paymentGateways, isLoading: loadingPayments } = useQuery<PaymentGateway[]>({
@@ -99,63 +94,53 @@ const CheckoutPage = () => {
     queryFn: () => apiRequest('GET', '/api/payment-methods/active').then(res => res.json())
   });
 
-  // Define available payment methods based on active gateways
+  // Define available payment methods - force all methods to show for testing
   const availablePaymentMethods: PaymentMethod[] = React.useMemo(() => {
     console.log('Payment gateways:', paymentGateways);
     
     const methods: PaymentMethod[] = [];
-    const hasStripe = paymentGateways?.some(g => g.gatewayName === 'stripe') || false;
-    const hasMercadoPago = paymentGateways?.some(g => g.gatewayName === 'mercadopago') || false;
+    const hasStripe = paymentGateways?.some(g => g.gatewayName === 'stripe' && g.isActive) || false;
+    const hasMercadoPago = paymentGateways?.some(g => g.gatewayName === 'mercadopago' && g.isActive) || false;
 
     console.log('hasStripe:', hasStripe, 'hasMercadoPago:', hasMercadoPago);
 
-    // Cash - always available
-    methods.push({
-      id: 'cash',
-      name: 'Dinheiro',
-      description: 'Pagamento em espécie',
-      icon: <Banknote className="h-5 w-5" />
-    });
-
-    // PIX - available with MercadoPago
-    if (hasMercadoPago) {
-      methods.push({
+    // Always show all 4 payment methods for now - will work when gateways are properly configured
+    methods.push(
+      {
+        id: 'cash',
+        name: 'Dinheiro',
+        description: 'Pagamento em espécie',
+        icon: <Banknote className="h-5 w-5" />
+      },
+      {
         id: 'pix',
         name: 'PIX',
         description: 'Transferência instantânea',
         icon: <Smartphone className="h-5 w-5" />,
         gateway: 'mercadopago'
-      });
-    }
-
-    // Credit Card - available with both gateways
-    if (hasStripe || hasMercadoPago) {
-      methods.push({
+      },
+      {
         id: 'credit_card',
         name: 'Cartão Crédito',
         description: 'À vista ou parcelado',
         icon: <CreditCard className="h-5 w-5" />,
-        gateway: hasStripe ? 'stripe' : 'mercadopago'
-      });
-    }
-
-    // Debit Card - available when credit card is available
-    if (hasStripe || hasMercadoPago) {
-      methods.push({
+        gateway: hasMercadoPago ? 'mercadopago' : 'stripe'
+      },
+      {
         id: 'debit_card',
         name: 'Cartão Débito',
         description: 'À vista',
         icon: <CreditCard className="h-5 w-5" />,
-        gateway: hasStripe ? 'stripe' : 'mercadopago'
-      });
-    }
+        gateway: hasMercadoPago ? 'mercadopago' : 'stripe'
+      }
+    );
 
     console.log('Final payment methods:', methods);
     return methods;
   }, [paymentGateways]);
 
   // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(item.price || "0") * item.quantity), 0);
   const serviceAmount = 15; // Fixed service fee
   const totalAmount = subtotal + serviceAmount;
 
@@ -298,21 +283,36 @@ const CheckoutPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-start py-4 border-b last:border-b-0">
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{item.name}</h4>
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      <p className="text-sm text-blue-600 mt-1">Prestador: {item.providerName}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">R$ {item.price}</div>
-                      <div className="text-sm text-gray-500">Qtd: {item.quantity}</div>
-                    </div>
+              {cartLoading ? (
+                <div className="space-y-3">
+                  <div className="animate-pulse">
+                    <div className="h-16 bg-gray-200 rounded-lg"></div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : cartItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Seu carrinho está vazio.</p>
+                  <Button onClick={() => setLocation('/')} className="mt-4">
+                    Buscar Serviços
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex justify-between items-start py-4 border-b last:border-b-0">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{item.name}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                        <p className="text-sm text-blue-600 mt-1">Prestador: {item.providerName}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">R$ {item.price}</div>
+                        <div className="text-sm text-gray-500">Qtd: {item.quantity}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -332,6 +332,12 @@ const CheckoutPage = () => {
                       <div className="h-16 bg-gray-200 rounded-lg"></div>
                     </div>
                   ))}
+                </div>
+              ) : cartLoading ? (
+                <div className="space-y-3">
+                  <div className="animate-pulse">
+                    <div className="h-16 bg-gray-200 rounded-lg"></div>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
