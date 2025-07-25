@@ -183,6 +183,7 @@ export interface IStorage {
   createPaymentGatewayConfig(config: InsertPaymentGatewayConfig): Promise<PaymentGatewayConfig>;
   updatePaymentGatewayConfig(id: number, config: Partial<InsertPaymentGatewayConfig>): Promise<PaymentGatewayConfig>;
   deletePaymentGatewayConfig(id: number): Promise<void>;
+  getActivePaymentMethods(): Promise<PaymentGatewayConfig[]>;
   
   // Coupons
   getCoupons(): Promise<Coupon[]>;
@@ -2291,11 +2292,18 @@ export class DatabaseStorage implements IStorage {
 
   // Payment Gateway Configuration methods
   async getActivePaymentMethods(): Promise<PaymentGatewayConfig[]> {
-    return await db
-      .select()
-      .from(paymentGatewayConfig)
-      .where(eq(paymentGatewayConfig.isActive, true))
-      .orderBy(paymentGatewayConfig.gatewayName);
+    try {
+      const result = await db
+        .select()
+        .from(paymentGatewayConfigs)
+        .where(eq(paymentGatewayConfigs.isActive, true))
+        .orderBy(paymentGatewayConfigs.gatewayName);
+      console.log('Payment methods query result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in getActivePaymentMethods:', error);
+      throw error;
+    }
   }
 }
 
