@@ -1,495 +1,425 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
-  Loader2, 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
   CreditCard, 
-  Banknote, 
-  Smartphone,
-  MapPin,
-  Calendar,
-  Clock
+  MapPin, 
+  Clock, 
+  Check,
+  Plus,
+  Minus,
+  ShoppingCart
 } from "lucide-react";
 
-const checkoutSchema = z.object({
-  address: z.string().min(1, "Endereço é obrigatório"),
-  cep: z.string().min(8, "CEP deve ter 8 dígitos"),
-  city: z.string().min(1, "Cidade é obrigatória"),
-  state: z.string().min(2, "Estado é obrigatório"),
-  scheduledAt: z.string().optional(),
-  notes: z.string().optional(),
-  paymentMethod: z.enum(["digital", "cash", "credit_card", "pix"]),
-});
+interface PaymentMethod {
+  id: number;
+  gatewayName: string;
+  gatewayTitle: string;
+  environmentMode: string;
+  isActive: boolean;
+  logo?: string;
+  clientId?: string;
+  publicKey?: string;
+}
 
-type CheckoutForm = z.infer<typeof checkoutSchema>;
+interface CartItem {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  quantity: number;
+  providerId: number;
+  providerName: string;
+}
 
-const steps = [
-  { id: "details", label: "Detalhes", icon: MapPin },
-  { id: "payment", label: "Pagamento", icon: CreditCard },
-  { id: "scheduled", label: "Agendado", icon: Check },
-];
-
-const paymentMethods = [
-  { id: "pix", label: "PIX", icon: Smartphone, description: "Pagamento instantâneo" },
-  { id: "credit_card", label: "Cartão de Crédito", icon: CreditCard, description: "Visa, Master, Elo" },
-  { id: "cash", label: "Dinheiro", icon: Banknote, description: "Pagamento na entrega" },
-  { id: "digital", label: "Pagamento Digital", icon: Smartphone, description: "Outros métodos digitais" },
-];
-
-export default function CheckoutPage() {
-  const [, setLocation] = useLocation();
+const CheckoutPage = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [currentStep, setCurrentStep] = useState("details");
+  const [, setLocation] = useLocation();
+  
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("");
+  const [address, setAddress] = useState("");
+  const [cep, setCep] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const form = useForm<CheckoutForm>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      address: "",
-      cep: "",
-      city: "",
-      state: "",
-      scheduledAt: "",
-      notes: "",
-      paymentMethod: "pix",
+  // Mock cart data - In real app this would come from cart state/API
+  const [cartItems] = useState<CartItem[]>([
+    {
+      id: 1,
+      name: "Limpeza Residencial Completa",
+      description: "Limpeza completa de casa incluindo cozinha, banheiros e quartos",
+      price: "150.00",
+      quantity: 1,
+      providerId: 1,
+      providerName: "Maria Silva"
     },
+    {
+      id: 2,
+      name: "Jardinagem e Paisagismo",
+      description: "Manutenção de jardim e poda de plantas",
+      price: "80.00",
+      quantity: 1,
+      providerId: 2,
+      providerName: "João Santos"
+    }
+  ]);
+
+  // Fetch active payment methods
+  const { data: paymentMethods, isLoading: loadingPayments } = useQuery<PaymentMethod[]>({
+    queryKey: ['/api/payment-methods/active'],
+    queryFn: () => apiRequest('GET', '/api/payment-methods/active').then(res => res.json())
   });
 
-  // Fetch cart
-  const { data: cart, isLoading: cartLoading } = useQuery({
-    queryKey: ["/api/cart"],
-  });
+  // Calculate totals
+  const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+  const serviceAmount = 15; // Fixed service fee
+  const totalAmount = subtotal + serviceAmount;
 
-  // Create order mutation
   const createOrderMutation = useMutation({
-    mutationFn: (data: CheckoutForm) => apiRequest("POST", "/api/orders", data),
-    onSuccess: (order) => {
-      console.log("Order created successfully:", order);
-      
-      // Clear the cache to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      
-      // Ensure we have an order ID
-      if (order && order.id) {
-        setLocation(`/order-success/${order.id}`);
-      } else {
-        console.error("Order ID is missing from response:", order);
-        // Fallback to orders page if ID is missing
-        toast({
-          title: "Pedido criado com sucesso!",
-          description: "Redirecionando para a página de pedidos...",
-        });
-        setLocation("/orders");
-      }
+    mutationFn: async (orderData: any) => {
+      const response = await apiRequest('POST', '/api/orders', orderData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Pedido criado com sucesso!",
+        description: "Seu pedido foi processado e enviado aos prestadores.",
+      });
+      setLocation(`/client/orders/${data.id}`);
     },
     onError: (error: any) => {
-      console.error("Order creation error:", error);
       toast({
         title: "Erro ao criar pedido",
-        description: error.message,
+        description: error.message || "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
-    },
+    }
   });
 
-  const calculateSubtotal = () => {
-    return cart?.items?.reduce((sum: number, item: any) => sum + parseFloat(item.totalPrice), 0) || 0;
-  };
-
-  const calculateServiceFee = () => {
-    const subtotal = calculateSubtotal();
-    return subtotal * 0.1; // 10% service fee
-  };
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const serviceFee = calculateServiceFee();
-    const discount = parseFloat(cart?.discountAmount || "0");
-    return subtotal + serviceFee - discount;
-  };
-
-  const onSubmit = (data: CheckoutForm) => {
-    if (currentStep === "details") {
-      setCurrentStep("payment");
-    } else if (currentStep === "payment") {
-      createOrderMutation.mutate(data);
+  const handleSubmitOrder = () => {
+    if (!selectedPaymentMethod) {
+      toast({
+        title: "Método de pagamento obrigatório",
+        description: "Por favor, selecione um método de pagamento.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (!address || !cep || !city || !state) {
+      toast({
+        title: "Endereço obrigatório",
+        description: "Por favor, preencha todos os campos de endereço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!scheduledDate || !scheduledTime) {
+      toast({
+        title: "Agendamento obrigatório",
+        description: "Por favor, selecione data e horário para o serviço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const orderData = {
+      items: cartItems,
+      subtotal: subtotal.toFixed(2),
+      serviceAmount: serviceAmount.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      paymentMethod: selectedPaymentMethod,
+      address,
+      cep,
+      city,
+      state,
+      scheduledAt: `${scheduledDate}T${scheduledTime}:00.000Z`,
+      notes
+    };
+
+    createOrderMutation.mutate(orderData);
   };
 
-  const getCurrentStepIndex = () => {
-    return steps.findIndex(step => step.id === currentStep);
-  };
-
-  if (cartLoading) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!cart?.items || cart.items.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Carrinho vazio</h1>
-          <p className="text-muted-foreground mb-6">
-            Adicione alguns serviços antes de finalizar o pedido
-          </p>
-          <Button onClick={() => setLocation("/services")}>
-            Explorar Serviços
-          </Button>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="text-center py-8">
+            <p>Você precisa estar logado para fazer um pedido.</p>
+            <Button onClick={() => setLocation('/login')} className="mt-4">
+              Fazer Login
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => setLocation("/cart")}
-              className="p-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Finalizar Pedido</h1>
-              <p className="text-muted-foreground">
-                Complete suas informações para continuar
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Finalizar Pedido</h1>
+        <p className="text-gray-600 mt-2">Revise seus serviços e complete o pagamento</p>
       </div>
 
-      {/* Progress Steps */}
-      <div className="bg-white dark:bg-gray-900 border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-center">
-            {steps.map((step, index) => {
-              const StepIcon = step.icon;
-              const isActive = step.id === currentStep;
-              const isCompleted = getCurrentStepIndex() > index;
-              const isAccessible = getCurrentStepIndex() >= index;
-
-              return (
-                <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    isActive 
-                      ? "bg-primary text-primary-foreground" 
-                      : isCompleted
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : isAccessible
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-muted text-muted-foreground opacity-50"
-                  }`}>
-                    {isCompleted ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <StepIcon className="h-4 w-4" />
-                    )}
-                    <span className="font-medium">{step.label}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Order Details */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Cart Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Serviços Selecionados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex justify-between items-start py-4 border-b last:border-b-0">
+                    <div className="flex-1">
+                      <h4 className="font-semibold">{item.name}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                      <p className="text-sm text-blue-600 mt-1">Prestador: {item.providerName}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">R$ {item.price}</div>
+                      <div className="text-sm text-gray-500">Qtd: {item.quantity}</div>
+                    </div>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`w-8 h-px mx-2 ${
-                      isCompleted ? "bg-green-500" : "bg-muted"
-                    }`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {currentStep === "details" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        Informações de Entrega
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Endereço Completo</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Rua, número, complemento" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="cep"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>CEP</FormLabel>
-                              <FormControl>
-                                <Input placeholder="00000-000" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cidade</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Sua cidade" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Estado</FormLabel>
-                            <FormControl>
-                              <Input placeholder="SP" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="scheduledAt"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Data e Hora Agendada (Opcional)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="datetime-local" 
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Observações (Opcional)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Informações adicionais sobre o serviço"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {currentStep === "payment" && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5" />
-                        Forma de Pagamento
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FormField
-                        control={form.control}
-                        name="paymentMethod"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Selecione a forma de pagamento</FormLabel>
-                            <FormControl>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {paymentMethods.map((method) => {
-                                  const MethodIcon = method.icon;
-                                  return (
-                                    <div
-                                      key={method.id}
-                                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                                        field.value === method.id
-                                          ? "border-primary bg-primary/5"
-                                          : "border-muted hover:border-primary/50"
-                                      }`}
-                                      onClick={() => field.onChange(method.id)}
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <MethodIcon className="h-6 w-6" />
-                                        <div>
-                                          <div className="font-medium">{method.label}</div>
-                                          <div className="text-sm text-muted-foreground">
-                                            {method.description}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-
-                <div className="flex justify-between">
-                  {currentStep === "payment" && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep("details")}
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Voltar
-                    </Button>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={createOrderMutation.isPending}
-                    className={currentStep === "details" ? "ml-auto" : ""}
-                  >
-                    {createOrderMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : currentStep === "details" ? (
-                      <>
-                        Continuar
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    ) : (
-                      <>
-                        Finalizar Pedido
-                        <Check className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-
-          {/* Order Summary */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Items */}
+          {/* Payment Methods */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Método de Pagamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingPayments ? (
                 <div className="space-y-3">
-                  {cart?.items?.map((item: any) => (
-                    <div key={item.id} className="flex items-center gap-3">
-                      <Badge className="h-6 w-6 rounded-full flex items-center justify-center p-0 text-xs">
-                        {item.quantity}
-                      </Badge>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">
-                          {item.providerService.name || item.providerService.category.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.providerService.provider.user.name}
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium">
-                        R$ {parseFloat(item.totalPrice).toFixed(2)}
-                      </div>
+                  {[1, 2].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-16 bg-gray-200 rounded-lg"></div>
                     </div>
                   ))}
                 </div>
-
-                <Separator />
-
-                {/* Totals */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>R$ {calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Taxa de serviço</span>
-                    <span>R$ {calculateServiceFee().toFixed(2)}</span>
-                  </div>
-                  {parseFloat(cart?.discountAmount || "0") > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Desconto</span>
-                      <span>-R$ {parseFloat(cart?.discountAmount || "0").toFixed(2)}</span>
+              ) : (
+                <div className="space-y-3">
+                  {paymentMethods?.map((method) => (
+                    <div
+                      key={method.id}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedPaymentMethod === method.gatewayName
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedPaymentMethod(method.gatewayName)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {method.logo ? (
+                            <img src={method.logo} alt={method.gatewayTitle} className="h-8 w-12 object-contain" />
+                          ) : (
+                            <div className="h-8 w-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                {method.gatewayName.toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold">{method.gatewayTitle}</p>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {method.environmentMode === 'test' ? 'Teste' : 'Produção'}
+                              </Badge>
+                              {method.gatewayName === 'mercadopago' && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                  PIX Disponível
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {selectedPaymentMethod === method.gatewayName && (
+                          <Check className="h-5 w-5 text-blue-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {(!paymentMethods || paymentMethods.length === 0) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhum método de pagamento configurado.</p>
+                      <p className="text-sm">Entre em contato com o administrador.</p>
                     </div>
                   )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>Total</span>
-                    <span>R$ {calculateTotal().toFixed(2)}</span>
-                  </div>
                 </div>
+              )}
+            </CardContent>
+          </Card>
 
-                {form.watch("scheduledAt") && (
-                  <>
-                    <Separator />
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        Agendado para: {new Date(form.watch("scheduledAt")).toLocaleString("pt-BR")}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {/* Address */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Endereço de Entrega
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="address">Endereço Completo *</Label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Rua, número, complemento"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cep">CEP *</Label>
+                  <Input
+                    id="cep"
+                    value={cep}
+                    onChange={(e) => setCep(e.target.value)}
+                    placeholder="00000-000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Sua cidade"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="state">Estado *</Label>
+                  <Input
+                    id="state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="Seu estado"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Scheduling */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Agendamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Data *</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="time">Horário *</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="notes">Observações (Opcional)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Instruções especiais, detalhes do local, etc."
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Order Summary */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumo do Pedido</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>R$ {subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Taxa de Serviço</span>
+                  <span>R$ {serviceAmount.toFixed(2)}</span>
+                </div>
+                <hr />
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>Total</span>
+                  <span>R$ {totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSubmitOrder}
+                className="w-full"
+                size="lg"
+                disabled={createOrderMutation.isPending}
+              >
+                {createOrderMutation.isPending ? 'Processando...' : 'Finalizar Pedido'}
+              </Button>
+
+              <div className="text-sm text-gray-500 text-center">
+                <p>Ao finalizar o pedido, você concorda com nossos</p>
+                <p>
+                  <span className="text-blue-600 cursor-pointer">Termos de Serviço</span>
+                  {' e '}
+                  <span className="text-blue-600 cursor-pointer">Política de Privacidade</span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default CheckoutPage;

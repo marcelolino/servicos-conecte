@@ -2098,6 +2098,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get active payment methods for checkout
+  app.get('/api/payment-methods/active', async (req: Request, res: Response) => {
+    try {
+      const paymentMethods = await storage.getActivePaymentMethods();
+      res.json(paymentMethods);
+    } catch (error) {
+      console.error('Error fetching active payment methods:', error);
+      res.status(500).json({ message: "Failed to fetch payment methods" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

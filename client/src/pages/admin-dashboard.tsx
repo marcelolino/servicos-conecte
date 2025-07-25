@@ -3914,8 +3914,10 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold">STRIPE</CardTitle>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">OFF</span>
-                  <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                  <span className={`text-sm font-medium ${stripeForm.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                    {stripeForm.isActive ? 'ON' : 'OFF'}
+                  </span>
+                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 ${stripeForm.isActive ? 'bg-green-500' : 'bg-gray-200'}`}>
                     <input
                       type="checkbox"
                       checked={stripeForm.isActive}
@@ -3936,19 +3938,39 @@ export default function AdminDashboard() {
               <form onSubmit={handleStripeSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Environment Mode</Label>
-                  <div className="w-full bg-black text-white p-2 rounded text-sm">
-                    Test
-                  </div>
+                  <Select 
+                    value={stripeForm.environmentMode} 
+                    onValueChange={(value: "test" | "live") => setStripeForm(prev => ({ ...prev, environmentMode: value }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o ambiente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="live">Live</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Publishable Key *</Label>
                   <Input
-                    type="password"
+                    type="text"
                     value={stripeForm.publicKey}
                     onChange={(e) => setStripeForm(prev => ({ ...prev, publicKey: e.target.value }))}
                     placeholder="pk_test_TYooMQauvdEDq54NiTphI7jx"
-                    className="bg-black text-white border-gray-600"
+                    className="bg-white text-black border-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Access Token *</Label>
+                  <Input
+                    type="password"
+                    value={stripeForm.accessToken}
+                    onChange={(e) => setStripeForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                    placeholder="sk_test_..."
+                    className="bg-white text-black border-gray-300"
                   />
                 </div>
 
@@ -3964,15 +3986,14 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Logo</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 bg-gray-100"
-                  >
-                    <span className="text-gray-500">Escolher Arquivo</span>
-                    <span className="ml-2 text-gray-400">Nenhum arquivo escolhido</span>
-                  </Button>
+                  <Label>Logo URL</Label>
+                  <Input
+                    type="url"
+                    value={stripeForm.logo}
+                    onChange={(e) => setStripeForm(prev => ({ ...prev, logo: e.target.value }))}
+                    placeholder="https://exemplo.com/logo.png"
+                    className="bg-white text-black border-gray-300"
+                  />
                 </div>
 
                 <Button 
@@ -3992,8 +4013,10 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold">MERCADOPAGO</CardTitle>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">OFF</span>
-                  <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                  <span className={`text-sm font-medium ${mercadoPagoForm.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                    {mercadoPagoForm.isActive ? 'ON' : 'OFF'}
+                  </span>
+                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 ${mercadoPagoForm.isActive ? 'bg-green-500' : 'bg-gray-200'}`}>
                     <input
                       type="checkbox"
                       checked={mercadoPagoForm.isActive}
@@ -4014,26 +4037,50 @@ export default function AdminDashboard() {
               <form onSubmit={handleMercadoPagoSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Environment Mode</Label>
-                  <div className="w-full bg-black text-white p-2 rounded text-sm">
-                    Test
-                  </div>
+                  <Select 
+                    value={mercadoPagoForm.environmentMode} 
+                    onValueChange={(value: "test" | "live") => setMercadoPagoForm(prev => ({ ...prev, environmentMode: value }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o ambiente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="live">Live</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Access Token *</Label>
-                  <div className="w-full bg-black text-white p-2 rounded text-sm">
-                    Access Token *
-                  </div>
+                  <Input
+                    type="password"
+                    value={mercadoPagoForm.accessToken}
+                    onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                    placeholder="APP_USR-..."
+                    className="bg-white text-black border-gray-300"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Public Key *</Label>
                   <Input
-                    type="password"
+                    type="text"
                     value={mercadoPagoForm.publicKey}
                     onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, publicKey: e.target.value }))}
-                    placeholder="Public Key *"
-                    className="bg-black text-white border-gray-600"
+                    placeholder="APP_USR-..."
+                    className="bg-white text-black border-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Client ID</Label>
+                  <Input
+                    type="text"
+                    value={mercadoPagoForm.clientId}
+                    onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, clientId: e.target.value }))}
+                    placeholder="Client ID do MercadoPago"
+                    className="bg-white text-black border-gray-300"
                   />
                 </div>
 
@@ -4049,15 +4096,20 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Logo</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 bg-gray-100"
-                  >
-                    <span className="text-gray-500">Escolher Arquivo</span>
-                    <span className="ml-2 text-gray-400">Nenhum arquivo escolhido</span>
-                  </Button>
+                  <Label>Logo URL</Label>
+                  <Input
+                    type="url"
+                    value={mercadoPagoForm.logo}
+                    onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, logo: e.target.value }))}
+                    placeholder="https://exemplo.com/logo.png"
+                    className="bg-white text-black border-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm flex items-center gap-2">
+                    <span className="font-semibold">💳 PIX</span> Habilitado automaticamente
+                  </div>
                 </div>
 
                 <Button 

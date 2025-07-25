@@ -2288,6 +2288,15 @@ export class DatabaseStorage implements IStorage {
 
     return result.count;
   }
+
+  // Payment Gateway Configuration methods
+  async getActivePaymentMethods(): Promise<PaymentGatewayConfig[]> {
+    return await db
+      .select()
+      .from(paymentGatewayConfig)
+      .where(eq(paymentGatewayConfig.isActive, true))
+      .orderBy(paymentGatewayConfig.gatewayName);
+  }
 }
 
 export const storage = new DatabaseStorage();
