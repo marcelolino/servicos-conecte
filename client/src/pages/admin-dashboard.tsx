@@ -151,6 +151,29 @@ export default function AdminDashboard() {
   const [chatSearchTerm, setChatSearchTerm] = useState("");
   const [chatUserTypeFilter, setChatUserTypeFilter] = useState<string>("all");
   
+  // Payment methods states
+  const [stripeForm, setStripeForm] = useState({
+    gatewayName: "stripe",
+    isActive: false,
+    environmentMode: "test" as "test" | "live",
+    publicKey: "",
+    accessToken: "",
+    clientId: "",
+    gatewayTitle: "Gateway Title",
+    logo: ""
+  });
+
+  const [mercadoPagoForm, setMercadoPagoForm] = useState({
+    gatewayName: "mercadopago",
+    isActive: false,
+    environmentMode: "test" as "test" | "live",
+    publicKey: "",
+    accessToken: "",
+    clientId: "",
+    gatewayTitle: "Gateway Title",
+    logo: ""
+  });
+  
   const [companySettings, setCompanySettings] = useState({
     name: "",
     description: "",
@@ -299,6 +322,13 @@ export default function AdminDashboard() {
   const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
     queryKey: ['/api/chat/conversations'],
     enabled: user?.userType === 'admin' && activeSection === 'chat'
+  });
+
+  // Payment gateway configurations query
+  const { data: paymentConfigs, isLoading: paymentConfigsLoading } = useQuery({
+    queryKey: ["/api/admin/payment-gateways"],
+    enabled: user?.userType === "admin" && activeSection === "payment-methods",
+    refetchOnWindowFocus: false,
   });
 
   // Create category mutation
@@ -482,6 +512,78 @@ export default function AdminDashboard() {
       });
     },
   });
+
+  // Save payment configuration mutation
+  const savePaymentConfigMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      const existingConfig = paymentConfigs?.find((c: any) => c.gatewayName === formData.gatewayName);
+      
+      if (existingConfig) {
+        return await apiRequest("PUT", `/api/admin/payment-gateways/${existingConfig.id}`, formData);
+      } else {
+        return await apiRequest("POST", "/api/admin/payment-gateways", formData);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-gateways"] });
+      toast({
+        title: "Configuração salva",
+        description: "As configurações do método de pagamento foram salvas com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Erro ao salvar as configurações.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Load existing payment configurations when data is available
+  React.useEffect(() => {
+    if (paymentConfigs) {
+      const stripeConfig = paymentConfigs.find((c: any) => c.gatewayName === "stripe");
+      const mercadoPagoConfig = paymentConfigs.find((c: any) => c.gatewayName === "mercadopago");
+
+      if (stripeConfig) {
+        setStripeForm({
+          gatewayName: "stripe",
+          isActive: stripeConfig.isActive,
+          environmentMode: stripeConfig.environmentMode,
+          publicKey: stripeConfig.publicKey || "",
+          accessToken: stripeConfig.accessToken || "",
+          clientId: stripeConfig.clientId || "",
+          gatewayTitle: stripeConfig.gatewayTitle || "Gateway Title",
+          logo: stripeConfig.logo || ""
+        });
+      }
+
+      if (mercadoPagoConfig) {
+        setMercadoPagoForm({
+          gatewayName: "mercadopago",
+          isActive: mercadoPagoConfig.isActive,
+          environmentMode: mercadoPagoConfig.environmentMode,
+          publicKey: mercadoPagoConfig.publicKey || "",
+          accessToken: mercadoPagoConfig.accessToken || "",
+          clientId: mercadoPagoConfig.clientId || "",
+          gatewayTitle: mercadoPagoConfig.gatewayTitle || "Gateway Title",
+          logo: mercadoPagoConfig.logo || ""
+        });
+      }
+    }
+  }, [paymentConfigs]);
+
+  // Payment form handlers
+  const handleStripeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    savePaymentConfigMutation.mutate(stripeForm);
+  };
+
+  const handleMercadoPagoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    savePaymentConfigMutation.mutate(mercadoPagoForm);
+  };
 
   // Image handling functions
   const handleCategoryImageUpload = (imageUrl: string) => {
@@ -3786,106 +3888,7 @@ export default function AdminDashboard() {
   };
 
   const renderPaymentMethods = () => {
-    const [stripeForm, setStripeForm] = useState({
-      gatewayName: "stripe",
-      isActive: false,
-      environmentMode: "test",
-      publicKey: "",
-      accessToken: "",
-      clientId: "",
-      gatewayTitle: "Gateway Title",
-      logo: ""
-    });
-
-    const [mercadoPagoForm, setMercadoPagoForm] = useState({
-      gatewayName: "mercadopago",
-      isActive: false,
-      environmentMode: "test",
-      publicKey: "",
-      accessToken: "",
-      clientId: "",
-      gatewayTitle: "Gateway Title",
-      logo: ""
-    });
-
-    // Fetch existing configurations
-    const { data: configs, isLoading } = useQuery({
-      queryKey: ["/api/admin/payment-gateways"],
-      refetchOnWindowFocus: false,
-    });
-
-    // Load existing configurations when data is available
-    React.useEffect(() => {
-      if (configs) {
-        const stripeConfig = configs.find((c: any) => c.gatewayName === "stripe");
-        const mercadoPagoConfig = configs.find((c: any) => c.gatewayName === "mercadopago");
-
-        if (stripeConfig) {
-          setStripeForm({
-            gatewayName: "stripe",
-            isActive: stripeConfig.isActive,
-            environmentMode: stripeConfig.environmentMode,
-            publicKey: stripeConfig.publicKey || "",
-            accessToken: stripeConfig.accessToken || "",
-            clientId: stripeConfig.clientId || "",
-            gatewayTitle: stripeConfig.gatewayTitle || "Gateway Title",
-            logo: stripeConfig.logo || ""
-          });
-        }
-
-        if (mercadoPagoConfig) {
-          setMercadoPagoForm({
-            gatewayName: "mercadopago",
-            isActive: mercadoPagoConfig.isActive,
-            environmentMode: mercadoPagoConfig.environmentMode,
-            publicKey: mercadoPagoConfig.publicKey || "",
-            accessToken: mercadoPagoConfig.accessToken || "",
-            clientId: mercadoPagoConfig.clientId || "",
-            gatewayTitle: mercadoPagoConfig.gatewayTitle || "Gateway Title",
-            logo: mercadoPagoConfig.logo || ""
-          });
-        }
-      }
-    }, [configs]);
-
-    // Create/Update mutation
-    const saveConfigMutation = useMutation({
-      mutationFn: async (formData: any) => {
-        const existingConfig = configs?.find((c: any) => c.gatewayName === formData.gatewayName);
-        
-        if (existingConfig) {
-          return await apiRequest("PUT", `/api/admin/payment-gateways/${existingConfig.id}`, formData);
-        } else {
-          return await apiRequest("POST", "/api/admin/payment-gateways", formData);
-        }
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-gateways"] });
-        toast({
-          title: "Configuração salva",
-          description: "As configurações do método de pagamento foram salvas com sucesso.",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Erro ao salvar",
-          description: error.message || "Erro ao salvar as configurações.",
-          variant: "destructive",
-        });
-      },
-    });
-
-    const handleStripeSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      saveConfigMutation.mutate(stripeForm);
-    };
-
-    const handleMercadoPagoSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      saveConfigMutation.mutate(mercadoPagoForm);
-    };
-
-    if (isLoading) {
+    if (paymentConfigsLoading) {
       return (
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
@@ -3975,9 +3978,9 @@ export default function AdminDashboard() {
                 <Button 
                   type="submit" 
                   className="w-full bg-teal-500 hover:bg-teal-600 text-white"
-                  disabled={saveConfigMutation.isPending}
+                  disabled={savePaymentConfigMutation.isPending}
                 >
-                  {saveConfigMutation.isPending ? "Salvando..." : "Save"}
+                  {savePaymentConfigMutation.isPending ? "Salvando..." : "Save"}
                 </Button>
               </form>
             </CardContent>
@@ -4060,9 +4063,9 @@ export default function AdminDashboard() {
                 <Button 
                   type="submit" 
                   className="w-full bg-teal-500 hover:bg-teal-600 text-white"
-                  disabled={saveConfigMutation.isPending}
+                  disabled={savePaymentConfigMutation.isPending}
                 >
-                  {saveConfigMutation.isPending ? "Salvando..." : "Save"}
+                  {savePaymentConfigMutation.isPending ? "Salvando..." : "Save"}
                 </Button>
               </form>
             </CardContent>
