@@ -3785,6 +3785,293 @@ export default function AdminDashboard() {
     );
   };
 
+  const renderPaymentMethods = () => {
+    const [stripeForm, setStripeForm] = useState({
+      gatewayName: "stripe",
+      isActive: false,
+      environmentMode: "test",
+      publicKey: "",
+      accessToken: "",
+      clientId: "",
+      gatewayTitle: "Gateway Title",
+      logo: ""
+    });
+
+    const [mercadoPagoForm, setMercadoPagoForm] = useState({
+      gatewayName: "mercadopago",
+      isActive: false,
+      environmentMode: "test",
+      publicKey: "",
+      accessToken: "",
+      clientId: "",
+      gatewayTitle: "Gateway Title",
+      logo: ""
+    });
+
+    // Fetch existing configurations
+    const { data: configs, isLoading } = useQuery({
+      queryKey: ["/api/admin/payment-gateways"],
+      refetchOnWindowFocus: false,
+    });
+
+    // Load existing configurations when data is available
+    React.useEffect(() => {
+      if (configs) {
+        const stripeConfig = configs.find((c: any) => c.gatewayName === "stripe");
+        const mercadoPagoConfig = configs.find((c: any) => c.gatewayName === "mercadopago");
+
+        if (stripeConfig) {
+          setStripeForm({
+            gatewayName: "stripe",
+            isActive: stripeConfig.isActive,
+            environmentMode: stripeConfig.environmentMode,
+            publicKey: stripeConfig.publicKey || "",
+            accessToken: stripeConfig.accessToken || "",
+            clientId: stripeConfig.clientId || "",
+            gatewayTitle: stripeConfig.gatewayTitle || "Gateway Title",
+            logo: stripeConfig.logo || ""
+          });
+        }
+
+        if (mercadoPagoConfig) {
+          setMercadoPagoForm({
+            gatewayName: "mercadopago",
+            isActive: mercadoPagoConfig.isActive,
+            environmentMode: mercadoPagoConfig.environmentMode,
+            publicKey: mercadoPagoConfig.publicKey || "",
+            accessToken: mercadoPagoConfig.accessToken || "",
+            clientId: mercadoPagoConfig.clientId || "",
+            gatewayTitle: mercadoPagoConfig.gatewayTitle || "Gateway Title",
+            logo: mercadoPagoConfig.logo || ""
+          });
+        }
+      }
+    }, [configs]);
+
+    // Create/Update mutation
+    const saveConfigMutation = useMutation({
+      mutationFn: async (formData: any) => {
+        const existingConfig = configs?.find((c: any) => c.gatewayName === formData.gatewayName);
+        
+        if (existingConfig) {
+          return await apiRequest("PUT", `/api/admin/payment-gateways/${existingConfig.id}`, formData);
+        } else {
+          return await apiRequest("POST", "/api/admin/payment-gateways", formData);
+        }
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-gateways"] });
+        toast({
+          title: "Configuração salva",
+          description: "As configurações do método de pagamento foram salvas com sucesso.",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Erro ao salvar",
+          description: error.message || "Erro ao salvar as configurações.",
+          variant: "destructive",
+        });
+      },
+    });
+
+    const handleStripeSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      saveConfigMutation.mutate(stripeForm);
+    };
+
+    const handleMercadoPagoSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      saveConfigMutation.mutate(mercadoPagoForm);
+    };
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Métodos de Pagamento</h2>
+          <p className="text-muted-foreground">Configure os métodos de pagamento do sistema</p>
+        </div>
+
+        {/* Payment Methods Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Stripe Card */}
+          <Card className="bg-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">STRIPE</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">OFF</span>
+                  <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                    <input
+                      type="checkbox"
+                      checked={stripeForm.isActive}
+                      onChange={(e) => setStripeForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${stripeForm.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center py-4">
+                <div className="w-24 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">stripe</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleStripeSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Environment Mode</Label>
+                  <div className="w-full bg-black text-white p-2 rounded text-sm">
+                    Test
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Publishable Key *</Label>
+                  <Input
+                    type="password"
+                    value={stripeForm.publicKey}
+                    onChange={(e) => setStripeForm(prev => ({ ...prev, publicKey: e.target.value }))}
+                    placeholder="pk_test_TYooMQauvdEDq54NiTphI7jx"
+                    className="bg-black text-white border-gray-600"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded text-sm">
+                    <span className="font-semibold">Payment</span> Gateway Title
+                  </div>
+                  <Input
+                    value={stripeForm.gatewayTitle}
+                    onChange={(e) => setStripeForm(prev => ({ ...prev, gatewayTitle: e.target.value }))}
+                    placeholder="Gateway Title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Logo</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 bg-gray-100"
+                  >
+                    <span className="text-gray-500">Escolher Arquivo</span>
+                    <span className="ml-2 text-gray-400">Nenhum arquivo escolhido</span>
+                  </Button>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+                  disabled={saveConfigMutation.isPending}
+                >
+                  {saveConfigMutation.isPending ? "Salvando..." : "Save"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* MercadoPago Card */}
+          <Card className="bg-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">MERCADOPAGO</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">OFF</span>
+                  <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                    <input
+                      type="checkbox"
+                      checked={mercadoPagoForm.isActive}
+                      onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${mercadoPagoForm.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center py-4">
+                <div className="w-24 h-16 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">mercado pago</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleMercadoPagoSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Environment Mode</Label>
+                  <div className="w-full bg-black text-white p-2 rounded text-sm">
+                    Test
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Access Token *</Label>
+                  <div className="w-full bg-black text-white p-2 rounded text-sm">
+                    Access Token *
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Public Key *</Label>
+                  <Input
+                    type="password"
+                    value={mercadoPagoForm.publicKey}
+                    onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, publicKey: e.target.value }))}
+                    placeholder="Public Key *"
+                    className="bg-black text-white border-gray-600"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded text-sm">
+                    <span className="font-semibold">Payment</span> Gateway Title
+                  </div>
+                  <Input
+                    value={mercadoPagoForm.gatewayTitle}
+                    onChange={(e) => setMercadoPagoForm(prev => ({ ...prev, gatewayTitle: e.target.value }))}
+                    placeholder="Gateway Title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Logo</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 bg-gray-100"
+                  >
+                    <span className="text-gray-500">Escolher Arquivo</span>
+                    <span className="ml-2 text-gray-400">Nenhum arquivo escolhido</span>
+                  </Button>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+                  disabled={saveConfigMutation.isPending}
+                >
+                  {saveConfigMutation.isPending ? "Salvando..." : "Save"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
@@ -3810,8 +4097,7 @@ export default function AdminDashboard() {
       case "withdrawal-requests":
         return <AdminWithdrawalRequests />;
       case "payment-methods":
-        setLocation("/admin-payment-methods");
-        return null;
+        return renderPaymentMethods();
       case "reports":
         return (
           <div className="text-center py-12">
