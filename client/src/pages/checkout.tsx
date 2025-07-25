@@ -17,10 +17,12 @@ import {
   Check,
   Plus,
   Minus,
-  ShoppingCart
+  ShoppingCart,
+  Banknote,
+  Smartphone
 } from "lucide-react";
 
-interface PaymentMethod {
+interface PaymentGateway {
   id: number;
   gatewayName: string;
   gatewayTitle: string;
@@ -29,6 +31,14 @@ interface PaymentMethod {
   logo?: string;
   clientId?: string;
   publicKey?: string;
+}
+
+interface PaymentMethod {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  gateway?: string; // Which gateway supports this method
 }
 
 interface CartItem {
@@ -77,11 +87,52 @@ const CheckoutPage = () => {
     }
   ]);
 
-  // Fetch active payment methods
-  const { data: paymentMethods, isLoading: loadingPayments } = useQuery<PaymentMethod[]>({
+  // Fetch active payment gateways
+  const { data: paymentGateways, isLoading: loadingPayments } = useQuery<PaymentGateway[]>({
     queryKey: ['/api/payment-methods/active'],
     queryFn: () => apiRequest('GET', '/api/payment-methods/active').then(res => res.json())
   });
+
+  // Define available payment methods based on active gateways
+  const availablePaymentMethods: PaymentMethod[] = React.useMemo(() => {
+    if (!paymentGateways || paymentGateways.length === 0) return [];
+    
+    const methods: PaymentMethod[] = [];
+    const hasStripe = paymentGateways.some(g => g.gatewayName === 'stripe');
+    const hasMercadoPago = paymentGateways.some(g => g.gatewayName === 'mercadopago');
+
+    // PIX - available with MercadoPago
+    if (hasMercadoPago) {
+      methods.push({
+        id: 'pix',
+        name: 'PIX',
+        description: 'Pagamento instantâneo via PIX',
+        icon: <Smartphone className="h-5 w-5" />,
+        gateway: 'mercadopago'
+      });
+    }
+
+    // Credit Card - available with both gateways
+    if (hasStripe || hasMercadoPago) {
+      methods.push({
+        id: 'credit_card',
+        name: 'Cartão de Crédito',
+        description: 'Visa, Mastercard, Elo e outros',
+        icon: <CreditCard className="h-5 w-5" />,
+        gateway: hasStripe ? 'stripe' : 'mercadopago'
+      });
+    }
+
+    // Cash - always available
+    methods.push({
+      id: 'cash',
+      name: 'Dinheiro',
+      description: 'Pagamento em dinheiro na entrega',
+      icon: <Banknote className="h-5 w-5" />
+    });
+
+    return methods;
+  }, [paymentGateways]);
 
   // Calculate totals
   const subtotal = cartItems.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
@@ -226,49 +277,40 @@ const CheckoutPage = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {paymentMethods?.map((method) => (
+                  {availablePaymentMethods.map((method) => (
                     <div
                       key={method.id}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.gatewayName
+                        selectedPaymentMethod === method.id
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => setSelectedPaymentMethod(method.gatewayName)}
+                      onClick={() => setSelectedPaymentMethod(method.id)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {method.logo ? (
-                            <img src={method.logo} alt={method.gatewayTitle} className="h-8 w-12 object-contain" />
-                          ) : (
-                            <div className="h-8 w-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                {method.gatewayName.toUpperCase()}
-                              </span>
-                            </div>
-                          )}
+                          <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white">
+                            {method.icon}
+                          </div>
                           <div>
-                            <p className="font-semibold">{method.gatewayTitle}</p>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {method.environmentMode === 'test' ? 'Teste' : 'Produção'}
-                              </Badge>
-                              {method.gatewayName === 'mercadopago' && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                                  PIX Disponível
-                                </Badge>
-                              )}
-                            </div>
+                            <h4 className="font-medium">{method.name}</h4>
+                            <p className="text-sm text-gray-500">{method.description}</p>
                           </div>
                         </div>
-                        {selectedPaymentMethod === method.gatewayName && (
-                          <Check className="h-5 w-5 text-blue-500" />
-                        )}
+                        <div className={`w-5 h-5 rounded-full border-2 ${
+                          selectedPaymentMethod === method.id
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedPaymentMethod === method.id && (
+                            <Check className="h-3 w-3 text-white m-0.5" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                   
-                  {(!paymentMethods || paymentMethods.length === 0) && (
+                  {availablePaymentMethods.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p>Nenhum método de pagamento configurado.</p>
