@@ -392,6 +392,21 @@ export const chatMessages = pgTable("chat_messages", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Payment gateway configurations table
+export const paymentGatewayConfigs = pgTable("payment_gateway_configs", {
+  id: serial("id").primaryKey(),
+  gatewayName: varchar("gateway_name", { length: 50 }).notNull(), // 'stripe', 'mercadopago'
+  isActive: boolean("is_active").default(false),
+  environmentMode: varchar("environment_mode", { length: 20 }).default("test"), // 'test', 'live'
+  publicKey: text("public_key"),
+  accessToken: text("access_token"),
+  clientId: text("client_id"),
+  gatewayTitle: varchar("gateway_title", { length: 255 }),
+  logo: text("logo"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -620,6 +635,10 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
+export const paymentGatewayConfigsRelations = relations(paymentGatewayConfigs, ({ many }) => ({
+  // Add relations as needed
+}));
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -766,6 +785,12 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   updatedAt: true,
 });
 
+export const insertPaymentGatewayConfigSchema = createInsertSchema(paymentGatewayConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -815,3 +840,5 @@ export type ChatConversation = typeof chatConversations.$inferSelect;
 export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type PaymentGatewayConfig = typeof paymentGatewayConfigs.$inferSelect;
+export type InsertPaymentGatewayConfig = z.infer<typeof insertPaymentGatewayConfigSchema>;

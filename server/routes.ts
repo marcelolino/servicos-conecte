@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema } from "@shared/schema";
 import { 
   upload, 
   uploadBannerImage, 
@@ -1874,6 +1874,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "PIX key deleted successfully" });
     } catch (error) {
       res.status(400).json({ message: "Failed to delete PIX key", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Admin Payment Gateway Configuration routes
+  app.get("/api/admin/payment-gateways", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getPaymentGatewayConfigs();
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch payment gateway configurations", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/admin/payment-gateways/:gatewayName", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const config = await storage.getPaymentGatewayConfig(req.params.gatewayName);
+      if (!config) {
+        return res.status(404).json({ message: "Payment gateway configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch payment gateway configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/payment-gateways", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configData = insertPaymentGatewayConfigSchema.parse(req.body);
+      const config = await storage.createPaymentGatewayConfig(configData);
+      res.json(config);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create payment gateway configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/payment-gateways/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configId = parseInt(req.params.id);
+      const updateData = req.body;
+      const updatedConfig = await storage.updatePaymentGatewayConfig(configId, updateData);
+      res.json(updatedConfig);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update payment gateway configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/payment-gateways/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configId = parseInt(req.params.id);
+      await storage.deletePaymentGatewayConfig(configId);
+      res.json({ message: "Payment gateway configuration deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete payment gateway configuration", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

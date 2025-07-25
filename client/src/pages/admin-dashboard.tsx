@@ -806,6 +806,11 @@ export default function AdminDashboard() {
           id: "withdrawal-requests",
           label: "Solicitações De Retirada",
           description: "Solicitações de retirada do provedor"
+        },
+        {
+          id: "payment-methods",
+          label: "Métodos de Pagamento",
+          description: "Configurar gateways de pagamento"
         }
       ]
     },
@@ -3804,6 +3809,9 @@ export default function AdminDashboard() {
         return <AdminEarnings />;
       case "withdrawal-requests":
         return <AdminWithdrawalRequests />;
+      case "payment-methods":
+        setLocation("/admin-payment-methods");
+        return null;
       case "reports":
         return (
           <div className="text-center py-12">

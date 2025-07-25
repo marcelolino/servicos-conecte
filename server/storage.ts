@@ -71,6 +71,9 @@ import {
   type InsertChatConversation,
   type ChatMessage,
   type InsertChatMessage,
+  paymentGatewayConfigs,
+  type PaymentGatewayConfig,
+  type InsertPaymentGatewayConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -173,6 +176,13 @@ export interface IStorage {
   getPaymentsByServiceRequest(serviceRequestId: number): Promise<Payment[]>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: number, payment: Partial<InsertPayment>): Promise<Payment>;
+  
+  // Payment Gateway Configurations
+  getPaymentGatewayConfigs(): Promise<PaymentGatewayConfig[]>;
+  getPaymentGatewayConfig(gatewayName: string): Promise<PaymentGatewayConfig | undefined>;
+  createPaymentGatewayConfig(config: InsertPaymentGatewayConfig): Promise<PaymentGatewayConfig>;
+  updatePaymentGatewayConfig(id: number, config: Partial<InsertPaymentGatewayConfig>): Promise<PaymentGatewayConfig>;
+  deletePaymentGatewayConfig(id: number): Promise<void>;
   
   // Coupons
   getCoupons(): Promise<Coupon[]>;
@@ -1169,6 +1179,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(payments.id, id))
       .returning();
     return updatedPayment;
+  }
+
+  // Payment Gateway Configurations
+  async getPaymentGatewayConfigs(): Promise<PaymentGatewayConfig[]> {
+    return await db
+      .select()
+      .from(paymentGatewayConfigs)
+      .orderBy(asc(paymentGatewayConfigs.gatewayName));
+  }
+
+  async getPaymentGatewayConfig(gatewayName: string): Promise<PaymentGatewayConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(paymentGatewayConfigs)
+      .where(eq(paymentGatewayConfigs.gatewayName, gatewayName))
+      .limit(1);
+    return config || undefined;
+  }
+
+  async createPaymentGatewayConfig(config: InsertPaymentGatewayConfig): Promise<PaymentGatewayConfig> {
+    const [newConfig] = await db
+      .insert(paymentGatewayConfigs)
+      .values(config)
+      .returning();
+    return newConfig;
+  }
+
+  async updatePaymentGatewayConfig(id: number, config: Partial<InsertPaymentGatewayConfig>): Promise<PaymentGatewayConfig> {
+    const [updatedConfig] = await db
+      .update(paymentGatewayConfigs)
+      .set({ ...config, updatedAt: new Date() })
+      .where(eq(paymentGatewayConfigs.id, id))
+      .returning();
+    return updatedConfig;
+  }
+
+  async deletePaymentGatewayConfig(id: number): Promise<void> {
+    await db.delete(paymentGatewayConfigs).where(eq(paymentGatewayConfigs.id, id));
   }
 
   // Coupons

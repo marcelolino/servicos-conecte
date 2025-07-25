@@ -37,6 +37,7 @@ import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
 import AdminSettings from "@/pages/admin-settings";
+import AdminPaymentMethods from "@/pages/admin-payment-methods";
 import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
@@ -97,6 +98,7 @@ function Router() {
           <Route path="/admin-cash-payments" component={AdminCashPayments} />
           <Route path="/admin-earnings" component={AdminEarnings} />
           <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
+          <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
 
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
