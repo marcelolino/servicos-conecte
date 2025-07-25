@@ -101,19 +101,13 @@ const CheckoutPage = () => {
 
   // Define available payment methods based on active gateways
   const availablePaymentMethods: PaymentMethod[] = React.useMemo(() => {
-    if (!paymentGateways || paymentGateways.length === 0) {
-      // Always show cash when no gateways are available
-      return [{
-        id: 'cash',
-        name: 'Dinheiro',
-        description: 'Pagamento em espécie',
-        icon: <Banknote className="h-5 w-5" />
-      }];
-    }
+    console.log('Payment gateways:', paymentGateways);
     
     const methods: PaymentMethod[] = [];
-    const hasStripe = paymentGateways.some(g => g.gatewayName === 'stripe');
-    const hasMercadoPago = paymentGateways.some(g => g.gatewayName === 'mercadopago');
+    const hasStripe = paymentGateways?.some(g => g.gatewayName === 'stripe') || false;
+    const hasMercadoPago = paymentGateways?.some(g => g.gatewayName === 'mercadopago') || false;
+
+    console.log('hasStripe:', hasStripe, 'hasMercadoPago:', hasMercadoPago);
 
     // Cash - always available
     methods.push({
@@ -156,6 +150,7 @@ const CheckoutPage = () => {
       });
     }
 
+    console.log('Final payment methods:', methods);
     return methods;
   }, [paymentGateways]);
 

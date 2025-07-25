@@ -37,7 +37,7 @@ import {
   type InsertServiceZone,
   type PromotionalBanner,
   type InsertPromotionalBanner,
-  type Payment,
+  type Payment as PaymentRecord,
   type InsertPayment,
   type Coupon,
   type InsertCoupon,
@@ -78,6 +78,8 @@ import {
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { MercadoPagoConfig, Payment } from 'mercadopago';
+import QRCode from 'qrcode';
 
 export interface IStorage {
   // User management
@@ -173,9 +175,9 @@ export interface IStorage {
   incrementBannerClick(id: number): Promise<void>;
   
   // Payments
-  getPaymentsByServiceRequest(serviceRequestId: number): Promise<Payment[]>;
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  updatePayment(id: number, payment: Partial<InsertPayment>): Promise<Payment>;
+  getPaymentsByServiceRequest(serviceRequestId: number): Promise<PaymentRecord[]>;
+  createPayment(payment: InsertPayment): Promise<PaymentRecord>;
+  updatePayment(id: number, payment: Partial<InsertPayment>): Promise<PaymentRecord>;
   
   // Payment Gateway Configurations
   getPaymentGatewayConfigs(): Promise<PaymentGatewayConfig[]>;
@@ -1158,7 +1160,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Payments
-  async getPaymentsByServiceRequest(serviceRequestId: number): Promise<Payment[]> {
+  async getPaymentsByServiceRequest(serviceRequestId: number): Promise<PaymentRecord[]> {
     return await db
       .select()
       .from(payments)
