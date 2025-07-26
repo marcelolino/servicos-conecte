@@ -226,7 +226,7 @@ const CheckoutPage = () => {
   // Fetch real cart data from API
   const { data: cartData, isLoading: cartLoading } = useQuery({
     queryKey: ['/api/cart'],
-    queryFn: () => apiRequest('GET', '/api/cart').then(res => res.json())
+    queryFn: () => apiRequest('GET', '/api/cart')
   });
 
   // Transform cart data to checkout format
@@ -243,7 +243,7 @@ const CheckoutPage = () => {
   // Fetch active payment gateways
   const { data: paymentGateways, isLoading: loadingPayments } = useQuery<PaymentGateway[]>({
     queryKey: ['/api/payment-methods/active'],
-    queryFn: () => apiRequest('GET', '/api/payment-methods/active').then(res => res.json())
+    queryFn: () => apiRequest('GET', '/api/payment-methods/active')
   });
 
   // Define available payment methods - force all methods to show for testing
@@ -299,7 +299,7 @@ const CheckoutPage = () => {
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
       const response = await apiRequest('POST', '/api/orders', orderData);
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       toast({
