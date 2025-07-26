@@ -44,7 +44,7 @@ const TEST_CARDS = [
     expMonth: '11',
     expYear: '2030',
     paymentMethodId: 'elo',
-    issuerId: '25'
+    issuerId: '1009' // Different issuer for Elo cards
   }
 ];
 
