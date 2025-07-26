@@ -306,7 +306,7 @@ const CheckoutPage = () => {
         title: "Pedido criado com sucesso!",
         description: "Seu pedido foi processado e enviado aos prestadores.",
       });
-      setLocation(`/client/orders/${data.id}`);
+      setLocation(`/orders/${data.id}`);
     },
     onError: (error: any) => {
       toast({
