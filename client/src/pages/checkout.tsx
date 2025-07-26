@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,10 +20,10 @@ import {
   Minus,
   ShoppingCart,
   Banknote,
-  Smartphone
+  Smartphone,
+  Loader2,
+  QrCode
 } from "lucide-react";
-import { PixPaymentModal } from "@/components/PixPaymentModal";
-import { CardPaymentModal } from "@/components/CardPaymentModal";
 
 interface PaymentGateway {
   id: number;
@@ -53,6 +54,31 @@ interface CartItem {
   providerName: string;
 }
 
+// Helper functions for input formatting
+const formatCardNumber = (value: string) => {
+  return value
+    .replace(/\s/g, '')
+    .replace(/(\d{4})/g, '$1 ')
+    .trim()
+    .slice(0, 19);
+};
+
+const formatCPF = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1');
+};
+
+const formatExpiry = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{2})(\d)/, '$1/$2')
+    .slice(0, 5);
+};
+
 const CheckoutPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,15 +93,18 @@ const CheckoutPage = () => {
   const [scheduledTime, setScheduledTime] = useState("");
   const [notes, setNotes] = useState("");
   
-  // PIX Payment Modal State
-  const [showPixModal, setShowPixModal] = useState(false);
+  // Inline Payment States
   const [pixPaymentData, setPixPaymentData] = useState<any>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isProcessingCardPayment, setIsProcessingCardPayment] = useState(false);
   
-  // Card Payment Modal State
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
-  const [cardPaymentData, setCardPaymentData] = useState<any>(null);
-  const [selectedPaymentType, setSelectedPaymentType] = useState<'credit_card' | 'debit_card'>('credit_card');
+  // Card Payment Fields
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardCpf, setCardCpf] = useState("");
+  const [installments, setInstallments] = useState("1");
 
   // Fetch real cart data from API
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -190,7 +219,10 @@ const CheckoutPage = () => {
       });
       
       setPixPaymentData(pixData);
-      setShowPixModal(true);
+      toast({
+        title: "PIX gerado com sucesso!",
+        description: "Escaneie o QR Code ou copie o código PIX para pagar.",
+      });
     } catch (error) {
       toast({
         title: "Erro ao gerar PIX",
@@ -202,9 +234,89 @@ const CheckoutPage = () => {
     }
   };
 
-  const handleCardPayment = (paymentType: 'credit_card' | 'debit_card') => {
-    setSelectedPaymentType(paymentType);
-    setIsCardModalOpen(true);
+  const handleCardPayment = async () => {
+    if (!cardNumber || !cardName || !cardExpiry || !cardCvv || !cardCpf) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos do cartão.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingCardPayment(true);
+    try {
+      // Format card data
+      const [expMonth, expYear] = cardExpiry.split('/');
+      const formattedExpYear = expYear.length === 2 ? `20${expYear}` : expYear;
+      
+      // Step 1: Create card token
+      const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
+        card_number: cardNumber.replace(/\s/g, ''),
+        security_code: cardCvv,
+        expiration_month: expMonth,
+        expiration_year: formattedExpYear,
+        cardholder_name: cardName,
+        cardholder_identification_type: 'CPF',
+        cardholder_identification_number: cardCpf.replace(/\D/g, '')
+      });
+
+      // Step 2: Create payment with token
+      const paymentResponse = await apiRequest('POST', '/api/payments/card', {
+        transaction_amount: totalAmount,
+        token: tokenResponse.id,
+        description: `Pagamento de serviços - ${cartItems[0]?.name}`,
+        installments: parseInt(installments),
+        payment_method_id: selectedPaymentMethod === 'credit_card' ? 'master' : 'master', // Will be dynamic later
+        issuer_id: '25',
+        payer: {
+          email: user?.email,
+          identification: {
+            type: 'CPF',
+            number: cardCpf.replace(/\D/g, '')
+          }
+        }
+      });
+
+      if (paymentResponse.status === 'approved') {
+        toast({
+          title: "Pagamento aprovado!",
+          description: "Seu pagamento foi processado com sucesso.",
+        });
+        
+        // Create order after successful payment
+        const orderData = {
+          items: cartItems,
+          subtotal: subtotal.toFixed(2),
+          serviceAmount: serviceAmount.toFixed(2),
+          totalAmount: totalAmount.toFixed(2),
+          paymentMethod: selectedPaymentMethod,
+          paymentId: paymentResponse.id,
+          address,
+          cep,
+          city,
+          state,
+          scheduledAt: `${scheduledDate}T${scheduledTime}:00.000Z`,
+          notes
+        };
+
+        createOrderMutation.mutate(orderData);
+      } else {
+        toast({
+          title: "Pagamento recusado",
+          description: paymentResponse.status_detail || "Pagamento não aprovado. Verifique os dados do cartão.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro no pagamento",
+        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingCardPayment(false);
+    }
   };
 
   const handleSubmitOrder = () => {
@@ -235,23 +347,19 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Handle PIX payment differently
+    // Handle PIX payment
     if (selectedPaymentMethod === 'pix') {
       handlePixPayment();
       return;
     }
 
-    // Handle card payments differently
-    if (selectedPaymentMethod === 'credit_card') {
-      handleCardPayment('credit_card');
+    // Handle card payments
+    if (selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') {
+      handleCardPayment();
       return;
     }
 
-    if (selectedPaymentMethod === 'debit_card') {
-      handleCardPayment('debit_card');
-      return;
-    }
-
+    // Handle cash payment directly
     const orderData = {
       items: cartItems,
       subtotal: subtotal.toFixed(2),
@@ -412,6 +520,232 @@ const CheckoutPage = () => {
             </CardContent>
           </Card>
 
+          {/* PIX Payment Details */}
+          {selectedPaymentMethod === 'pix' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5" />
+                  Pagamento PIX
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!pixPaymentData ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-4">Clique no botão para gerar o PIX</p>
+                    <Button 
+                      onClick={handlePixPayment}
+                      disabled={isProcessingPayment}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isProcessingPayment ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Gerando PIX...
+                        </>
+                      ) : (
+                        <>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Gerar PIX
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-green-600 font-medium mb-2">PIX gerado com sucesso!</p>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Valor: R$ {totalAmount.toFixed(2)}
+                      </p>
+                    </div>
+                    
+                    {pixPaymentData.qr_code_base64 && (
+                      <div className="text-center">
+                        <Label className="text-sm font-medium">QR Code PIX:</Label>
+                        <div className="flex justify-center mt-2">
+                          <img 
+                            src={`data:image/png;base64,${pixPaymentData.qr_code_base64}`}
+                            alt="QR Code PIX"
+                            className="max-w-48 border rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {pixPaymentData.qr_code && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Código PIX (Copia e Cola):</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={pixPaymentData.qr_code}
+                            readOnly
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(pixPaymentData.qr_code);
+                              toast({
+                                title: "Código copiado!",
+                                description: "O código PIX foi copiado para a área de transferência.",
+                              });
+                            }}
+                          >
+                            Copiar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-yellow-800 text-sm">
+                        <strong>Atenção:</strong> Após efetuar o pagamento, aguarde alguns minutos para confirmação automática.
+                      </p>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => {
+                        // Create order after PIX is generated (pending payment)
+                        const orderData = {
+                          items: cartItems,
+                          subtotal: subtotal.toFixed(2),
+                          serviceAmount: serviceAmount.toFixed(2),
+                          totalAmount: totalAmount.toFixed(2),
+                          paymentMethod: selectedPaymentMethod,
+                          paymentId: pixPaymentData.id,
+                          address,
+                          cep,
+                          city,
+                          state,
+                          scheduledAt: `${scheduledDate}T${scheduledTime}:00.000Z`,
+                          notes
+                        };
+                        createOrderMutation.mutate(orderData);
+                      }}
+                      className="w-full"
+                      disabled={createOrderMutation.isPending}
+                    >
+                      {createOrderMutation.isPending ? 'Criando pedido...' : 'Confirmar Pedido'}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Card Payment Details */}
+          {(selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  {selectedPaymentMethod === 'credit_card' ? 'Cartão de Crédito' : 'Cartão de Débito'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="cardNumber">Número do Cartão *</Label>
+                    <Input
+                      id="cardNumber"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                      placeholder="0000 0000 0000 0000"
+                      maxLength={19}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardName">Nome no Cartão *</Label>
+                    <Input
+                      id="cardName"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                      placeholder="NOME COMPLETO"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardCpf">CPF do Portador *</Label>
+                    <Input
+                      id="cardCpf"
+                      value={cardCpf}
+                      onChange={(e) => setCardCpf(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardExpiry">Validade *</Label>
+                    <Input
+                      id="cardExpiry"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
+                      placeholder="MM/AA"
+                      maxLength={5}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardCvv">CVV *</Label>
+                    <Input
+                      id="cardCvv"
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="123"
+                      maxLength={4}
+                    />
+                  </div>
+                  
+                  {selectedPaymentMethod === 'credit_card' && (
+                    <div className="md:col-span-2">
+                      <Label htmlFor="installments">Parcelas</Label>
+                      <Select value={installments} onValueChange={setInstallments}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o número de parcelas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1x de R$ {totalAmount.toFixed(2)} sem juros</SelectItem>
+                          <SelectItem value="2">2x de R$ {(totalAmount / 2).toFixed(2)} sem juros</SelectItem>
+                          <SelectItem value="3">3x de R$ {(totalAmount / 3).toFixed(2)} sem juros</SelectItem>
+                          <SelectItem value="4">4x de R$ {(totalAmount / 4).toFixed(2)} sem juros</SelectItem>
+                          <SelectItem value="5">5x de R$ {(totalAmount / 5).toFixed(2)} sem juros</SelectItem>
+                          <SelectItem value="6">6x de R$ {(totalAmount / 6).toFixed(2)} sem juros</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Ambiente de Teste:</strong> Use os cartões de teste do MercadoPago para simular pagamentos.
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={handleCardPayment}
+                  className="w-full"
+                  disabled={isProcessingCardPayment || !cardNumber || !cardName || !cardExpiry || !cardCvv || !cardCpf}
+                >
+                  {isProcessingCardPayment ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Processando Pagamento...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Pagar R$ {totalAmount.toFixed(2)}
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Address */}
           <Card>
             <CardHeader>
@@ -533,9 +867,18 @@ const CheckoutPage = () => {
                 onClick={handleSubmitOrder}
                 className="w-full"
                 size="lg"
-                disabled={createOrderMutation.isPending || isProcessingPayment}
+                disabled={createOrderMutation.isPending || isProcessingPayment || isProcessingCardPayment || 
+                         (selectedPaymentMethod === 'pix' && !pixPaymentData) ||
+                         ((selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') && 
+                          (!cardNumber || !cardName || !cardExpiry || !cardCvv || !cardCpf))}
               >
-                {createOrderMutation.isPending || isProcessingPayment ? 'Processando...' : 'Finalizar Pedido'}
+                {createOrderMutation.isPending || isProcessingPayment || isProcessingCardPayment ? 
+                  'Processando...' : 
+                  selectedPaymentMethod === 'cash' ? 'Finalizar Pedido' :
+                  selectedPaymentMethod === 'pix' ? (pixPaymentData ? 'PIX Gerado - Preencha os dados' : 'Gerar PIX') :
+                  (selectedPaymentMethod === 'credit_card' || selectedPaymentMethod === 'debit_card') ? 'Preencha os dados do cartão' :
+                  'Selecione um método de pagamento'
+                }
               </Button>
 
               <div className="text-sm text-gray-500 text-center">
@@ -550,30 +893,6 @@ const CheckoutPage = () => {
           </Card>
         </div>
       </div>
-
-      {/* PIX Payment Modal */}
-      <PixPaymentModal
-        isOpen={showPixModal}
-        onClose={() => setShowPixModal(false)}
-        paymentData={pixPaymentData}
-        orderSummary={{
-          serviceName: cartItems[0]?.name || "Serviço",
-          total: totalAmount
-        }}
-      />
-
-      {/* Card Payment Modal */}
-      <CardPaymentModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        paymentData={cardPaymentData}
-        orderSummary={{
-          serviceName: cartItems[0]?.name || "Serviço",
-          total: totalAmount
-        }}
-        publicKey={paymentGateways?.find(g => g.gatewayName === 'mercadopago')?.publicKey || ''}
-        paymentType={selectedPaymentType}
-      />
     </div>
   );
 };
