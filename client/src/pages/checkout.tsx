@@ -79,12 +79,35 @@ const formatExpiry = (value: string) => {
     .slice(0, 5);
 };
 
-// Function to get card info from BIN
+// Function to get card info from BIN using known test cards
 const getCardInfo = async (cardNumber: string) => {
   const cleanCardNumber = cardNumber.replace(/\s/g, '');
   if (cleanCardNumber.length >= 6) {
     const bin = cleanCardNumber.substring(0, 6);
     console.log('Detecting card info for BIN:', bin);
+    
+    // Check against known test cards first
+    const knownCards = [
+      { bin: '503143', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
+      { bin: '423564', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
+      { bin: '375365', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
+      { bin: '506776', paymentMethodId: 'elo', issuerId: '25', type: 'debit_card' },
+      { bin: '503175', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
+      { bin: '400917', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' }
+    ];
+    
+    const knownCard = knownCards.find(card => bin.startsWith(card.bin));
+    if (knownCard) {
+      console.log('Known test card detected:', knownCard);
+      return {
+        payment_method_id: knownCard.paymentMethodId,
+        issuer_id: knownCard.issuerId,
+        payment_type_id: knownCard.type,
+        bin: bin
+      };
+    }
+    
+    // Fallback to API detection for unknown cards
     try {
       const response = await apiRequest('POST', '/api/payments/card-info', { bin });
       console.log('Card info response:', response);
@@ -791,9 +814,9 @@ const CheckoutPage = () => {
                     <strong>Ambiente de Teste:</strong> Use os cartões de teste do MercadoPago:
                   </p>
                   <div className="mt-2 text-xs text-blue-700">
-                    <p>• Mastercard Aprovado: 5031 7557 3453 0604</p>
-                    <p>• Visa Aprovado: 4009 1750 1041 4098</p>
-                    <p>• CVV: qualquer • Data: 11/25 • CPF: 12345678909</p>
+                    <p>• Mastercard: 5031 4332 1540 6351</p>
+                    <p>• Visa: 4235 6477 2802 5682</p>
+                    <p>• CVV: 123 • Data: 11/30 • Nome: APRO</p>
                   </div>
                 </div>
                 
