@@ -22,7 +22,7 @@ export default function TestMercadoPagoSimple() {
     description: 'Teste de Pagamento'
   });
 
-  const testCardPaymentSimulation = async () => {
+  const testCardPaymentWithRealToken = async () => {
     if (!testData.email || !testData.cpf) {
       toast({
         title: "Dados Obrigatórios",
@@ -34,12 +34,25 @@ export default function TestMercadoPagoSimple() {
 
     setLoading(true);
     try {
-      // Simulate a realistic card token (like what MercadoPago would generate)
-      const simulatedToken = `card_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // First, create a real card token using MercadoPago API
+      console.log('Step 1: Creating card token with MercadoPago...');
       
+      const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
+        card_number: '5031755734530604', // Mastercard test card
+        security_code: '123',
+        expiration_month: '11',
+        expiration_year: '25',
+        cardholder_name: 'APRO',
+        cardholder_identification_type: 'CPF',
+        cardholder_identification_number: testData.cpf.replace(/\D/g, '')
+      });
+
+      console.log('Step 2: Token created successfully, now making payment...');
+      
+      // Now use the real token to make the payment
       const response = await apiRequest('POST', '/api/payments/card', {
         transaction_amount: testData.amount,
-        token: simulatedToken,
+        token: tokenResponse.id, // Use the real token ID
         description: testData.description,
         installments: 1,
         payment_method_id: 'master',
@@ -56,9 +69,10 @@ export default function TestMercadoPagoSimple() {
       setCardResult(response);
       toast({
         title: "Teste de Cartão Executado",
-        description: "Simulação realizada com sucesso!",
+        description: "Pagamento processado com token real!",
       });
     } catch (error) {
+      console.error('Card payment test error:', error);
       toast({
         title: "Erro no Teste de Cartão",
         description: error instanceof Error ? error.message : "Erro desconhecido",
@@ -204,17 +218,17 @@ export default function TestMercadoPagoSimple() {
             </div>
             
             <Button
-              onClick={testCardPaymentSimulation}
+              onClick={testCardPaymentWithRealToken}
               disabled={loading || !testData.email || !testData.cpf}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Testando...
+                  Criando token e processando...
                 </>
               ) : (
-                'Testar Pagamento com Cartão'
+                'Testar Pagamento com Token Real'
               )}
             </Button>
 
@@ -312,10 +326,11 @@ export default function TestMercadoPagoSimple() {
             <p>• <strong>Gateway:</strong> MercadoPago</p>
             <p>• <strong>Email Válido:</strong> Use um email real (não test@mercadopago.com)</p>
             <p>• <strong>CPF Válido:</strong> Insira um CPF válido para testes</p>
-            <p>• <strong>Simulação de Token:</strong> Esta versão simula tokens de cartão</p>
+            <p>• <strong>Token Real:</strong> Gera tokens reais usando a API do MercadoPago</p>
             <p>• <strong>PIX Real:</strong> Gera QR Code PIX real através da API do MercadoPago</p>
             <p>• <strong>Checkout Transparente:</strong> Sem redirecionamento para páginas externas</p>
-            <p className="text-green-600 font-medium">✅ Esta versão evita problemas de carregamento do SDK</p>
+            <p>• <strong>Cartão de Teste:</strong> Mastercard 5031 7557 3453 0604 (APRO)</p>
+            <p className="text-green-600 font-medium">✅ Versão completa com tokens reais do MercadoPago</p>
           </div>
         </CardContent>
       </Card>

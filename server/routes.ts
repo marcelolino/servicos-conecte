@@ -2109,40 +2109,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create card token endpoint - for real token generation
+  app.post('/api/payments/create-card-token', async (req: Request, res: Response) => {
+    try {
+      console.log('Creating card token with data:', req.body);
+      
+      const mercadoPagoConfig = await storage.getActivePaymentMethods();
+      const mpConfig = mercadoPagoConfig.find((pm: any) => pm.gatewayName === 'mercadopago' && pm.isActive);
+      
+      if (!mpConfig || !mpConfig.accessToken) {
+        return res.status(400).json({ error: 'MercadoPago not configured' });
+      }
+
+      const { MercadoPagoConfig, CardToken } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({ 
+        accessToken: mpConfig.accessToken,
+        options: { timeout: 5000 }
+      });
+      const cardToken = new CardToken(client);
+
+      const tokenData = {
+        card_number: req.body.card_number,
+        security_code: req.body.security_code,
+        expiration_month: req.body.expiration_month,
+        expiration_year: req.body.expiration_year,
+        cardholder: {
+          name: req.body.cardholder_name,
+          identification: {
+            type: req.body.cardholder_identification_type,
+            number: req.body.cardholder_identification_number
+          }
+        }
+      };
+
+      console.log('Token creation request:', {
+        ...tokenData,
+        card_number: tokenData.card_number.substring(0, 6) + '******' + tokenData.card_number.substring(-4),
+        security_code: '***'
+      });
+
+      const result = await cardToken.create({ body: tokenData });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error creating card token:', error);
+      res.status(500).json({ 
+        message: 'Failed to create card token', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   // Card payment route - MercadoPago transparent checkout
   app.post('/api/payments/card', async (req: Request, res: Response) => {
     try {
-      const { 
-        token, 
-        transaction_amount, 
-        description, 
-        installments,
-        payment_method_id,
-        issuer_id,
-        payer 
-      } = req.body;
+      console.log('Creating card payment with data:', req.body);
       
-      if (!token || !transaction_amount || !description || !payment_method_id || !payer) {
-        return res.status(400).json({ message: 'Missing required fields' });
+      const mercadoPagoConfig = await storage.getActivePaymentMethods();
+      console.log('MercadoPago config:', mercadoPagoConfig);
+      
+      const mpConfig = mercadoPagoConfig.find((pm: any) => pm.gatewayName === 'mercadopago' && pm.isActive);
+      if (!mpConfig || !mpConfig.accessToken) {
+        return res.status(400).json({ error: 'MercadoPago not configured' });
       }
 
-      const payment_data = {
-        transaction_amount: Number(transaction_amount),
-        token: token,
-        description: description,
-        installments: Number(installments) || 1,
-        payment_method_id: payment_method_id,
-        issuer_id: issuer_id,
-        payer: {
-          email: payer.email,
-          identification: {
-            type: payer.identification.type,
-            number: payer.identification.number,
-          },
-        },
+      console.log('Using access token for card payment:', mpConfig.accessToken.substring(0, 20) + '...');
+
+      const { MercadoPagoConfig, Payment } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({ 
+        accessToken: mpConfig.accessToken,
+        options: { timeout: 5000 }
+      });
+      const payment = new Payment(client);
+
+      const paymentData = {
+        transaction_amount: req.body.transaction_amount,
+        token: req.body.token,
+        description: req.body.description,
+        installments: req.body.installments || 1,
+        payment_method_id: req.body.payment_method_id,
+        issuer_id: req.body.issuer_id,
+        payer: req.body.payer
       };
 
-      const result = await storage.createCardPayment(payment_data);
+      console.log('Card payment request:', paymentData);
+
+      const result = await payment.create({ body: paymentData });
+      
       res.json(result);
     } catch (error) {
       console.error('Error creating card payment:', error);
