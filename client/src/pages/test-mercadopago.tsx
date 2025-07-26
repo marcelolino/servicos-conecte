@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,20 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, CreditCard, Smartphone } from "lucide-react";
 
+declare global {
+  interface Window {
+    mp: any;
+  }
+}
+
 export default function TestMercadoPago() {
   const [loading, setLoading] = useState(false);
   const [cardResult, setCardResult] = useState<any>(null);
   const [pixResult, setPixResult] = useState<any>(null);
   const { toast } = useToast();
+  const cardPaymentRef = useRef<HTMLDivElement>(null);
+  const [mp, setMp] = useState<any>(null);
+  const [isCardFormReady, setIsCardFormReady] = useState(false);
   
   // Form data states
   const [testData, setTestData] = useState({
@@ -22,51 +31,125 @@ export default function TestMercadoPago() {
     description: 'Teste de Pagamento'
   });
 
-  const testCardPayment = async () => {
-    if (!testData.email || !testData.cpf) {
-      toast({
-        title: "Dados Obrigatórios",
-        description: "Por favor, preencha email e CPF para testar o pagamento.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Test card payment with user-provided data
-      const response = await apiRequest('POST', '/api/payments/card', {
-        transaction_amount: testData.amount,
-        token: 'sample_token_123',
-        description: testData.description,
-        installments: 1,
-        payment_method_id: 'visa',
-        issuer_id: '24',
-        payer: {
-          email: testData.email,
-          identification: {
-            type: 'CPF',
-            number: testData.cpf.replace(/\D/g, '') // Remove formatting
-          }
+  // Initialize MercadoPago SDK
+  useEffect(() => {
+    const initializeMercadoPago = async () => {
+      try {
+        // Get public key from API
+        const response = await fetch('/api/payment-methods/active');
+        const paymentMethods = await response.json();
+        const mercadoPago = paymentMethods.find((pm: any) => pm.gatewayName === 'mercadopago');
+        
+        if (!mercadoPago?.publicKey) {
+          toast({
+            title: "Erro de Configuração",
+            description: "Chave pública do MercadoPago não encontrada.",
+            variant: "destructive"
+          });
+          return;
         }
-      });
-      
-      setCardResult(response);
-      toast({
-        title: "Teste de Cartão Executado",
-        description: "Verifique os resultados abaixo.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro no Teste de Cartão",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive"
-      });
-      setCardResult({ error: error instanceof Error ? error.message : "Erro desconhecido" });
-    } finally {
-      setLoading(false);
+
+        // Load MercadoPago script
+        const script = document.createElement('script');
+        script.src = 'https://sdk.mercadopago.com/js/v2';
+        script.onload = () => {
+          const mpInstance = new window.mp(mercadoPago.publicKey);
+          setMp(mpInstance);
+          console.log('MercadoPago SDK initialized');
+        };
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error initializing MercadoPago:', error);
+        toast({
+          title: "Erro de Inicialização",
+          description: "Não foi possível carregar o MercadoPago SDK.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    initializeMercadoPago();
+  }, []);
+
+  // Initialize Card Payment Brick
+  useEffect(() => {
+    if (mp && cardPaymentRef.current && testData.email && testData.cpf) {
+      try {
+        const cardPaymentBrick = mp.bricks().create('cardPayment', cardPaymentRef.current, {
+          initialization: {
+            amount: testData.amount,
+            payer: {
+              email: testData.email,
+              identification: {
+                type: 'CPF',
+                number: testData.cpf.replace(/\D/g, '')
+              }
+            }
+          },
+          customization: {
+            paymentMethods: {
+              creditCard: 'all',
+              debitCard: 'all'
+            },
+            visual: {
+              style: {
+                customVariables: {
+                  theme: 'default'
+                }
+              }
+            }
+          },
+          callbacks: {
+            onReady: () => {
+              console.log('Card Payment Brick ready');
+              setIsCardFormReady(true);
+            },
+            onSubmit: async (cardFormData: any) => {
+              setLoading(true);
+              try {
+                console.log('Card form data:', cardFormData);
+                const response = await apiRequest('POST', '/api/payments/card', {
+                  transaction_amount: testData.amount,
+                  token: cardFormData.token,
+                  description: testData.description,
+                  installments: cardFormData.installments || 1,
+                  payment_method_id: cardFormData.paymentMethodId,
+                  issuer_id: cardFormData.issuerId,
+                  payer: {
+                    email: testData.email,
+                    identification: {
+                      type: 'CPF',
+                      number: testData.cpf.replace(/\D/g, '')
+                    }
+                  }
+                });
+                
+                setCardResult(response);
+                toast({
+                  title: "Teste de Cartão Executado",
+                  description: "Pagamento processado com sucesso!",
+                });
+              } catch (error) {
+                console.error('Card payment error:', error);
+                toast({
+                  title: "Erro no Pagamento",
+                  description: error instanceof Error ? error.message : "Erro desconhecido",
+                  variant: "destructive"
+                });
+                setCardResult({ error: error instanceof Error ? error.message : "Erro desconhecido" });
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error creating Card Payment Brick:', error);
+      }
     }
-  };
+  }, [mp, testData.email, testData.cpf, testData.amount]);
+
+  // Card payment is now handled by the Brick's onSubmit callback
 
   const testPixPayment = async () => {
     if (!testData.email) {
@@ -190,32 +273,33 @@ export default function TestMercadoPago() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Dados do Teste:</Label>
-              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                <p><strong>Valor:</strong> R$ {testData.amount.toFixed(2)}</p>
-                <p><strong>Descrição:</strong> {testData.description}</p>
-                <p><strong>Email:</strong> {testData.email || 'Não informado'}</p>
-                <p><strong>CPF:</strong> {testData.cpf || 'Não informado'}</p>
-                <p><strong>Método:</strong> Visa</p>
-                <p><strong>Parcelas:</strong> 1x</p>
+            {testData.email && testData.cpf ? (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                  <p><strong>Valor:</strong> R$ {testData.amount.toFixed(2)}</p>
+                  <p><strong>Descrição:</strong> {testData.description}</p>
+                  <p><strong>Email:</strong> {testData.email}</p>
+                  <p><strong>CPF:</strong> {testData.cpf}</p>
+                </div>
+                
+                <div className="border rounded-lg p-4 bg-white">
+                  <Label className="text-sm font-medium mb-3 block">Formulário de Pagamento:</Label>
+                  <div ref={cardPaymentRef} id="cardPayment"></div>
+                  {loading && (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Processando pagamento...</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            
-            <Button
-              onClick={testCardPayment}
-              disabled={loading || !testData.email || !testData.cpf}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Testando...
-                </>
-              ) : (
-                'Testar Pagamento com Cartão'
-              )}
-            </Button>
+            ) : (
+              <div className="text-center p-6 bg-yellow-50 rounded-lg">
+                <p className="text-yellow-800">
+                  Preencha email e CPF acima para carregar o formulário de pagamento
+                </p>
+              </div>
+            )}
 
             {cardResult && (
               <div className="space-y-2">
@@ -299,11 +383,12 @@ export default function TestMercadoPago() {
             <p>• <strong>Gateway:</strong> MercadoPago</p>
             <p>• <strong>Email Válido:</strong> Use um email real (não test@mercadopago.com)</p>
             <p>• <strong>CPF Válido:</strong> Insira um CPF válido para testes</p>
-            <p>• <strong>Cartões de Teste:</strong></p>
+            <p>• <strong>Cartões de Teste MercadoPago:</strong></p>
             <div className="ml-4 space-y-1">
-              <p>- Aprovado: 4111 1111 1111 1111</p>
-              <p>- Rejeitado: 4000 0000 0000 0002</p>
-              <p>- CVV: 123 | Vencimento: 12/25</p>
+              <p>- Mastercard Aprovado: 5031 7557 3453 0604</p>
+              <p>- Visa Aprovado: 4509 9535 6623 3704</p>
+              <p>- CVV: 123 | Vencimento: 11/25</p>
+              <p>- Nome: APRO (para aprovado) ou CONT (para contestado)</p>
             </div>
             <p>• <strong>PIX:</strong> QR Code gerado automaticamente para pagamentos instantâneos</p>
             <p>• <strong>Checkout Transparente:</strong> Sem redirecionamento para páginas externas</p>
