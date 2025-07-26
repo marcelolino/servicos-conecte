@@ -53,6 +53,7 @@ import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
 import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
+import TestMercadoPago from "@/pages/test-mercadopago";
 
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -113,6 +114,7 @@ function Router() {
           <Route path="/orders" component={Orders} />
           <Route path="/orders/:id" component={OrderDetails} />
           <Route path="/order-success/:id" component={OrderSuccess} />
+          <Route path="/test-mercadopago" component={TestMercadoPago} />
           <Route component={NotFound} />
         </Switch>
       </main>

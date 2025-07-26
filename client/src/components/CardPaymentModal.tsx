@@ -127,17 +127,29 @@ export function CardPaymentModal({
             return new Promise<void>((resolve, reject) => {
               setIsProcessing(true);
               
+              // Format data according to MercadoPago structure
+              const payment_data = {
+                transaction_amount: orderSummary.total,
+                token: cardFormData.token,
+                description: orderSummary.serviceName,
+                installments: cardFormData.installments || 1,
+                payment_method_id: cardFormData.paymentMethodId,
+                issuer_id: cardFormData.issuerId,
+                payer: {
+                  email: cardFormData.cardholderEmail,
+                  identification: {
+                    type: cardFormData.identificationType,
+                    number: cardFormData.identificationNumber,
+                  },
+                }
+              };
+              
               fetch('/api/payments/card', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                  ...cardFormData,
-                  amount: orderSummary.total,
-                  description: orderSummary.serviceName,
-                  payment_method_type: paymentType
-                }),
+                body: JSON.stringify(payment_data),
               })
               .then(response => response.json())
               .then(response => {

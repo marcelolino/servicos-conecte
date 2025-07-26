@@ -42,7 +42,7 @@ export function PixPaymentModal({ isOpen, onClose, paymentData, orderSummary }: 
   const handleConfirmPayment = () => {
     toast({
       title: "Aguardando pagamento",
-      description: "Sua compra será confirmada automaticamente após o pagamento.",
+      description: "Sua compra será confirmada automaticamente após o pagamento PIX.",
     });
     onClose();
   };

@@ -2109,53 +2109,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Card payment route
+  // Card payment route - MercadoPago transparent checkout
   app.post('/api/payments/card', async (req: Request, res: Response) => {
     try {
       const { 
         token, 
-        amount, 
+        transaction_amount, 
         description, 
         installments,
         payment_method_id,
+        issuer_id,
         payer 
       } = req.body;
       
-      if (!token || !amount || !description || !payment_method_id || !payer) {
+      if (!token || !transaction_amount || !description || !payment_method_id || !payer) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      const result = await storage.createCardPayment({
-        token,
-        amount: parseFloat(amount),
-        description,
-        installments: installments || 1,
-        payment_method_id,
-        payer
-      });
-      
+      const payment_data = {
+        transaction_amount: Number(transaction_amount),
+        token: token,
+        description: description,
+        installments: Number(installments) || 1,
+        payment_method_id: payment_method_id,
+        issuer_id: issuer_id,
+        payer: {
+          email: payer.email,
+          identification: {
+            type: payer.identification.type,
+            number: payer.identification.number,
+          },
+        },
+      };
+
+      const result = await storage.createCardPayment(payment_data);
       res.json(result);
     } catch (error) {
       console.error('Error creating card payment:', error);
-      res.status(500).json({ message: 'Failed to create card payment' });
+      res.status(500).json({ 
+        message: 'Failed to create card payment',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
-  // PIX payment route
+  // PIX payment route - MercadoPago transparent checkout
   app.post('/api/payments/pix', async (req: Request, res: Response) => {
     try {
-      const { amount, description, payerEmail } = req.body;
+      const { transaction_amount, description, email } = req.body;
       
+      if (!transaction_amount || !description || !email) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
       const pixPayment = await storage.createPixPayment({
-        amount: parseFloat(amount),
-        description,
-        payerEmail
+        transaction_amount: parseFloat(transaction_amount),
+        description: description,
+        payerEmail: email
       });
       
-      res.json(pixPayment);
+      res.json({
+        id: pixPayment.id,
+        status: pixPayment.status,
+        qr_code: pixPayment.qr_code,
+        qr_code_base64: pixPayment.qr_code_base64,
+        ticket_url: pixPayment.ticket_url
+      });
     } catch (error) {
       console.error('Error creating PIX payment:', error);
-      res.status(500).json({ message: 'Failed to create PIX payment' });
+      res.status(500).json({ 
+        message: 'Failed to create PIX payment',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

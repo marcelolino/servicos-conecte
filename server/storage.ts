@@ -2311,11 +2311,12 @@ export class DatabaseStorage implements IStorage {
 
   // Card payment integration with MercadoPago
   async createCardPayment(data: { 
+    transaction_amount: number; 
     token: string; 
-    amount: number; 
     description: string; 
     installments: number;
     payment_method_id: string;
+    issuer_id?: string;
     payer: {
       email: string;
       identification: {
@@ -2355,13 +2356,14 @@ export class DatabaseStorage implements IStorage {
 
       const payment = new Payment(client);
 
-      // Create card payment
+      // Create card payment request following MercadoPago structure
       const paymentRequest = {
-        transaction_amount: data.amount,
+        transaction_amount: Number(data.transaction_amount),
         token: data.token,
         description: data.description,
-        installments: data.installments,
+        installments: Number(data.installments),
         payment_method_id: data.payment_method_id,
+        issuer_id: data.issuer_id,
         payer: {
           email: data.payer.email,
           identification: {
@@ -2375,17 +2377,7 @@ export class DatabaseStorage implements IStorage {
       const response = await payment.create({ body: paymentRequest });
       console.log('Card payment response:', response);
 
-      return {
-        id: response.id,
-        status: response.status,
-        status_detail: response.status_detail,
-        amount: response.transaction_amount,
-        currency_id: response.currency_id,
-        payment_method_id: response.payment_method_id,
-        payment_type_id: response.payment_type_id,
-        date_created: response.date_created,
-        date_approved: response.date_approved,
-      };
+      return response; // Return the full response from MercadoPago
     } catch (error) {
       console.error('Error creating card payment:', error);
       throw error;
@@ -2393,7 +2385,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // PIX payment integration with MercadoPago
-  async createPixPayment(data: { amount: number; description: string; payerEmail: string }): Promise<any> {
+  async createPixPayment(data: { transaction_amount: number; description: string; payerEmail: string }): Promise<any> {
     try {
       console.log('Creating PIX payment with data:', data);
       
@@ -2425,34 +2417,26 @@ export class DatabaseStorage implements IStorage {
 
       const payment = new Payment(client);
 
-      // Create PIX payment
+      // Create PIX payment request following MercadoPago structure
       const paymentRequest = {
-        transaction_amount: data.amount,
+        transaction_amount: Number(data.transaction_amount),
         description: data.description,
         payment_method_id: 'pix',
-        payer: {
-          email: data.payerEmail
+        payer: { 
+          email: data.payerEmail 
         }
       };
 
+      console.log('PIX payment request:', paymentRequest);
       const response = await payment.create({ body: paymentRequest });
+      console.log('PIX payment response:', response);
       
-      // Generate QR Code from PIX code
-      let qrCodeDataURL = null;
-      if (response.point_of_interaction?.transaction_data?.qr_code) {
-        qrCodeDataURL = await QRCode.toDataURL(response.point_of_interaction.transaction_data.qr_code);
-      }
-
       return {
         id: response.id,
         status: response.status,
         qr_code: response.point_of_interaction?.transaction_data?.qr_code,
         qr_code_base64: response.point_of_interaction?.transaction_data?.qr_code_base64,
-        qr_code_image: qrCodeDataURL,
-        ticket_url: response.point_of_interaction?.transaction_data?.ticket_url,
-        amount: response.transaction_amount,
-        currency: response.currency_id,
-        expires_at: response.date_of_expiration
+        ticket_url: response.point_of_interaction?.transaction_data?.ticket_url
       };
     } catch (error) {
       console.error('Error creating PIX payment:', error);

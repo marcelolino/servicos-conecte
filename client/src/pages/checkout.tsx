@@ -183,13 +183,12 @@ const CheckoutPage = () => {
 
     setIsProcessingPayment(true);
     try {
-      const response = await apiRequest('POST', '/api/payments/pix', {
-        amount: totalAmount,
+      const pixData = await apiRequest('POST', '/api/payments/pix', {
+        transaction_amount: totalAmount,
         description: `Pagamento de serviços - ${cartItems[0]?.name}`,
-        payerEmail: user.email
+        email: user.email
       });
       
-      const pixData = await response.json();
       setPixPaymentData(pixData);
       setShowPixModal(true);
     } catch (error) {

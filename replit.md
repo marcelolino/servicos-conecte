@@ -144,6 +144,11 @@ Preferred communication style: Simple, everyday language.
 - ✓ Integrated with existing order creation flow for seamless user experience
 - ✓ Payment methods now display in 2x2 grid: Cash, PIX, Credit Card, Debit Card
 - ✓ All payment gateways properly configured and accessible from database
+- ✓ Updated API structure to match MercadoPago requirements (transaction_amount vs amount)
+- ✓ Corrected card payment data formatting in frontend to include issuer_id and proper payer structure
+- ✓ Fixed PIX payment request structure to follow MercadoPago API specifications
+- ✓ Enhanced error handling and response formatting for both card and PIX payments
+- ✓ Aligned frontend and backend implementations for transparent checkout workflow
 
 ### Complete Chat System Implementation (July 23, 2025)
 - ✓ Implemented business rule that chat is only allowed after provider accepts service request
