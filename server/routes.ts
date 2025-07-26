@@ -2152,9 +2152,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const issuerResponse = await fetch(`https://api.mercadopago.com/v1/payment_methods/card_issuers?payment_method_id=${paymentMethod.id}&bin=${bin}&public_key=${mpConfig.publicKey}`);
       const issuerData = await issuerResponse.json();
       
+      console.log('Issuer response:', issuerResponse.ok, issuerData);
+      
       let issuerId = null;
       if (issuerResponse.ok && issuerData.length > 0) {
         issuerId = issuerData[0].id;
+      } else if (paymentMethod.id === 'consumer_credits') {
+        // For consumer credits, we don't need issuer_id
+        console.log('Consumer credits detected - no issuer required');
+        issuerId = null;
+      } else {
+        console.log('No issuer found, trying to get default issuer from payment method');
+        // Try to get issuer from payment method itself if available
+        if (paymentMethod.issuer) {
+          issuerId = paymentMethod.issuer.id;
+        } else if (paymentMethod.issuers && paymentMethod.issuers.length > 0) {
+          issuerId = paymentMethod.issuers[0].id;
+        }
       }
 
       console.log('Card info detected:', {
@@ -2251,15 +2265,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const payment = new Payment(client);
 
-      const paymentData = {
+      const paymentData: any = {
         transaction_amount: req.body.transaction_amount,
         token: req.body.token,
         description: req.body.description,
         installments: req.body.installments || 1,
         payment_method_id: req.body.payment_method_id,
-        issuer_id: req.body.issuer_id,
         payer: req.body.payer
       };
+      
+      // Only add issuer_id if it's not null
+      if (req.body.issuer_id !== null && req.body.issuer_id !== undefined) {
+        paymentData.issuer_id = req.body.issuer_id;
+      }
 
       console.log('Card payment request:', paymentData);
 
