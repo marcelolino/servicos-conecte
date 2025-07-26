@@ -1740,6 +1740,38 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async createOrderFromData(orderData: InsertOrder, items: any[]): Promise<Order> {
+    // Create the order
+    const [newOrder] = await db
+      .insert(orders)
+      .values(orderData)
+      .returning();
+
+    // Create service requests based on items
+    if (items && items.length > 0) {
+      // For now, we'll create a simple service request
+      // This assumes items contains basic service information
+      for (const item of items) {
+        await db.insert(serviceRequests).values({
+          clientId: orderData.clientId,
+          providerId: item.providerId || null,
+          categoryId: item.categoryId || 1, // Default to first category
+          description: item.description || "Serviço solicitado",
+          address: orderData.address || "",
+          cep: orderData.cep || "",
+          city: orderData.city || "",
+          state: orderData.state || "",
+          scheduledAt: orderData.scheduledAt,
+          status: "pending",
+          price: parseFloat(orderData.totalAmount) || 0,
+          notes: orderData.notes,
+        });
+      }
+    }
+
+    return this.getOrderById(newOrder.id) as Promise<Order>;
+  }
+
   async convertCartToOrder(clientId: number, orderData: Partial<InsertOrder>): Promise<Order> {
     const cart = await this.getCartByClient(clientId);
     if (!cart) {

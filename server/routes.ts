@@ -1213,23 +1213,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", authenticateToken, async (req, res) => {
     try {
       console.log("Creating order for user:", req.user!.id);
-      const orderData = {
-        address: req.body.address,
-        cep: req.body.cep,
-        city: req.body.city,
-        state: req.body.state,
-        latitude: req.body.latitude || null,
-        longitude: req.body.longitude || null,
-        scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null,
-        notes: req.body.notes || null,
-        couponCode: req.body.couponCode || null,
-        discountAmount: req.body.discountAmount || "0.00",
-        paymentMethod: req.body.paymentMethod || null,
-      };
+      
+      // Check if cart exists, if not create order directly from provided data
+      const cart = await storage.getCartByClient(req.user!.id);
+      
+      if (!cart && req.body.items) {
+        // Create order directly from provided data (after payment)
+        const orderData = {
+          clientId: req.user!.id,
+          status: "confirmed" as const,
+          subtotal: req.body.subtotal || "0.00",
+          serviceAmount: req.body.serviceAmount || "0.00", 
+          totalAmount: req.body.totalAmount || "0.00",
+          paymentMethod: req.body.paymentMethod || null,
+          paymentId: req.body.paymentId || null,
+          address: req.body.address,
+          cep: req.body.cep,
+          city: req.body.city,
+          state: req.body.state,
+          latitude: req.body.latitude || null,
+          longitude: req.body.longitude || null,
+          scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null,
+          notes: req.body.notes || null,
+          couponCode: req.body.couponCode || null,
+          discountAmount: req.body.discountAmount || "0.00",
+        };
 
-      const order = await storage.convertCartToOrder(req.user!.id, orderData);
-      console.log("Order created successfully:", order);
-      res.json(order);
+        const order = await storage.createOrderFromData(orderData, req.body.items);
+        console.log("Order created successfully from payment data:", order);
+        res.json(order);
+      } else if (cart) {
+        // Convert existing cart to order
+        const orderData = {
+          address: req.body.address,
+          cep: req.body.cep,
+          city: req.body.city,
+          state: req.body.state,
+          latitude: req.body.latitude || null,
+          longitude: req.body.longitude || null,
+          scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null,
+          notes: req.body.notes || null,
+          couponCode: req.body.couponCode || null,
+          discountAmount: req.body.discountAmount || "0.00",
+          paymentMethod: req.body.paymentMethod || null,
+          paymentId: req.body.paymentId || null,
+        };
+
+        const order = await storage.convertCartToOrder(req.user!.id, orderData);
+        console.log("Order created successfully from cart:", order);
+        res.json(order);
+      } else {
+        throw new Error("No cart found and no items provided");
+      }
     } catch (error) {
       console.error("Failed to create order:", error);
       res.status(400).json({ message: "Failed to create order", error: error instanceof Error ? error.message : "Unknown error" });
