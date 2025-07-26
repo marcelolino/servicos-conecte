@@ -22,6 +22,7 @@ import {
   Smartphone
 } from "lucide-react";
 import { PixPaymentModal } from "@/components/PixPaymentModal";
+import { CardPaymentModal } from "@/components/CardPaymentModal";
 
 interface PaymentGateway {
   id: number;
@@ -70,6 +71,11 @@ const CheckoutPage = () => {
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixPaymentData, setPixPaymentData] = useState<any>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Card Payment Modal State
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [cardPaymentData, setCardPaymentData] = useState<any>(null);
+  const [selectedPaymentType, setSelectedPaymentType] = useState<'credit_card' | 'debit_card'>('credit_card');
 
   // Fetch real cart data from API
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -197,6 +203,11 @@ const CheckoutPage = () => {
     }
   };
 
+  const handleCardPayment = (paymentType: 'credit_card' | 'debit_card') => {
+    setSelectedPaymentType(paymentType);
+    setIsCardModalOpen(true);
+  };
+
   const handleSubmitOrder = () => {
     if (!selectedPaymentMethod) {
       toast({
@@ -228,6 +239,17 @@ const CheckoutPage = () => {
     // Handle PIX payment differently
     if (selectedPaymentMethod === 'pix') {
       handlePixPayment();
+      return;
+    }
+
+    // Handle card payments differently
+    if (selectedPaymentMethod === 'credit_card') {
+      handleCardPayment('credit_card');
+      return;
+    }
+
+    if (selectedPaymentMethod === 'debit_card') {
+      handleCardPayment('debit_card');
       return;
     }
 
@@ -539,6 +561,19 @@ const CheckoutPage = () => {
           serviceName: cartItems[0]?.name || "Serviço",
           total: totalAmount
         }}
+      />
+
+      {/* Card Payment Modal */}
+      <CardPaymentModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        paymentData={cardPaymentData}
+        orderSummary={{
+          serviceName: cartItems[0]?.name || "Serviço",
+          total: totalAmount
+        }}
+        publicKey={paymentGateways?.find(g => g.gatewayName === 'mercadopago')?.publicKey || ''}
+        paymentType={selectedPaymentType}
       />
     </div>
   );

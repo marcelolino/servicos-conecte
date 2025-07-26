@@ -7,7 +7,7 @@ import { z } from "zod";
 export const userTypeEnum = pgEnum("user_type", ["client", "provider", "admin", "employee"]);
 export const serviceStatusEnum = pgEnum("service_status", ["pending", "accepted", "in_progress", "completed", "cancelled"]);
 export const providerStatusEnum = pgEnum("provider_status", ["pending", "approved", "rejected", "suspended"]);
-export const paymentMethodEnum = pgEnum("payment_method", ["digital", "cash", "credit_card", "pix"]);
+export const paymentMethodEnum = pgEnum("payment_method", ["digital", "cash", "credit_card", "debit_card", "pix"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "processing", "completed", "failed", "refunded"]);
 export const bannerStatusEnum = pgEnum("banner_status", ["active", "inactive", "scheduled"]);
 export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment", "confirmed", "in_progress", "completed", "cancelled"]);

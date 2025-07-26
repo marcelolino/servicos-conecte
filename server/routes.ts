@@ -2109,6 +2109,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Card payment route
+  app.post('/api/payments/card', async (req: Request, res: Response) => {
+    try {
+      const { 
+        token, 
+        amount, 
+        description, 
+        installments,
+        payment_method_id,
+        payer 
+      } = req.body;
+      
+      if (!token || !amount || !description || !payment_method_id || !payer) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      const result = await storage.createCardPayment({
+        token,
+        amount: parseFloat(amount),
+        description,
+        installments: installments || 1,
+        payment_method_id,
+        payer
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error creating card payment:', error);
+      res.status(500).json({ message: 'Failed to create card payment' });
+    }
+  });
+
   // PIX payment route
   app.post('/api/payments/pix', async (req: Request, res: Response) => {
     try {

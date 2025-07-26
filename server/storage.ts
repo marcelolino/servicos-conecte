@@ -2309,6 +2309,89 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Card payment integration with MercadoPago
+  async createCardPayment(data: { 
+    token: string; 
+    amount: number; 
+    description: string; 
+    installments: number;
+    payment_method_id: string;
+    payer: {
+      email: string;
+      identification: {
+        type: string;
+        number: string;
+      };
+    };
+  }): Promise<any> {
+    try {
+      console.log('Creating card payment with data:', data);
+      
+      // Get MercadoPago credentials from database
+      const mercadoPagoConfig = await db
+        .select()
+        .from(paymentGatewayConfigs)
+        .where(and(
+          eq(paymentGatewayConfigs.gatewayName, 'mercadopago'),
+          eq(paymentGatewayConfigs.isActive, true)
+        ))
+        .limit(1);
+
+      console.log('MercadoPago config:', mercadoPagoConfig);
+
+      if (!mercadoPagoConfig.length || !mercadoPagoConfig[0].accessToken) {
+        console.error('MercadoPago config missing or access token empty');
+        throw new Error('MercadoPago access token not configured');
+      }
+
+      const accessToken = mercadoPagoConfig[0].accessToken;
+      console.log('Using access token for card payment:', accessToken?.substring(0, 20) + '...');
+
+      // Initialize MercadoPago client
+      const client = new MercadoPagoConfig({ 
+        accessToken: accessToken,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+
+      // Create card payment
+      const paymentRequest = {
+        transaction_amount: data.amount,
+        token: data.token,
+        description: data.description,
+        installments: data.installments,
+        payment_method_id: data.payment_method_id,
+        payer: {
+          email: data.payer.email,
+          identification: {
+            type: data.payer.identification.type,
+            number: data.payer.identification.number,
+          },
+        },
+      };
+
+      console.log('Card payment request:', paymentRequest);
+      const response = await payment.create({ body: paymentRequest });
+      console.log('Card payment response:', response);
+
+      return {
+        id: response.id,
+        status: response.status,
+        status_detail: response.status_detail,
+        amount: response.transaction_amount,
+        currency_id: response.currency_id,
+        payment_method_id: response.payment_method_id,
+        payment_type_id: response.payment_type_id,
+        date_created: response.date_created,
+        date_approved: response.date_approved,
+      };
+    } catch (error) {
+      console.error('Error creating card payment:', error);
+      throw error;
+    }
+  }
+
   // PIX payment integration with MercadoPago
   async createPixPayment(data: { amount: number; description: string; payerEmail: string }): Promise<any> {
     try {
