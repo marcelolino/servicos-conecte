@@ -88,11 +88,11 @@ const getCardInfo = async (cardNumber: string) => {
     
     // Check against known official test cards first
     const knownCards = [
-      { bin: '503175', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
-      { bin: '450995', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
-      { bin: '371180', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
+      { bin: '503143', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
+      { bin: '423564', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
+      { bin: '375365', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
       // Note: Elo cards require API detection for correct issuer_id
-      { bin: '506726', paymentMethodId: 'elo', issuerId: null, type: 'credit_card' }
+      { bin: '506776', paymentMethodId: 'elo', issuerId: null, type: 'credit_card' }
     ];
     
     const knownCard = knownCards.find(card => bin.startsWith(card.bin));
@@ -110,6 +110,33 @@ const getCardInfo = async (cardNumber: string) => {
     try {
       const response = await apiRequest('POST', '/api/payments/card-info', { bin });
       console.log('Card info response:', response);
+      
+      // Fix incorrect API detection: if API returns consumer_credits for known BINs, use correct method
+      if (response.payment_method_id === 'consumer_credits') {
+        if (bin === '423564') {
+          console.log('Correcting consumer_credits to visa for BIN 423564');
+          return {
+            payment_method_id: 'visa',
+            issuer_id: '25',
+            payment_type_id: 'credit_card',
+            bin: bin
+          };
+        } else if (bin === '503143') {
+          console.log('Correcting consumer_credits to master for BIN 503143');
+          return {
+            payment_method_id: 'master',
+            issuer_id: '25',
+            payment_type_id: 'credit_card',
+            bin: bin
+          };
+        }
+        // For other consumer_credits (like real Elo), keep as is with no issuer_id
+        return {
+          ...response,
+          issuer_id: null
+        };
+      }
+      
       return response;
     } catch (error) {
       console.error('Could not detect card info:', error);
@@ -816,13 +843,13 @@ const CheckoutPage = () => {
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-blue-800 text-sm">
-                    <strong>Ambiente de Teste:</strong> Use os cartões oficiais do MercadoPago:
+                    <strong>Ambiente de Teste:</strong> Use os cartões atuais do MercadoPago:
                   </p>
                   <div className="mt-2 text-xs text-blue-700">
-                    <p>• Mastercard: 5031 7557 3453 0604</p>
-                    <p>• Visa: 4509 9531 6623 3704</p>
-                    <p>• Elo: 5067 2686 5178 2643</p>
-                    <p>• CVV: 123 • Data: 11/25 • Nome: APRO</p>
+                    <p>• Mastercard: 5031 4332 1540 6351</p>
+                    <p>• Visa: 4235 6477 2802 5682</p>
+                    <p>• Elo: 5067 7667 8388 8311</p>
+                    <p>• CVV: 123 • Data: 11/30 • Nome: APRO</p>
                   </div>
                 </div>
                 

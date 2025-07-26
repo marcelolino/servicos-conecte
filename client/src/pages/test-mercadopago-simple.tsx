@@ -12,37 +12,37 @@ import { Loader2, CreditCard, Smartphone, CheckCircle } from "lucide-react";
 const TEST_CARDS = [
   {
     brand: 'Mastercard',
-    number: '5031755734530604',
+    number: '5031433215406351',
     cvv: '123',
     expMonth: '11',
-    expYear: '2025',
+    expYear: '2030',
     paymentMethodId: 'master',
     issuerId: '25'
   },
   {
     brand: 'Visa',
-    number: '4509953166233704',
+    number: '4235647728025682',
     cvv: '123',
     expMonth: '11',
-    expYear: '2025',
+    expYear: '2030',
     paymentMethodId: 'visa',
     issuerId: '25'
   },
   {
     brand: 'American Express',
-    number: '371180303257522',
+    number: '375365153568885',
     cvv: '1234',
     expMonth: '11',
-    expYear: '2025',
+    expYear: '2030',
     paymentMethodId: 'amex',
     issuerId: '25'
   },
   {
-    brand: 'Elo',
-    number: '5067268651782643',
+    brand: 'Elo Débito',
+    number: '5067766783888311',
     cvv: '123',
     expMonth: '11',
-    expYear: '2025',
+    expYear: '2030',
     paymentMethodId: 'elo',
     issuerId: null // Elo uses automatic detection
   }
@@ -101,8 +101,24 @@ export default function TestMercadoPagoSimple() {
       console.log('Step 3: Token created successfully, now making payment...');
       
       // Step 3: Use detected card info for payment (fallback to selectedCard if detection fails)
-      const paymentMethodId = cardInfoResponse.payment_method_id || selectedCard.paymentMethodId;
-      const issuerId = cardInfoResponse.issuer_id || selectedCard.issuerId;
+      // Fix incorrect API detection: if API returns consumer_credits for known Visa/Mastercard BINs, use correct method
+      let paymentMethodId = cardInfoResponse.payment_method_id || selectedCard.paymentMethodId;
+      let issuerId = cardInfoResponse.issuer_id || selectedCard.issuerId;
+      
+      if (paymentMethodId === 'consumer_credits') {
+        if (bin === '423564') {
+          console.log('Correcting consumer_credits to visa for BIN 423564');
+          paymentMethodId = 'visa';
+          issuerId = '25';
+        } else if (bin === '503143') {
+          console.log('Correcting consumer_credits to master for BIN 503143');
+          paymentMethodId = 'master';
+          issuerId = '25';
+        } else {
+          // For other consumer_credits (like Elo), exclude issuer_id
+          issuerId = null;
+        }
+      }
       
       console.log('Using payment method:', paymentMethodId, 'and issuer:', issuerId);
       
