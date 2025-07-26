@@ -2174,7 +2174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Card info detected:', {
         payment_method_id: paymentMethod.id,
         issuer_id: issuerId,
-        payment_type_id: paymentMethod.payment_type_id
+        payment_type_id: paymentMethod.payment_type_id,
+        installments: paymentMethod.installments || null,
+        processing_modes: paymentMethod.processing_modes || null
       });
 
       res.json({

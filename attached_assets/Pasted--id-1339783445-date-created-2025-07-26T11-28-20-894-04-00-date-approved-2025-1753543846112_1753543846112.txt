@@ -1,0 +1,220 @@
+{
+  "id": 1339783445,
+  "date_created": "2025-07-26T11:28:20.894-04:00",
+  "date_approved": "2025-07-26T11:28:21.257-04:00",
+  "date_last_updated": "2025-07-26T11:28:21.257-04:00",
+  "date_of_expiration": null,
+  "money_release_date": "2025-07-26T11:28:21.257-04:00",
+  "money_release_status": "released",
+  "operation_type": "regular_payment",
+  "issuer_id": "25",
+  "payment_method_id": "visa",
+  "payment_type_id": "credit_card",
+  "payment_method": {
+    "id": "visa",
+    "type": "credit_card",
+    "issuer_id": "25",
+    "data": {
+      "routing_data": {
+        "merchant_account_id": "7187517"
+      }
+    }
+  },
+  "status": "approved",
+  "status_detail": "accredited",
+  "currency_id": "BRL",
+  "description": "Teste de Pagamento",
+  "live_mode": false,
+  "sponsor_id": null,
+  "authorization_code": "301299",
+  "money_release_schema": null,
+  "taxes_amount": 0,
+  "counter_currency": null,
+  "brand_id": null,
+  "shipping_amount": 0,
+  "build_version": "3.116.0-rc-4",
+  "pos_id": null,
+  "store_id": null,
+  "integrator_id": null,
+  "platform_id": null,
+  "corporation_id": null,
+  "payer": {
+    "identification": {
+      "number": "32659430",
+      "type": "DNI"
+    },
+    "entity_type": null,
+    "phone": {
+      "number": null,
+      "extension": null,
+      "area_code": null
+    },
+    "last_name": null,
+    "id": "2579203239",
+    "type": null,
+    "first_name": null,
+    "email": "test_user_80507629@testuser.com"
+  },
+  "collector_id": 130334509,
+  "marketplace_owner": null,
+  "metadata": {},
+  "additional_info": {
+    "nsu_processadora": "30121999",
+    "tracking_id": "platform:v20|v20.19.3,so:so;,type:SDK2.8.0,security:none"
+  },
+  "order": {},
+  "external_reference": null,
+  "transaction_amount": 115,
+  "transaction_amount_refunded": 0,
+  "coupon_amount": 0,
+  "differential_pricing_id": null,
+  "financing_group": null,
+  "deduction_schema": "PROACTIVE_4",
+  "installments": 1,
+  "transaction_details": {
+    "payment_method_reference_id": null,
+    "acquirer_reference": null,
+    "net_received_amount": 112.7,
+    "total_paid_amount": 115,
+    "overpaid_amount": 0,
+    "external_resource_url": null,
+    "installment_amount": 115,
+    "financial_institution": null,
+    "payable_deferral_period": null
+  },
+  "fee_details": [
+    {
+      "type": "mercadopago_fee",
+      "amount": 2.3,
+      "fee_payer": "collector"
+    }
+  ],
+  "charges_details": [
+    {
+      "id": "1339783445-001",
+      "name": "mercadopago_fee",
+      "type": "fee",
+      "accounts": {
+        "from": "collector",
+        "to": "mp"
+      },
+      "client_id": 0,
+      "date_created": "2025-07-26T11:28:20.897-04:00",
+      "last_updated": "2025-07-26T11:28:20.897-04:00",
+      "amounts": {
+        "original": 2.3,
+        "refunded": 0
+      },
+      "metadata": {
+        "source": "rule-engine",
+        "reason": ""
+      },
+      "reserve_id": null,
+      "refund_charges": [],
+      "processing_mode": ""
+    }
+  ],
+  "captured": true,
+  "binary_mode": false,
+  "call_for_authorize_id": null,
+  "statement_descriptor": "Mercadopago*fake",
+  "card": {
+    "id": null,
+    "first_six_digits": "423564",
+    "last_four_digits": "5682",
+    "expiration_month": 11,
+    "expiration_year": 2030,
+    "date_created": "2025-07-26T11:28:20.000-04:00",
+    "date_last_updated": "2025-07-26T11:28:20.000-04:00",
+    "country": null,
+    "tags": [
+      "credit"
+    ],
+    "cardholder": {
+      "name": "APRO",
+      "identification": {
+        "number": "68957831053",
+        "type": "CPF"
+      }
+    }
+  },
+  "notification_url": null,
+  "refunds": [],
+  "processing_mode": "aggregator",
+  "merchant_account_id": null,
+  "merchant_number": null,
+  "acquirer_reconciliation": [],
+  "point_of_interaction": {
+    "type": "UNSPECIFIED",
+    "business_info": {
+      "unit": "online_payments",
+      "sub_unit": "sdk",
+      "branch": null
+    }
+  },
+  "accounts_info": null,
+  "release_info": null,
+  "tags": null,
+  "api_response": {
+    "status": 201,
+    "headers": {
+      "date": [
+        "Sat, 26 Jul 2025 15:28:21 GMT"
+      ],
+      "content-type": [
+        "application/json;charset=UTF-8"
+      ],
+      "transfer-encoding": [
+        "chunked"
+      ],
+      "connection": [
+        "keep-alive"
+      ],
+      "x-site-id": [
+        "MLB"
+      ],
+      "x-response-status": [
+        "approved/accredited"
+      ],
+      "x-caller-id": [
+        "130334509"
+      ],
+      "vary": [
+        "Accept,Accept-Encoding"
+      ],
+      "cache-control": [
+        "max-age=0"
+      ],
+      "etag": [
+        "ff2cd1ccd241b8c4ec867bdae49ab36f"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ],
+      "x-request-id": [
+        "2621b78f-4df4-4f72-a83d-14f73daa430c"
+      ],
+      "x-xss-protection": [
+        "1; mode=block"
+      ],
+      "strict-transport-security": [
+        "max-age=16070400; includeSubDomains; preload, max-age=31536000; includeSubDomains"
+      ],
+      "access-control-allow-origin": [
+        "*"
+      ],
+      "access-control-allow-headers": [
+        "Content-Type"
+      ],
+      "access-control-allow-methods": [
+        "PUT, GET, POST, DELETE, OPTIONS"
+      ],
+      "access-control-max-age": [
+        "86400"
+      ],
+      "timing-allow-origin": [
+        "*"
+      ]
+    }
+  }
+}
