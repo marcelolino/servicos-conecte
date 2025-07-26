@@ -525,6 +525,8 @@ const CheckoutPage = () => {
       const paymentResponse = await apiRequest('POST', '/api/payments/card', paymentData);
       
       console.log('Payment response:', paymentResponse);
+      console.log('Payment status:', paymentResponse.status);
+      console.log('Payment status detail:', paymentResponse.status_detail);
 
       if (paymentResponse.status === 'approved') {
         toast({
