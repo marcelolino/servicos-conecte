@@ -2109,6 +2109,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get card info (payment method and issuer) based on BIN
+  app.post('/api/payments/card-info', authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const { bin } = req.body; // First 6 digits of card number
+      
+      if (!bin || bin.length < 6) {
+        return res.status(400).json({ message: 'BIN must have at least 6 digits' });
+      }
+      
+      const mercadoPagoConfig = await storage.getActivePaymentMethods();
+      const mpConfig = mercadoPagoConfig.find((pm: any) => pm.gatewayName === 'mercadopago' && pm.isActive);
+      
+      if (!mpConfig || !mpConfig.publicKey) {
+        return res.status(400).json({ message: 'MercadoPago not configured' });
+      }
+
+      // Get payment method info from bin
+      const paymentMethodResponse = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?bin=${bin}&public_key=${mpConfig.publicKey}`);
+      const paymentMethodData = await paymentMethodResponse.json();
+      
+      if (!paymentMethodResponse.ok || !paymentMethodData.results?.length) {
+        return res.status(400).json({ message: 'Invalid card number or unsupported card' });
+      }
+
+      const paymentMethod = paymentMethodData.results[0];
+      
+      // Get issuer info
+      const issuerResponse = await fetch(`https://api.mercadopago.com/v1/payment_methods/card_issuers?payment_method_id=${paymentMethod.id}&bin=${bin}&public_key=${mpConfig.publicKey}`);
+      const issuerData = await issuerResponse.json();
+      
+      let issuerId = null;
+      if (issuerResponse.ok && issuerData.length > 0) {
+        issuerId = issuerData[0].id;
+      }
+
+      console.log('Card info detected:', {
+        payment_method_id: paymentMethod.id,
+        issuer_id: issuerId,
+        payment_type_id: paymentMethod.payment_type_id
+      });
+
+      res.json({
+        payment_method_id: paymentMethod.id,
+        issuer_id: issuerId,
+        payment_type_id: paymentMethod.payment_type_id,
+        thumbnail: paymentMethod.thumbnail,
+        secure_thumbnail: paymentMethod.secure_thumbnail
+      });
+    } catch (error) {
+      console.error('Card info error:', error);
+      res.status(500).json({ message: 'Failed to get card info' });
+    }
+  });
+
   // Create card token endpoint - for real token generation
   app.post('/api/payments/create-card-token', async (req: Request, res: Response) => {
     try {

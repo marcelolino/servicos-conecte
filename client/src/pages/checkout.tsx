@@ -79,6 +79,22 @@ const formatExpiry = (value: string) => {
     .slice(0, 5);
 };
 
+// Function to get card info from BIN
+const getCardInfo = async (cardNumber: string) => {
+  const cleanCardNumber = cardNumber.replace(/\s/g, '');
+  if (cleanCardNumber.length >= 6) {
+    const bin = cleanCardNumber.substring(0, 6);
+    try {
+      const response = await apiRequest('POST', '/api/payments/card-info', { bin });
+      return response;
+    } catch (error) {
+      console.log('Could not detect card info:', error);
+      return null;
+    }
+  }
+  return null;
+};
+
 const CheckoutPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -105,6 +121,8 @@ const CheckoutPage = () => {
   const [cardCvv, setCardCvv] = useState("");
   const [cardCpf, setCardCpf] = useState("");
   const [installments, setInstallments] = useState("1");
+  const [cardInfo, setCardInfo] = useState<any>(null);
+  const [isLoadingCardInfo, setIsLoadingCardInfo] = useState(false);
 
   // Fetch real cart data from API
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -234,11 +252,34 @@ const CheckoutPage = () => {
     }
   };
 
+  const handleCardNumberChange = async (value: string) => {
+    const formatted = formatCardNumber(value);
+    setCardNumber(formatted);
+    
+    // Auto-detect card info when we have enough digits
+    const cleanNumber = formatted.replace(/\s/g, '');
+    if (cleanNumber.length >= 6 && cleanNumber.length % 6 === 0) {
+      setIsLoadingCardInfo(true);
+      const info = await getCardInfo(formatted);
+      setCardInfo(info);
+      setIsLoadingCardInfo(false);
+    }
+  };
+
   const handleCardPayment = async () => {
     if (!cardNumber || !cardName || !cardExpiry || !cardCvv || !cardCpf) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos do cartão.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!cardInfo) {
+      toast({
+        title: "Cartão não identificado",
+        description: "Não foi possível identificar as informações do cartão. Verifique o número.",
         variant: "destructive",
       });
       return;
@@ -261,14 +302,14 @@ const CheckoutPage = () => {
         cardholder_identification_number: cardCpf.replace(/\D/g, '')
       });
 
-      // Step 2: Create payment with token
+      // Step 2: Create payment with token using detected card info
       const paymentResponse = await apiRequest('POST', '/api/payments/card', {
         transaction_amount: totalAmount,
         token: tokenResponse.id,
         description: `Pagamento de serviços - ${cartItems[0]?.name}`,
         installments: parseInt(installments),
-        payment_method_id: selectedPaymentMethod === 'credit_card' ? 'master' : 'master', // Will be dynamic later
-        issuer_id: '25',
+        payment_method_id: cardInfo.payment_method_id,
+        issuer_id: cardInfo.issuer_id,
         payer: {
           email: user?.email,
           identification: {
@@ -647,13 +688,34 @@ const CheckoutPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <Label htmlFor="cardNumber">Número do Cartão *</Label>
-                    <Input
-                      id="cardNumber"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="cardNumber"
+                        value={cardNumber}
+                        onChange={(e) => handleCardNumberChange(e.target.value)}
+                        placeholder="0000 0000 0000 0000"
+                        maxLength={19}
+                      />
+                      {isLoadingCardInfo && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                        </div>
+                      )}
+                      {cardInfo && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="flex items-center gap-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                            <span className="text-xs text-green-600">Cartão detectado</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {cardInfo && (
+                      <div className="mt-1 text-xs text-green-600">
+                        Tipo: {cardInfo.payment_type_id === 'credit_card' ? 'Crédito' : 'Débito'} • 
+                        Método: {cardInfo.payment_method_id?.toUpperCase()}
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -721,8 +783,13 @@ const CheckoutPage = () => {
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-blue-800 text-sm">
-                    <strong>Ambiente de Teste:</strong> Use os cartões de teste do MercadoPago para simular pagamentos.
+                    <strong>Ambiente de Teste:</strong> Use os cartões de teste do MercadoPago:
                   </p>
+                  <div className="mt-2 text-xs text-blue-700">
+                    <p>• Mastercard Aprovado: 5031 7557 3453 0604</p>
+                    <p>• Visa Aprovado: 4009 1750 1041 4098</p>
+                    <p>• CVV: qualquer • Data: 11/25 • CPF: 12345678909</p>
+                  </div>
                 </div>
                 
                 <Button 
