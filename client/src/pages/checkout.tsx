@@ -450,6 +450,8 @@ const CheckoutPage = () => {
       
       // Now use the real token to make the payment
       const paymentResponse = await apiRequest('POST', '/api/payments/card', paymentData);
+      
+      console.log('Payment response:', paymentResponse);
 
       if (paymentResponse.status === 'approved') {
         toast({
@@ -475,9 +477,43 @@ const CheckoutPage = () => {
 
         createOrderMutation.mutate(orderData);
       } else {
+        // Handle different types of rejection with specific messages
+        let errorMessage = "Pagamento não aprovado. Verifique os dados do cartão.";
+        
+        if (paymentResponse.status_detail) {
+          switch (paymentResponse.status_detail) {
+            case 'cc_rejected_other_reason':
+              errorMessage = "Cartão rejeitado. Verifique os dados do cartão ou tente outro cartão.";
+              break;
+            case 'cc_rejected_card_disabled':
+              errorMessage = "Cartão bloqueado ou desabilitado. Entre em contato com seu banco.";
+              break;
+            case 'cc_rejected_bad_filled_card_number':
+              errorMessage = "Número do cartão inválido. Verifique o número digitado.";
+              break;
+            case 'cc_rejected_bad_filled_date':
+              errorMessage = "Data de validade inválida. Verifique o mês e ano.";
+              break;
+            case 'cc_rejected_bad_filled_security_code':
+              errorMessage = "Código de segurança inválido. Verifique o CVV.";
+              break;
+            case 'cc_rejected_insufficient_amount':
+              errorMessage = "Limite insuficiente no cartão.";
+              break;
+            default:
+              errorMessage = `Pagamento rejeitado: ${paymentResponse.status_detail}`;
+          }
+        }
+        
+        console.log('Payment rejected:', {
+          status: paymentResponse.status,
+          status_detail: paymentResponse.status_detail,
+          id: paymentResponse.id
+        });
+        
         toast({
           title: "Pagamento recusado",
-          description: paymentResponse.status_detail || "Pagamento não aprovado. Verifique os dados do cartão.",
+          description: errorMessage,
           variant: "destructive",
         });
       }
