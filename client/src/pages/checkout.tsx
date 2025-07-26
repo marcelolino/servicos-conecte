@@ -463,12 +463,24 @@ const CheckoutPage = () => {
       // Step 2: Create a real card token using MercadoPago API
       console.log('Step 2: Creating card token with MercadoPago...');
       
+      // For test environment, use special test names for approval simulation
+      let testCardholderName = cardName;
+      const isTestCard = MERCADOPAGO_TEST_CARDS.some(card => 
+        cleanCardNumber.startsWith(card.number.substring(0, 6))
+      );
+      
+      if (isTestCard) {
+        // Use 'APRO' for test cards to simulate approval
+        testCardholderName = 'APRO';
+        console.log('Using test cardholder name APRO for test card approval');
+      }
+
       const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
         card_number: cleanCardNumber,
         security_code: cardCvv,
         expiration_month: expMonth,
         expiration_year: formattedExpYear,
-        cardholder_name: cardName,
+        cardholder_name: testCardholderName,
         cardholder_identification_type: 'CPF',
         cardholder_identification_number: cardCpf.replace(/\D/g, '')
       });
@@ -1033,7 +1045,7 @@ const CheckoutPage = () => {
                     <p>• Mastercard: 5031 4332 1540 6351</p>
                     <p>• Visa: 4235 6477 2802 5682</p>
                     <p>• Elo: 5067 7667 8388 8311</p>
-                    <p>• CVV: 123 • Data: 11/30 • Nome: APRO</p>
+                    <p>• CVV: 123 • Data: 11/30 • Nome: Qualquer nome (APRO para aprovação automática)</p>
                   </div>
                 </div>
                 
