@@ -2295,11 +2295,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await payment.create({ body: paymentData });
       
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating card payment:', error);
-      res.status(500).json({ 
-        message: 'Failed to create card payment',
-        error: error instanceof Error ? error.message : 'Unknown error'
+      
+      // Handle specific MercadoPago errors
+      let errorMessage = 'Failed to create card payment';
+      let statusCode = 500;
+      
+      if (error.message === 'bin_not_found') {
+        errorMessage = 'BIN do cartão não encontrado. Use cartões de teste oficiais do MercadoPago.';
+        statusCode = 400;
+      } else if (error.cause && Array.isArray(error.cause)) {
+        const cause = error.cause[0];
+        if (cause.code === 10105) { // BIN not found
+          errorMessage = 'Número do cartão não é válido para testes. Use os cartões de teste do MercadoPago.';
+          statusCode = 400;
+        }
+      }
+      
+      res.status(statusCode).json({ 
+        message: errorMessage,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        mercadopago_error: error.cause || null
       });
     }
   });

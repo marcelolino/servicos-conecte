@@ -79,6 +79,34 @@ const formatExpiry = (value: string) => {
     .slice(0, 5);
 };
 
+// Official MercadoPago test cards that are guaranteed to work
+const MERCADOPAGO_TEST_CARDS = [
+  {
+    brand: 'Visa',
+    number: '4235647728025682',
+    bin: '423564',
+    paymentMethodId: 'visa',
+    issuerId: '25',
+    type: 'credit_card'
+  },
+  {
+    brand: 'Mastercard', 
+    number: '5031433215406351',
+    bin: '503143',
+    paymentMethodId: 'master',
+    issuerId: '25',
+    type: 'credit_card'
+  },
+  {
+    brand: 'American Express',
+    number: '375365153568885', 
+    bin: '375365',
+    paymentMethodId: 'amex',
+    issuerId: '25',
+    type: 'credit_card'
+  }
+];
+
 // Function to get card info from BIN using known test cards
 const getCardInfo = async (cardNumber: string) => {
   const cleanCardNumber = cardNumber.replace(/\s/g, '');
@@ -87,17 +115,9 @@ const getCardInfo = async (cardNumber: string) => {
     console.log('Detecting card info for BIN:', bin);
     
     // Check against known official test cards first
-    const knownCards = [
-      { bin: '503143', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
-      { bin: '423564', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
-      { bin: '375365', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
-      // Note: Elo cards require API detection for correct issuer_id
-      { bin: '506776', paymentMethodId: 'elo', issuerId: null, type: 'credit_card' }
-    ];
-    
-    const knownCard = knownCards.find(card => bin.startsWith(card.bin));
+    const knownCard = MERCADOPAGO_TEST_CARDS.find(card => bin.startsWith(card.bin));
     if (knownCard) {
-      console.log('Known test card detected:', knownCard);
+      console.log('Known MercadoPago test card detected:', knownCard);
       return {
         payment_method_id: knownCard.paymentMethodId,
         issuer_id: knownCard.issuerId,
@@ -106,7 +126,7 @@ const getCardInfo = async (cardNumber: string) => {
       };
     }
     
-    // Fallback to API detection for unknown cards
+    // For unknown cards, try API detection but handle BIN errors gracefully
     try {
       const response = await apiRequest('POST', '/api/payments/card-info', { bin });
       console.log('Card info response:', response);
@@ -140,6 +160,34 @@ const getCardInfo = async (cardNumber: string) => {
       return response;
     } catch (error) {
       console.error('Could not detect card info:', error);
+      
+      // If BIN detection fails, try to guess based on common patterns
+      if (bin.startsWith('4')) {
+        console.log('Fallback: Assuming Visa for BIN starting with 4');
+        return {
+          payment_method_id: 'visa',
+          issuer_id: '25',
+          payment_type_id: 'credit_card',
+          bin: bin
+        };
+      } else if (bin.startsWith('5')) {
+        console.log('Fallback: Assuming Mastercard for BIN starting with 5'); 
+        return {
+          payment_method_id: 'master',
+          issuer_id: '25',
+          payment_type_id: 'credit_card',
+          bin: bin
+        };
+      } else if (bin.startsWith('3')) {
+        console.log('Fallback: Assuming American Express for BIN starting with 3');
+        return {
+          payment_method_id: 'amex',
+          issuer_id: '25',
+          payment_type_id: 'credit_card',
+          bin: bin
+        };
+      }
+      
       return null;
     }
   }
