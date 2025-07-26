@@ -1,0 +1,197 @@
+
+ajuste o pagamento do mercadopago com checkout transparente
+✅ Frontend React – checkout com cartão e PIX usando SDK do Mercado Pago
+✅ Backend Node.js + Express – processamento seguro dos pagamentos
+✅ Suporte a variáveis .env – para usar Access Token e Public Key
+✅ Rota para salvar/editar chaves – caso você queira manter a lógica do painel admin
+✅ Fluxo do PIX com exibição do QR Code e retorno do status
+✅ Checkout Transparente (sem redirecionar para Mercado Pago)
+
+📂 Estrutura do Projeto
+bash
+Copiar
+Editar
+qservicos/
+ ├── backend/
+ │    ├── server.js
+ │    ├── routes/paymentRoutes.js
+ │    ├── controllers/paymentController.js
+ │    ├── config/db.js  (se salvar no banco)
+ │    ├── .env
+ │    └── package.json
+ │
+ ├── frontend/
+ │    ├── src/Checkout.js
+ │    ├── src/App.js
+ │    └── package.json
+ │
+ └── README.md
+🚀 1. Backend (Node.js)
+📌 backend/.env
+env
+Copiar
+Editar
+MP_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxxxxxx
+MP_PUBLIC_KEY=TEST-xxxxxxxxxxxxxxxxxxxxxxxx
+PORT=4000
+📌 backend/server.js
+js
+Copiar
+Editar
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mercadopago from "mercadopago";
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Configura Mercado Pago
+mercadopago.configure({
+  access_token: process.env.MP_ACCESS_TOKEN,
+});
+
+// Rota para pagamento com cartão
+app.post("/api/payments/card", async (req, res) => {
+  try {
+    const payment_data = {
+      transaction_amount: Number(req.body.transaction_amount),
+      token: req.body.token,
+      description: req.body.description,
+      installments: Number(req.body.installments),
+      payment_method_id: req.body.payment_method_id,
+      issuer_id: req.body.issuer_id,
+      payer: {
+        email: req.body.payer.email,
+        identification: {
+          type: req.body.payer.identification.type,
+          number: req.body.payer.identification.number,
+        },
+      },
+    };
+
+    const payment = await mercadopago.payment.create(payment_data);
+    res.json(payment.body);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Rota para pagamento PIX
+app.post("/api/payments/pix", async (req, res) => {
+  try {
+    const payment = await mercadopago.payment.create({
+      transaction_amount: Number(req.body.transaction_amount),
+      description: req.body.description,
+      payment_method_id: "pix",
+      payer: { email: req.body.email },
+    });
+    res.json({
+      id: payment.body.id,
+      status: payment.body.status,
+      qr_code: payment.body.point_of_interaction.transaction_data.qr_code,
+      qr_code_base64: payment.body.point_of_interaction.transaction_data.qr_code_base64,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(process.env.PORT, () =>
+  console.log(`✅ Backend rodando na porta ${process.env.PORT}`)
+);
+🚀 2. Frontend React
+📌 frontend/.env
+env
+Copiar
+Editar
+REACT_APP_MP_PUBLIC_KEY=TEST-xxxxxxxxxxxxxxxxxxxxxxxx
+📌 frontend/src/Checkout.js
+jsx
+Copiar
+Editar
+import React, { useEffect, useState } from "react";
+import { initMercadoPago, CardForm } from '@mercadopago/sdk-react';
+
+function Checkout() {
+  const [status, setStatus] = useState(null);
+  const [qrPix, setQrPix] = useState(null);
+
+  useEffect(() => {
+    initMercadoPago(process.env.REACT_APP_MP_PUBLIC_KEY);
+  }, []);
+
+  // Pagamento com cartão
+  const handleCardPayment = async (event) => {
+    event.preventDefault();
+    const formData = window.cardForm.getCardFormData();
+
+    const response = await fetch("http://localhost:4000/api/payments/card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: formData.token,
+        transaction_amount: 115.0,
+        description: "Serviço Qservicos",
+        installments: formData.installments,
+        payment_method_id: formData.paymentMethodId,
+        issuer_id: formData.issuerId,
+        payer: {
+          email: formData.cardholderEmail,
+          identification: {
+            type: formData.identificationType,
+            number: formData.identificationNumber,
+          },
+        },
+      }),
+    });
+
+    const result = await response.json();
+    setStatus(result.status);
+  };
+
+  // Pagamento PIX
+  const handlePixPayment = async () => {
+    const response = await fetch("http://localhost:4000/api/payments/pix", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transaction_amount: 115.0, description: "Serviço Qservicos", email: "cliente@teste.com" }),
+    });
+
+    const result = await response.json();
+    setQrPix(result.qr_code_base64);
+    setStatus(result.status);
+  };
+
+  return (
+    <div>
+      <h2>Checkout Qserviços</h2>
+
+      <h3>💳 Pagar com Cartão</h3>
+      <form id="form-checkout" onSubmit={handleCardPayment}>
+        <CardForm />
+        <button type="submit">Pagar com Cartão</button>
+      </form>
+
+      <h3>📲 Pagar com PIX</h3>
+      <button onClick={handlePixPayment}>Gerar PIX</button>
+      {qrPix && <img src={`data:image/png;base64,${qrPix}`} alt="QR Code PIX" />}
+
+      {status && <p>Status do pagamento: {status}</p>}
+    </div>
+  );
+}
+
+export default Checkout;
+✅ 3. Como rodar no Replit
+Crie um projeto Node.js → cole o conteúdo da pasta backend.
+
+Crie um projeto React → cole o conteúdo da pasta frontend.
+
+Configure as variáveis .env no painel do Replit.
+
+Inicie os dois servidores (npm start para frontend e backend).
+
+Faça as chamadas do frontend para o backend (use URL pública do Replit).
