@@ -1,0 +1,36 @@
+Using access token for card payment: TEST-428413709578943...
+Detected known test card, trying payment without issuer_id first
+Card payment request: {
+  transaction_amount: 165,
+  token: 'd3f4503e71c14ca9ed66db3b2f8d44ef',
+  description: 'Pagamento de serviços - Instalação Elétrica Básica',
+  installments: 1,
+  payment_method_id: 'visa',
+  payer: {
+    email: 'elis205@gmail.com',
+    identification: { type: 'CPF', number: '83440541096' }
+  }
+}
+8:49:37 PM [express] POST /api/payments/card 200 in 864ms :: {"id":1324192484,"date_created":"2025-0…
+Creating order for user: 11
+Failed to create order: RangeError: Invalid time value
+    at Date.toISOString (<anonymous>)
+    at PgTimestamp.mapToDriverValue (/home/runner/workspace/node_modules/src/pg-core/columns/timestamp.ts:66:16)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:223:69)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/home/runner/workspace/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/home/runner/workspace/node_modules/src/sql/sql.ts:124:23)
+    at Object.startActiveSpan (/home/runner/workspace/node_modules/src/tracing.ts:27:11)
+    at SQL.toQuery (/home/runner/workspace/node_modules/src/sql/sql.ts:123:17)
+    at PgDialect.sqlToQuery (/home/runner/workspace/node_modules/src/pg-core/dialect.ts:591:14)
+    at QueryPromise._prepare (/home/runner/workspace/node_modules/src/pg-core/query-builders/update.ts:579:18)
+    at QueryPromise.execute (/home/runner/workspace/node_modules/src/pg-core/query-builders/update.ts:596:15)
+    at QueryPromise.then (/home/runner/workspace/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+8:49:38 PM [express] POST /api/orders 400 in 47ms :: {"message":"Failed to create order","error":"In…

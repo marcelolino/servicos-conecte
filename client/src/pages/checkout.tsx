@@ -547,6 +547,10 @@ const CheckoutPage = () => {
         });
         
         // Create order after successful payment
+        // Fix date formatting to ensure valid ISO string
+        const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
+        const isValidDate = !isNaN(scheduledDateTime.getTime());
+        
         const orderData = {
           items: cartItems,
           subtotal: subtotal.toFixed(2),
@@ -558,9 +562,11 @@ const CheckoutPage = () => {
           cep,
           city,
           state,
-          scheduledAt: `${scheduledDate}T${scheduledTime}:00.000Z`,
+          scheduledAt: isValidDate ? scheduledDateTime.toISOString() : new Date().toISOString(),
           notes
         };
+        
+        console.log('Creating order with data:', orderData);
 
         createOrderMutation.mutate(orderData);
       } else {
