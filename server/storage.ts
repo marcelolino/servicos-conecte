@@ -1756,6 +1756,7 @@ export class DatabaseStorage implements IStorage {
           clientId: orderData.clientId,
           providerId: item.providerId || null,
           categoryId: item.categoryId || 1, // Default to first category
+          title: "Solicitação de Serviço", // Required field
           description: item.description || "Serviço solicitado",
           address: orderData.address || "",
           cep: orderData.cep || "",
