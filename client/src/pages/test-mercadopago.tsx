@@ -11,6 +11,7 @@ import { Loader2, CreditCard, Smartphone } from "lucide-react";
 declare global {
   interface Window {
     mp: any;
+    MercadoPago: any;
   }
 }
 
@@ -33,6 +34,33 @@ export default function TestMercadoPago() {
 
   // Initialize MercadoPago SDK
   useEffect(() => {
+    const loadMercadoPagoScript = () => {
+      return new Promise((resolve, reject) => {
+        // Remove existing script if any
+        const existingScript = document.getElementById('mercadopago-js');
+        if (existingScript) {
+          existingScript.remove();
+        }
+
+        const script = document.createElement('script');
+        script.id = 'mercadopago-js';
+        script.src = 'https://sdk.mercadopago.com/js/v2';
+        script.async = true;
+        
+        script.onload = () => {
+          console.log('MercadoPago script loaded');
+          resolve(true);
+        };
+        
+        script.onerror = () => {
+          console.error('Failed to load MercadoPago script');
+          reject(new Error('Failed to load MercadoPago script'));
+        };
+        
+        document.head.appendChild(script);
+      });
+    };
+
     const initializeMercadoPago = async () => {
       try {
         // Get public key from API
@@ -49,15 +77,38 @@ export default function TestMercadoPago() {
           return;
         }
 
-        // Load MercadoPago script
-        const script = document.createElement('script');
-        script.src = 'https://sdk.mercadopago.com/js/v2';
-        script.onload = () => {
-          const mpInstance = new window.mp(mercadoPago.publicKey);
-          setMp(mpInstance);
-          console.log('MercadoPago SDK initialized');
+        // Load script first
+        await loadMercadoPagoScript();
+        
+        // Wait for window.mp to be available
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const checkMP = () => {
+          return new Promise((resolve) => {
+            const interval = setInterval(() => {
+              attempts++;
+              if (window.mp) {
+                clearInterval(interval);
+                try {
+                  const mpInstance = new window.mp(mercadoPago.publicKey);
+                  setMp(mpInstance);
+                  console.log('MercadoPago SDK initialized successfully');
+                  resolve(true);
+                } catch (error) {
+                  console.error('Error creating MP instance:', error);
+                  resolve(false);
+                }
+              } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.error('MercadoPago SDK not available after multiple attempts');
+                resolve(false);
+              }
+            }, 200);
+          });
         };
-        document.head.appendChild(script);
+
+        await checkMP();
       } catch (error) {
         console.error('Error initializing MercadoPago:', error);
         toast({
@@ -74,78 +125,108 @@ export default function TestMercadoPago() {
   // Initialize Card Payment Brick
   useEffect(() => {
     if (mp && cardPaymentRef.current && testData.email && testData.cpf) {
-      try {
-        const cardPaymentBrick = mp.bricks().create('cardPayment', cardPaymentRef.current, {
-          initialization: {
-            amount: testData.amount,
-            payer: {
-              email: testData.email,
-              identification: {
-                type: 'CPF',
-                number: testData.cpf.replace(/\D/g, '')
-              }
-            }
-          },
-          customization: {
-            paymentMethods: {
-              creditCard: 'all',
-              debitCard: 'all'
-            },
-            visual: {
-              style: {
-                customVariables: {
-                  theme: 'default'
+      // Clear previous brick instance
+      if (cardPaymentRef.current) {
+        cardPaymentRef.current.innerHTML = '';
+      }
+      
+      console.log('Creating Card Payment Brick with MP instance:', mp);
+      
+      const createBrick = async () => {
+        try {
+          const bricks = mp.bricks();
+          
+          const cardPaymentBrick = await bricks.create('cardPayment', cardPaymentRef.current, {
+            initialization: {
+              amount: testData.amount,
+              payer: {
+                email: testData.email,
+                identification: {
+                  type: 'CPF',
+                  number: testData.cpf.replace(/\D/g, '')
                 }
               }
-            }
-          },
-          callbacks: {
-            onReady: () => {
-              console.log('Card Payment Brick ready');
-              setIsCardFormReady(true);
             },
-            onSubmit: async (cardFormData: any) => {
-              setLoading(true);
-              try {
-                console.log('Card form data:', cardFormData);
-                const response = await apiRequest('POST', '/api/payments/card', {
-                  transaction_amount: testData.amount,
-                  token: cardFormData.token,
-                  description: testData.description,
-                  installments: cardFormData.installments || 1,
-                  payment_method_id: cardFormData.paymentMethodId,
-                  issuer_id: cardFormData.issuerId,
-                  payer: {
-                    email: testData.email,
-                    identification: {
-                      type: 'CPF',
-                      number: testData.cpf.replace(/\D/g, '')
-                    }
+            customization: {
+              paymentMethods: {
+                creditCard: 'all',
+                debitCard: 'all'
+              },
+              visual: {
+                style: {
+                  customVariables: {
+                    theme: 'default'
                   }
-                });
-                
-                setCardResult(response);
+                }
+              }
+            },
+            callbacks: {
+              onReady: () => {
+                console.log('Card Payment Brick ready');
+                setIsCardFormReady(true);
+              },
+              onSubmit: async (cardFormData: any) => {
+                console.log('Card form submitted with data:', cardFormData);
+                setLoading(true);
+                try {
+                  const response = await apiRequest('POST', '/api/payments/card', {
+                    transaction_amount: testData.amount,
+                    token: cardFormData.token,
+                    description: testData.description,
+                    installments: cardFormData.installments || 1,
+                    payment_method_id: cardFormData.paymentMethodId,
+                    issuer_id: cardFormData.issuerId,
+                    payer: {
+                      email: testData.email,
+                      identification: {
+                        type: 'CPF',
+                        number: testData.cpf.replace(/\D/g, '')
+                      }
+                    }
+                  });
+                  
+                  setCardResult(response);
+                  toast({
+                    title: "Teste de Cartão Executado",
+                    description: "Pagamento processado com sucesso!",
+                  });
+                  return { status: 'success' };
+                } catch (error) {
+                  console.error('Card payment error:', error);
+                  toast({
+                    title: "Erro no Pagamento",
+                    description: error instanceof Error ? error.message : "Erro desconhecido",
+                    variant: "destructive"
+                  });
+                  setCardResult({ error: error instanceof Error ? error.message : "Erro desconhecido" });
+                  return { status: 'error' };
+                } finally {
+                  setLoading(false);
+                }
+              },
+              onError: (error: any) => {
+                console.error('Card Payment Brick error:', error);
                 toast({
-                  title: "Teste de Cartão Executado",
-                  description: "Pagamento processado com sucesso!",
-                });
-              } catch (error) {
-                console.error('Card payment error:', error);
-                toast({
-                  title: "Erro no Pagamento",
-                  description: error instanceof Error ? error.message : "Erro desconhecido",
+                  title: "Erro no Formulário",
+                  description: "Erro no formulário de pagamento.",
                   variant: "destructive"
                 });
-                setCardResult({ error: error instanceof Error ? error.message : "Erro desconhecido" });
-              } finally {
-                setLoading(false);
               }
             }
-          }
-        });
-      } catch (error) {
-        console.error('Error creating Card Payment Brick:', error);
-      }
+          });
+          
+          console.log('Card Payment Brick created successfully');
+        } catch (error) {
+          console.error('Error creating Card Payment Brick:', error);
+          toast({
+            title: "Erro no Brick",
+            description: "Não foi possível criar o formulário de pagamento.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      createBrick();
     }
   }, [mp, testData.email, testData.cpf, testData.amount]);
 
