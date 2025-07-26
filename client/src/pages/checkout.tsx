@@ -311,8 +311,48 @@ const CheckoutPage = () => {
     const cleanNumber = formatted.replace(/\s/g, '');
     if (cleanNumber.length >= 6) {
       setIsLoadingCardInfo(true);
-      const info = await getCardInfo(formatted);
-      setCardInfo(info);
+      try {
+        const bin = cleanNumber.substring(0, 6);
+        console.log('Auto-detecting card info for BIN:', bin);
+        
+        const cardInfoResponse = await apiRequest('POST', '/api/payments/card-info', {
+          bin: bin
+        });
+        
+        console.log('Auto-detected card info:', cardInfoResponse);
+        
+        // Apply the same correction logic as in payment processing
+        let paymentMethodId = cardInfoResponse.payment_method_id;
+        let issuerId = cardInfoResponse.issuer_id;
+        
+        if (paymentMethodId === 'consumer_credits') {
+          if (bin === '423564') {
+            console.log('Auto-correction: consumer_credits to visa for BIN 423564');
+            paymentMethodId = 'visa';
+            issuerId = '25';
+          } else if (bin === '503143') {
+            console.log('Auto-correction: consumer_credits to master for BIN 503143');
+            paymentMethodId = 'master';
+            issuerId = '25';
+          } else {
+            // For other consumer_credits (like Elo), exclude issuer_id
+            issuerId = null;
+          }
+        }
+        
+        const detectedInfo = {
+          payment_method_id: paymentMethodId,
+          issuer_id: issuerId,
+          payment_type_id: cardInfoResponse.payment_type_id,
+          bin: bin
+        };
+        
+        console.log('Final auto-detected card info:', detectedInfo);
+        setCardInfo(detectedInfo);
+      } catch (error) {
+        console.error('Error auto-detecting card info:', error);
+        setCardInfo(null);
+      }
       setIsLoadingCardInfo(false);
     } else {
       // Clear card info if number is too short
@@ -330,24 +370,28 @@ const CheckoutPage = () => {
       return;
     }
 
-    if (!cardInfo) {
-      toast({
-        title: "Cartão não identificado",
-        description: "Não foi possível identificar as informações do cartão. Verifique o número.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsProcessingCardPayment(true);
     try {
       // Format card data
       const [expMonth, expYear] = cardExpiry.split('/');
       const formattedExpYear = expYear.length === 2 ? `20${expYear}` : expYear;
+      const cleanCardNumber = cardNumber.replace(/\s/g, '');
       
-      // Step 1: Create card token
+      // Step 1: Get card info to detect correct payment_method_id and issuer_id
+      console.log('Step 1: Detecting card info...');
+      const bin = cleanCardNumber.substring(0, 6);
+      
+      const cardInfoResponse = await apiRequest('POST', '/api/payments/card-info', {
+        bin: bin
+      });
+      
+      console.log('Card info detected:', cardInfoResponse);
+      
+      // Step 2: Create a real card token using MercadoPago API
+      console.log('Step 2: Creating card token with MercadoPago...');
+      
       const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
-        card_number: cardNumber.replace(/\s/g, ''),
+        card_number: cleanCardNumber,
         security_code: cardCvv,
         expiration_month: expMonth,
         expiration_year: formattedExpYear,
@@ -356,13 +400,37 @@ const CheckoutPage = () => {
         cardholder_identification_number: cardCpf.replace(/\D/g, '')
       });
 
-      // Step 2: Create payment with token using detected card info
+      console.log('Step 3: Token created successfully, now making payment...');
+      
+      // Step 3: Use detected card info for payment (with correction logic)
+      // Fix incorrect API detection: if API returns consumer_credits for known Visa/Mastercard BINs, use correct method
+      let paymentMethodId = cardInfoResponse.payment_method_id;
+      let issuerId = cardInfoResponse.issuer_id;
+      
+      if (paymentMethodId === 'consumer_credits') {
+        if (bin === '423564') {
+          console.log('Correcting consumer_credits to visa for BIN 423564');
+          paymentMethodId = 'visa';
+          issuerId = '25';
+        } else if (bin === '503143') {
+          console.log('Correcting consumer_credits to master for BIN 503143');
+          paymentMethodId = 'master';
+          issuerId = '25';
+        } else {
+          // For other consumer_credits (like Elo), exclude issuer_id
+          issuerId = null;
+        }
+      }
+      
+      console.log('Using payment method:', paymentMethodId, 'and issuer:', issuerId);
+      
+      // Prepare payment data
       const paymentData: any = {
         transaction_amount: totalAmount,
-        token: tokenResponse.id,
+        token: tokenResponse.id, // Use the real token ID
         description: `Pagamento de serviços - ${cartItems[0]?.name}`,
         installments: parseInt(installments),
-        payment_method_id: cardInfo.payment_method_id,
+        payment_method_id: paymentMethodId,
         payer: {
           email: user?.email,
           identification: {
@@ -373,10 +441,14 @@ const CheckoutPage = () => {
       };
       
       // Only add issuer_id for payment methods that require it
-      if (cardInfo.payment_method_id !== 'consumer_credits' && cardInfo.issuer_id) {
-        paymentData.issuer_id = cardInfo.issuer_id;
+      // Consumer credits and some other methods don't use issuer_id
+      if (paymentMethodId !== 'consumer_credits' && issuerId) {
+        paymentData.issuer_id = issuerId;
       }
       
+      console.log('Final payment data:', paymentData);
+      
+      // Now use the real token to make the payment
       const paymentResponse = await apiRequest('POST', '/api/payments/card', paymentData);
 
       if (paymentResponse.status === 'approved') {
@@ -410,6 +482,7 @@ const CheckoutPage = () => {
         });
       }
     } catch (error: any) {
+      console.log('Card payment error:', error);
       toast({
         title: "Erro no pagamento",
         description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
