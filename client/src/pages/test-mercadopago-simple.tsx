@@ -8,11 +8,52 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, CreditCard, Smartphone, CheckCircle } from "lucide-react";
 
+// Test cards from MercadoPago official documentation
+const TEST_CARDS = [
+  {
+    brand: 'Mastercard',
+    number: '5031433215406351',
+    cvv: '123',
+    expMonth: '11',
+    expYear: '2030',
+    paymentMethodId: 'master',
+    issuerId: '25'
+  },
+  {
+    brand: 'Visa',
+    number: '4235647728025682',
+    cvv: '123',
+    expMonth: '11',
+    expYear: '2030',
+    paymentMethodId: 'visa',
+    issuerId: '25'
+  },
+  {
+    brand: 'American Express',
+    number: '375365153568885',
+    cvv: '1234',
+    expMonth: '11',
+    expYear: '2030',
+    paymentMethodId: 'amex',
+    issuerId: '25'
+  },
+  {
+    brand: 'Elo Débito',
+    number: '5067766783888311',
+    cvv: '123',
+    expMonth: '11',
+    expYear: '2030',
+    paymentMethodId: 'elo',
+    issuerId: '25'
+  }
+];
+
 export default function TestMercadoPagoSimple() {
   const [loading, setLoading] = useState(false);
   const [cardResult, setCardResult] = useState<any>(null);
   const [pixResult, setPixResult] = useState<any>(null);
   const { toast } = useToast();
+  const [selectedCard, setSelectedCard] = useState(TEST_CARDS[0]);
   
   // Form data states
   const [testData, setTestData] = useState({
@@ -38,10 +79,10 @@ export default function TestMercadoPagoSimple() {
       console.log('Step 1: Creating card token with MercadoPago...');
       
       const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
-        card_number: '5031755734530604', // Mastercard test card
-        security_code: '123',
-        expiration_month: '11',
-        expiration_year: '25',
+        card_number: selectedCard.number,
+        security_code: selectedCard.cvv,
+        expiration_month: selectedCard.expMonth,
+        expiration_year: selectedCard.expYear,
         cardholder_name: 'APRO',
         cardholder_identification_type: 'CPF',
         cardholder_identification_number: testData.cpf.replace(/\D/g, '')
@@ -55,8 +96,8 @@ export default function TestMercadoPagoSimple() {
         token: tokenResponse.id, // Use the real token ID
         description: testData.description,
         installments: 1,
-        payment_method_id: 'master',
-        issuer_id: '25',
+        payment_method_id: selectedCard.paymentMethodId,
+        issuer_id: selectedCard.issuerId,
         payer: {
           email: testData.email,
           identification: {
@@ -192,6 +233,32 @@ export default function TestMercadoPagoSimple() {
               />
             </div>
           </div>
+          
+          {/* Card Selection */}
+          <div className="mt-6 space-y-3">
+            <Label>Cartão de Teste (MercadoPago)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {TEST_CARDS.map((card, index) => (
+                <div
+                  key={index}
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedCard === card
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedCard(card)}
+                >
+                  <div className="font-semibold text-sm">{card.brand}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                    {card.number}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    CVV: {card.cvv} | {card.expMonth}/{card.expYear}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -212,7 +279,8 @@ export default function TestMercadoPagoSimple() {
                 <p><strong>Descrição:</strong> {testData.description}</p>
                 <p><strong>Email:</strong> {testData.email || 'Não informado'}</p>
                 <p><strong>CPF:</strong> {testData.cpf || 'Não informado'}</p>
-                <p><strong>Método:</strong> Mastercard (simulado)</p>
+                <p><strong>Cartão:</strong> {selectedCard.brand} {selectedCard.number}</p>
+                <p><strong>CVV:</strong> {selectedCard.cvv} | <strong>Validade:</strong> {selectedCard.expMonth}/{selectedCard.expYear}</p>
                 <p><strong>Parcelas:</strong> 1x</p>
               </div>
             </div>
@@ -329,7 +397,8 @@ export default function TestMercadoPagoSimple() {
             <p>• <strong>Token Real:</strong> Gera tokens reais usando a API do MercadoPago</p>
             <p>• <strong>PIX Real:</strong> Gera QR Code PIX real através da API do MercadoPago</p>
             <p>• <strong>Checkout Transparente:</strong> Sem redirecionamento para páginas externas</p>
-            <p>• <strong>Cartão de Teste:</strong> Mastercard 5031 7557 3453 0604 (APRO)</p>
+            <p>• <strong>Cartões de Teste:</strong> Mastercard, Visa, American Express, Elo Débito</p>
+            <p>• <strong>Status Result:</strong> APRO (aprovado), todos os cartões de teste</p>
             <p className="text-green-600 font-medium">✅ Versão completa com tokens reais do MercadoPago</p>
           </div>
         </CardContent>
