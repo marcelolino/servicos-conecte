@@ -2212,23 +2212,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const cardToken = new CardToken(client);
 
+      // Ensure proper data types and formatting
       const tokenData = {
-        card_number: req.body.card_number,
-        security_code: req.body.security_code,
-        expiration_month: req.body.expiration_month,
-        expiration_year: req.body.expiration_year,
+        card_number: String(req.body.card_number).replace(/\D/g, ''), // Remove any non-digit characters
+        security_code: String(req.body.security_code),
+        expiration_month: String(req.body.expiration_month).padStart(2, '0'), // Ensure 2-digit format
+        expiration_year: String(req.body.expiration_year),
         cardholder: {
-          name: req.body.cardholder_name,
+          name: String(req.body.cardholder_name).toUpperCase(),
           identification: {
-            type: req.body.cardholder_identification_type,
-            number: req.body.cardholder_identification_number
+            type: String(req.body.cardholder_identification_type),
+            number: String(req.body.cardholder_identification_number).replace(/\D/g, '') // Clean CPF/CNPJ
           }
         }
       };
 
       console.log('Token creation request:', {
         ...tokenData,
-        card_number: tokenData.card_number.substring(0, 6) + '******' + tokenData.card_number.substring(-4),
+        card_number: tokenData.card_number.substring(0, 6) + '******' + tokenData.card_number.slice(-4),
         security_code: '***'
       });
 
@@ -2268,17 +2269,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payment = new Payment(client);
 
       const paymentData: any = {
-        transaction_amount: req.body.transaction_amount,
-        token: req.body.token,
-        description: req.body.description,
-        installments: req.body.installments || 1,
-        payment_method_id: req.body.payment_method_id,
-        payer: req.body.payer
+        transaction_amount: Number(req.body.transaction_amount),
+        token: String(req.body.token),
+        description: String(req.body.description),
+        installments: Number(req.body.installments) || 1,
+        payment_method_id: String(req.body.payment_method_id),
+        payer: {
+          email: String(req.body.payer.email),
+          identification: {
+            type: String(req.body.payer.identification.type),
+            number: String(req.body.payer.identification.number).replace(/\D/g, '')
+          }
+        }
       };
       
-      // Only add issuer_id if it's not null
+      // Only add issuer_id if it's not null and convert to string
       if (req.body.issuer_id !== null && req.body.issuer_id !== undefined) {
-        paymentData.issuer_id = req.body.issuer_id;
+        paymentData.issuer_id = String(req.body.issuer_id);
       }
 
       console.log('Card payment request:', paymentData);
