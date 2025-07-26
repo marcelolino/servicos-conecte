@@ -91,7 +91,7 @@ const getCardInfo = async (cardNumber: string) => {
       { bin: '503143', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
       { bin: '423564', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
       { bin: '375365', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
-      { bin: '506776', paymentMethodId: 'elo', issuerId: '1009', type: 'debit_card' },
+      // Note: Elo cards require API detection for correct issuer_id
       { bin: '503175', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
       { bin: '400917', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' }
     ];

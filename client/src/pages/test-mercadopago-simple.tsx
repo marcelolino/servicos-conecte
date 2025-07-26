@@ -75,8 +75,18 @@ export default function TestMercadoPagoSimple() {
 
     setLoading(true);
     try {
-      // First, create a real card token using MercadoPago API
-      console.log('Step 1: Creating card token with MercadoPago...');
+      // Step 1: Get card info to detect correct payment_method_id and issuer_id
+      console.log('Step 1: Detecting card info...');
+      const bin = selectedCard.number.substring(0, 6);
+      
+      const cardInfoResponse = await apiRequest('POST', '/api/payments/card-info', {
+        bin: bin
+      });
+      
+      console.log('Card info detected:', cardInfoResponse);
+      
+      // Step 2: Create a real card token using MercadoPago API
+      console.log('Step 2: Creating card token with MercadoPago...');
       
       const tokenResponse = await apiRequest('POST', '/api/payments/create-card-token', {
         card_number: selectedCard.number,
@@ -88,7 +98,13 @@ export default function TestMercadoPagoSimple() {
         cardholder_identification_number: testData.cpf.replace(/\D/g, '')
       });
 
-      console.log('Step 2: Token created successfully, now making payment...');
+      console.log('Step 3: Token created successfully, now making payment...');
+      
+      // Step 3: Use detected card info for payment (fallback to selectedCard if detection fails)
+      const paymentMethodId = cardInfoResponse.payment_method_id || selectedCard.paymentMethodId;
+      const issuerId = cardInfoResponse.issuer_id || selectedCard.issuerId;
+      
+      console.log('Using payment method:', paymentMethodId, 'and issuer:', issuerId);
       
       // Now use the real token to make the payment
       const response = await apiRequest('POST', '/api/payments/card', {
@@ -96,8 +112,8 @@ export default function TestMercadoPagoSimple() {
         token: tokenResponse.id, // Use the real token ID
         description: testData.description,
         installments: 1,
-        payment_method_id: selectedCard.paymentMethodId,
-        issuer_id: selectedCard.issuerId,
+        payment_method_id: paymentMethodId,
+        issuer_id: issuerId,
         payer: {
           email: testData.email,
           identification: {
