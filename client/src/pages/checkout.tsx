@@ -86,14 +86,13 @@ const getCardInfo = async (cardNumber: string) => {
     const bin = cleanCardNumber.substring(0, 6);
     console.log('Detecting card info for BIN:', bin);
     
-    // Check against known test cards first
+    // Check against known official test cards first
     const knownCards = [
-      { bin: '503143', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
-      { bin: '423564', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
-      { bin: '375365', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
-      // Note: Elo cards require API detection for correct issuer_id
       { bin: '503175', paymentMethodId: 'master', issuerId: '25', type: 'credit_card' },
-      { bin: '400917', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' }
+      { bin: '450995', paymentMethodId: 'visa', issuerId: '25', type: 'credit_card' },
+      { bin: '371180', paymentMethodId: 'amex', issuerId: '25', type: 'credit_card' },
+      // Note: Elo cards require API detection for correct issuer_id
+      { bin: '506726', paymentMethodId: 'elo', issuerId: null, type: 'credit_card' }
     ];
     
     const knownCard = knownCards.find(card => bin.startsWith(card.bin));
@@ -817,12 +816,13 @@ const CheckoutPage = () => {
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-blue-800 text-sm">
-                    <strong>Ambiente de Teste:</strong> Use os cartões de teste do MercadoPago:
+                    <strong>Ambiente de Teste:</strong> Use os cartões oficiais do MercadoPago:
                   </p>
                   <div className="mt-2 text-xs text-blue-700">
-                    <p>• Mastercard: 5031 4332 1540 6351</p>
-                    <p>• Visa: 4235 6477 2802 5682</p>
-                    <p>• CVV: 123 • Data: 11/30 • Nome: APRO</p>
+                    <p>• Mastercard: 5031 7557 3453 0604</p>
+                    <p>• Visa: 4509 9531 6623 3704</p>
+                    <p>• Elo: 5067 2686 5178 2643</p>
+                    <p>• CVV: 123 • Data: 11/25 • Nome: APRO</p>
                   </div>
                 </div>
                 

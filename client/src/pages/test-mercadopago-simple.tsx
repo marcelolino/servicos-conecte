@@ -12,39 +12,39 @@ import { Loader2, CreditCard, Smartphone, CheckCircle } from "lucide-react";
 const TEST_CARDS = [
   {
     brand: 'Mastercard',
-    number: '5031433215406351',
+    number: '5031755734530604',
     cvv: '123',
     expMonth: '11',
-    expYear: '2030',
+    expYear: '2025',
     paymentMethodId: 'master',
     issuerId: '25'
   },
   {
     brand: 'Visa',
-    number: '4235647728025682',
+    number: '4509953166233704',
     cvv: '123',
     expMonth: '11',
-    expYear: '2030',
+    expYear: '2025',
     paymentMethodId: 'visa',
     issuerId: '25'
   },
   {
     brand: 'American Express',
-    number: '375365153568885',
+    number: '371180303257522',
     cvv: '1234',
     expMonth: '11',
-    expYear: '2030',
+    expYear: '2025',
     paymentMethodId: 'amex',
     issuerId: '25'
   },
   {
-    brand: 'Elo Débito',
-    number: '5067766783888311',
+    brand: 'Elo',
+    number: '5067268651782643',
     cvv: '123',
     expMonth: '11',
-    expYear: '2030',
+    expYear: '2025',
     paymentMethodId: 'elo',
-    issuerId: '1009' // Different issuer for Elo cards
+    issuerId: null // Elo uses automatic detection
   }
 ];
 
