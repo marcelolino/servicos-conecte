@@ -2125,11 +2125,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'MercadoPago not configured' });
       }
 
+      console.log('Searching payment method for BIN:', bin, 'with public key:', mpConfig.publicKey?.substring(0, 10) + '...');
+
       // Get payment method info from bin
       const paymentMethodResponse = await fetch(`https://api.mercadopago.com/v1/payment_methods/search?bin=${bin}&public_key=${mpConfig.publicKey}`);
       const paymentMethodData = await paymentMethodResponse.json();
       
-      if (!paymentMethodResponse.ok || !paymentMethodData.results?.length) {
+      console.log('Payment method response:', paymentMethodData);
+      
+      if (!paymentMethodResponse.ok) {
+        console.error('MercadoPago API error:', paymentMethodData);
+        return res.status(400).json({ 
+          message: 'Error connecting to MercadoPago', 
+          error: paymentMethodData 
+        });
+      }
+      
+      if (!paymentMethodData.results?.length) {
+        console.log('No payment methods found for BIN:', bin);
         return res.status(400).json({ message: 'Invalid card number or unsupported card' });
       }
 

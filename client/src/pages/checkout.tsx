@@ -84,11 +84,13 @@ const getCardInfo = async (cardNumber: string) => {
   const cleanCardNumber = cardNumber.replace(/\s/g, '');
   if (cleanCardNumber.length >= 6) {
     const bin = cleanCardNumber.substring(0, 6);
+    console.log('Detecting card info for BIN:', bin);
     try {
       const response = await apiRequest('POST', '/api/payments/card-info', { bin });
+      console.log('Card info response:', response);
       return response;
     } catch (error) {
-      console.log('Could not detect card info:', error);
+      console.error('Could not detect card info:', error);
       return null;
     }
   }
@@ -258,11 +260,14 @@ const CheckoutPage = () => {
     
     // Auto-detect card info when we have enough digits
     const cleanNumber = formatted.replace(/\s/g, '');
-    if (cleanNumber.length >= 6 && cleanNumber.length % 6 === 0) {
+    if (cleanNumber.length >= 6) {
       setIsLoadingCardInfo(true);
       const info = await getCardInfo(formatted);
       setCardInfo(info);
       setIsLoadingCardInfo(false);
+    } else {
+      // Clear card info if number is too short
+      setCardInfo(null);
     }
   };
 
