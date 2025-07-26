@@ -429,11 +429,36 @@ const CheckoutPage = () => {
       console.log('Step 1: Detecting card info...');
       const bin = cleanCardNumber.substring(0, 6);
       
-      const cardInfoResponse = await apiRequest('POST', '/api/payments/card-info', {
-        bin: bin
-      });
-      
-      console.log('Card info detected:', cardInfoResponse);
+      let cardInfoResponse;
+      try {
+        cardInfoResponse = await apiRequest('POST', '/api/payments/card-info', {
+          bin: bin
+        });
+        console.log('Card info detected:', cardInfoResponse);
+      } catch (error) {
+        console.log('Card info detection failed, using fallback logic');
+        // Fallback to known test card configurations
+        const knownCard = MERCADOPAGO_TEST_CARDS.find(card => bin.startsWith(card.bin));
+        if (knownCard) {
+          cardInfoResponse = {
+            payment_method_id: knownCard.paymentMethodId,
+            issuer_id: knownCard.issuerId,
+            payment_type_id: knownCard.type
+          };
+          console.log('Using fallback card config:', cardInfoResponse);
+        } else {
+          // Last resort fallback based on card number patterns
+          if (bin.startsWith('4')) {
+            cardInfoResponse = { payment_method_id: 'visa', issuer_id: '25', payment_type_id: 'credit_card' };
+          } else if (bin.startsWith('5')) {
+            cardInfoResponse = { payment_method_id: 'master', issuer_id: '25', payment_type_id: 'credit_card' };
+          } else if (bin.startsWith('3')) {
+            cardInfoResponse = { payment_method_id: 'amex', issuer_id: '25', payment_type_id: 'credit_card' };
+          } else {
+            throw new Error('Cartão não é compatível com o ambiente de teste');
+          }
+        }
+      }
       
       // Step 2: Create a real card token using MercadoPago API
       console.log('Step 2: Creating card token with MercadoPago...');
@@ -450,7 +475,7 @@ const CheckoutPage = () => {
 
       console.log('Step 3: Token created successfully, now making payment...');
       
-      // Step 3: Use detected card info for payment (with correction logic)
+      // Step 3: Use detected card info for payment (fallback to selectedCard if detection fails)
       // Fix incorrect API detection: if API returns consumer_credits for known Visa/Mastercard BINs, use correct method
       let paymentMethodId = cardInfoResponse.payment_method_id;
       let issuerId = cardInfoResponse.issuer_id;
