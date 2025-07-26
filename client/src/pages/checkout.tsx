@@ -331,13 +331,12 @@ const CheckoutPage = () => {
       });
 
       // Step 2: Create payment with token using detected card info
-      const paymentResponse = await apiRequest('POST', '/api/payments/card', {
+      const paymentData: any = {
         transaction_amount: totalAmount,
         token: tokenResponse.id,
         description: `Pagamento de serviços - ${cartItems[0]?.name}`,
         installments: parseInt(installments),
         payment_method_id: cardInfo.payment_method_id,
-        issuer_id: cardInfo.issuer_id,
         payer: {
           email: user?.email,
           identification: {
@@ -345,7 +344,14 @@ const CheckoutPage = () => {
             number: cardCpf.replace(/\D/g, '')
           }
         }
-      });
+      };
+      
+      // Only add issuer_id for payment methods that require it
+      if (cardInfo.payment_method_id !== 'consumer_credits' && cardInfo.issuer_id) {
+        paymentData.issuer_id = cardInfo.issuer_id;
+      }
+      
+      const paymentResponse = await apiRequest('POST', '/api/payments/card', paymentData);
 
       if (paymentResponse.status === 'approved') {
         toast({

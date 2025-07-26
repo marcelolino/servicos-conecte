@@ -106,14 +106,13 @@ export default function TestMercadoPagoSimple() {
       
       console.log('Using payment method:', paymentMethodId, 'and issuer:', issuerId);
       
-      // Now use the real token to make the payment
-      const response = await apiRequest('POST', '/api/payments/card', {
+      // Prepare payment data
+      const paymentData: any = {
         transaction_amount: testData.amount,
         token: tokenResponse.id, // Use the real token ID
         description: testData.description,
         installments: 1,
         payment_method_id: paymentMethodId,
-        issuer_id: issuerId,
         payer: {
           email: testData.email,
           identification: {
@@ -121,7 +120,18 @@ export default function TestMercadoPagoSimple() {
             number: testData.cpf.replace(/\D/g, '')
           }
         }
-      });
+      };
+      
+      // Only add issuer_id for payment methods that require it
+      // Consumer credits and some other methods don't use issuer_id
+      if (paymentMethodId !== 'consumer_credits' && issuerId) {
+        paymentData.issuer_id = issuerId;
+      }
+      
+      console.log('Final payment data:', paymentData);
+      
+      // Now use the real token to make the payment
+      const response = await apiRequest('POST', '/api/payments/card', paymentData);
       
       setCardResult(response);
       toast({

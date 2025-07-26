@@ -2283,8 +2283,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      // Only add issuer_id if it's not null and convert to string
-      if (req.body.issuer_id !== null && req.body.issuer_id !== undefined) {
+      // Only add issuer_id if it's not null and the payment method requires it
+      // Consumer credits and some other payment methods don't use issuer_id
+      if (req.body.issuer_id !== null && req.body.issuer_id !== undefined && 
+          paymentData.payment_method_id !== 'consumer_credits') {
         paymentData.issuer_id = String(req.body.issuer_id);
       }
 
