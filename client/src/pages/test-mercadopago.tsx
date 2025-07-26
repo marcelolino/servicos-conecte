@@ -13,23 +13,40 @@ export default function TestMercadoPago() {
   const [cardResult, setCardResult] = useState<any>(null);
   const [pixResult, setPixResult] = useState<any>(null);
   const { toast } = useToast();
+  
+  // Form data states
+  const [testData, setTestData] = useState({
+    email: '',
+    cpf: '',
+    amount: 115.0,
+    description: 'Teste de Pagamento'
+  });
 
   const testCardPayment = async () => {
+    if (!testData.email || !testData.cpf) {
+      toast({
+        title: "Dados Obrigatórios",
+        description: "Por favor, preencha email e CPF para testar o pagamento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Test card payment with sample data
+      // Test card payment with user-provided data
       const response = await apiRequest('POST', '/api/payments/card', {
-        transaction_amount: 115.0,
+        transaction_amount: testData.amount,
         token: 'sample_token_123',
-        description: 'Teste de Pagamento com Cartão',
+        description: testData.description,
         installments: 1,
         payment_method_id: 'visa',
         issuer_id: '24',
         payer: {
-          email: 'test@mercadopago.com',
+          email: testData.email,
           identification: {
             type: 'CPF',
-            number: '12345678909'
+            number: testData.cpf.replace(/\D/g, '') // Remove formatting
           }
         }
       });
@@ -52,13 +69,22 @@ export default function TestMercadoPago() {
   };
 
   const testPixPayment = async () => {
+    if (!testData.email) {
+      toast({
+        title: "Email Obrigatório",
+        description: "Por favor, preencha o email para testar o pagamento PIX.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Test PIX payment with sample data
+      // Test PIX payment with user-provided data
       const response = await apiRequest('POST', '/api/payments/pix', {
-        transaction_amount: 115.0,
-        description: 'Teste de Pagamento PIX',
-        email: 'test@mercadopago.com'
+        transaction_amount: testData.amount,
+        description: testData.description,
+        email: testData.email
       });
       
       setPixResult(response);
@@ -78,6 +104,20 @@ export default function TestMercadoPago() {
     }
   };
 
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setTestData(prev => ({ ...prev, cpf: formatted }));
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="text-center">
@@ -88,6 +128,57 @@ export default function TestMercadoPago() {
           Teste das funcionalidades de pagamento integradas com MercadoPago
         </p>
       </div>
+
+      {/* Form for test data */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Dados para Teste</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={testData.email}
+                onChange={(e) => setTestData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF *</Label>
+              <Input
+                id="cpf"
+                type="text"
+                placeholder="000.000.000-00"
+                value={testData.cpf}
+                onChange={handleCPFChange}
+                maxLength={14}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Valor (R$)</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={testData.amount}
+                onChange={(e) => setTestData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Input
+                id="description"
+                type="text"
+                value={testData.description}
+                onChange={(e) => setTestData(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card Payment Test */}
@@ -102,8 +193,10 @@ export default function TestMercadoPago() {
             <div className="space-y-2">
               <Label>Dados do Teste:</Label>
               <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                <p><strong>Valor:</strong> R$ 115,00</p>
-                <p><strong>Descrição:</strong> Teste de Pagamento com Cartão</p>
+                <p><strong>Valor:</strong> R$ {testData.amount.toFixed(2)}</p>
+                <p><strong>Descrição:</strong> {testData.description}</p>
+                <p><strong>Email:</strong> {testData.email || 'Não informado'}</p>
+                <p><strong>CPF:</strong> {testData.cpf || 'Não informado'}</p>
                 <p><strong>Método:</strong> Visa</p>
                 <p><strong>Parcelas:</strong> 1x</p>
               </div>
@@ -111,7 +204,7 @@ export default function TestMercadoPago() {
             
             <Button
               onClick={testCardPayment}
-              disabled={loading}
+              disabled={loading || !testData.email || !testData.cpf}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? (
@@ -149,16 +242,16 @@ export default function TestMercadoPago() {
             <div className="space-y-2">
               <Label>Dados do Teste:</Label>
               <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                <p><strong>Valor:</strong> R$ 115,00</p>
-                <p><strong>Descrição:</strong> Teste de Pagamento PIX</p>
-                <p><strong>Email:</strong> test@mercadopago.com</p>
+                <p><strong>Valor:</strong> R$ {testData.amount.toFixed(2)}</p>
+                <p><strong>Descrição:</strong> {testData.description}</p>
+                <p><strong>Email:</strong> {testData.email || 'Não informado'}</p>
                 <p><strong>Método:</strong> PIX</p>
               </div>
             </div>
             
             <Button
               onClick={testPixPayment}
-              disabled={loading}
+              disabled={loading || !testData.email}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading ? (
@@ -204,6 +297,8 @@ export default function TestMercadoPago() {
           <div className="space-y-2 text-sm text-gray-600">
             <p>• <strong>Ambiente:</strong> Teste (Sandbox)</p>
             <p>• <strong>Gateway:</strong> MercadoPago</p>
+            <p>• <strong>Email Válido:</strong> Use um email real (não test@mercadopago.com)</p>
+            <p>• <strong>CPF Válido:</strong> Insira um CPF válido para testes</p>
             <p>• <strong>Cartões de Teste:</strong></p>
             <div className="ml-4 space-y-1">
               <p>- Aprovado: 4111 1111 1111 1111</p>
@@ -212,6 +307,7 @@ export default function TestMercadoPago() {
             </div>
             <p>• <strong>PIX:</strong> QR Code gerado automaticamente para pagamentos instantâneos</p>
             <p>• <strong>Checkout Transparente:</strong> Sem redirecionamento para páginas externas</p>
+            <p className="text-orange-600 font-medium">⚠️ Preencha email e CPF válidos acima para evitar erros de "Payer email forbidden"</p>
           </div>
         </CardContent>
       </Card>
