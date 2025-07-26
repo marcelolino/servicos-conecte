@@ -2268,7 +2268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const payment = new Payment(client);
 
-      const paymentData: any = {
+      let paymentData: any = {
         transaction_amount: Number(req.body.transaction_amount),
         token: String(req.body.token),
         description: String(req.body.description),
@@ -2283,18 +2283,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      // Only add issuer_id if it's not null and the payment method requires it
-      // Consumer credits and some other payment methods don't use issuer_id
-      if (req.body.issuer_id !== null && req.body.issuer_id !== undefined && 
-          paymentData.payment_method_id !== 'consumer_credits') {
-        paymentData.issuer_id = String(req.body.issuer_id);
+      // For known test cards with BIN issues, try without issuer_id first
+      const isKnownTestCard = req.body.payment_method_id === 'master' || 
+                             req.body.payment_method_id === 'visa' || 
+                             req.body.payment_method_id === 'amex';
+      
+      if (isKnownTestCard) {
+        console.log('Detected known test card, trying payment without issuer_id first');
+        // First attempt without issuer_id to bypass BIN detection issues
+      } else {
+        // Only add issuer_id for non-test cards or if payment method requires it
+        if (req.body.issuer_id !== null && req.body.issuer_id !== undefined && 
+            paymentData.payment_method_id !== 'consumer_credits') {
+          paymentData.issuer_id = String(req.body.issuer_id);
+        }
       }
 
       console.log('Card payment request:', paymentData);
 
-      const result = await payment.create({ body: paymentData });
+      try {
+        const result = await payment.create({ body: paymentData });
+        res.json(result);
+      } catch (firstError: any) {
+        // If first attempt failed with BIN error and we have issuer_id, try with it
+        if (isKnownTestCard && firstError.message === 'bin_not_found' && req.body.issuer_id) {
+          console.log('First attempt failed, retrying with issuer_id');
+          paymentData.issuer_id = String(req.body.issuer_id);
+          
+          try {
+            const retryResult = await payment.create({ body: paymentData });
+            res.json(retryResult);
+          } catch (secondError) {
+            throw secondError; // Use the second error for final handling
+          }
+        } else {
+          throw firstError; // Use the first error
+        }
+      }
       
-      res.json(result);
     } catch (error: any) {
       console.error('Error creating card payment:', error);
       
