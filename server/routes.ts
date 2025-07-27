@@ -432,6 +432,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subscribe to a service (provider service subscription)
+  app.post("/api/provider-services", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      const serviceData = {
+        ...req.body,
+        providerId: provider.id,
+      };
+      
+      const service = await storage.createProviderService(serviceData);
+      res.json(service);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to subscribe to service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Update provider service
+  app.put("/api/provider-services/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Get the service to verify ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updatedService = await storage.updateProviderService(serviceId, req.body);
+      res.json(updatedService);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Unsubscribe from a service (delete provider service)
+  app.delete("/api/provider-services/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Get the service to verify ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteProviderService(serviceId);
+      res.json({ message: "Service unsubscribed successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to unsubscribe from service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Create new service
   app.post("/api/services", authenticateToken, requireProvider, async (req, res) => {
     try {
