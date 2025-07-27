@@ -226,7 +226,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64">
+      <main className="ml-64 flex flex-col">
         {/* Header with notifications */}
         <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -236,7 +236,8 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             <ChatNotification userType="provider" />
           </div>
         </header>
-        <div className="p-8">
+        {/* Content Area */}
+        <div className="flex-1 p-8">
           {children}
         </div>
       </main>
