@@ -920,6 +920,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile routes
+  app.put("/api/users/profile", authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const userData = req.body;
+      
+      // Remove sensitive fields that shouldn't be updated via this endpoint
+      const { password, userType, ...updateData } = userData;
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update profile", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/users/password", authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { currentPassword, newPassword } = req.body;
+      
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify current password
+      const bcrypt = require('bcrypt');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      
+      await storage.updateUser(userId, { password: hashedPassword });
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update password", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Admin routes for managing users and providers
   app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) => {
     try {

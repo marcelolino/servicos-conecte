@@ -313,10 +313,10 @@ export default function Profile() {
                     <div className="space-y-4">
                       <Label>Foto de Perfil</Label>
                       <ImageUpload
-                        category="profile"
+                        category="provider"
                         onUpload={handleAvatarUpload}
                         onRemove={handleAvatarRemove}
-                        currentImages={avatarUrl ? [{ id: avatarUrl, url: avatarUrl, name: 'Avatar' }] : []}
+                        currentImages={avatarUrl ? [avatarUrl] : []}
                         multiple={false}
                         maxFiles={1}
                         accept="image/*"
