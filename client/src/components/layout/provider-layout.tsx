@@ -134,15 +134,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-50">
-        {/* Logo & Brand */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Wrench className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-foreground">Qserviços</span>
-          </div>
-        </div>
+
 
         {/* User Profile Section */}
         <div className="px-6 py-4 border-b">
