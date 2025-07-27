@@ -237,7 +237,7 @@ export default function ClientDashboard() {
       return (
         <RatingModal
           serviceRequestId={request.id}
-          providerId={request.provider.userId}
+          providerId={request.provider.id}
           providerName={request.provider.user?.name || "Prestador"}
           trigger={
             <Button variant="outline" size="sm">
