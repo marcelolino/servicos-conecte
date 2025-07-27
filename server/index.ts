@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import swaggerUi from "swagger-ui-express";
+import { specs } from "./swagger";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
@@ -9,6 +11,19 @@ app.use(express.urlencoded({ extended: false }));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "Qserviços API Documentation",
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();

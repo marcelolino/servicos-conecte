@@ -74,6 +74,35 @@ const requireProvider = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  /**
+   * @swagger
+   * /api/auth/register:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: Registrar novo usuário
+   *     description: Cria uma nova conta de usuário (cliente, prestador ou admin)
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/RegisterRequest'
+   *     responses:
+   *       201:
+   *         description: Usuário criado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
+   *       400:
+   *         description: Dados inválidos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       409:
+   *         description: Email já existe
+   */
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -97,6 +126,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/auth/login:
+   *   post:
+   *     tags: [Authentication]
+   *     summary: Login do usuário
+   *     description: Autentica usuário e retorna token JWT
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/LoginRequest'
+   *     responses:
+   *       200:
+   *         description: Login realizado com sucesso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
+   *       401:
+   *         description: Credenciais inválidas
+   *       400:
+   *         description: Email e senha obrigatórios
+   */
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -123,6 +177,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/auth/me:
+   *   get:
+   *     tags: [Authentication]
+   *     summary: Obter dados do usuário atual
+   *     description: Retorna informações do usuário autenticado
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Dados do usuário
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/User'
+   *       401:
+   *         description: Token não fornecido
+   *       403:
+   *         description: Token inválido
+   *       404:
+   *         description: Usuário não encontrado
+   */
   app.get("/api/auth/me", authenticateToken, async (req, res) => {
     try {
       const user = await storage.getUser(req.user!.id);
@@ -135,6 +212,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/categories:
+   *   get:
+   *     tags: [Service Categories]
+   *     summary: Listar todas as categorias de serviços
+   *     description: Retorna lista de todas as categorias de serviços ativas
+   *     responses:
+   *       200:
+   *         description: Lista de categorias
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/ServiceCategory'
+   *       500:
+   *         description: Erro interno do servidor
+   */
   // Service categories routes
   app.get("/api/categories", async (req, res) => {
     try {
