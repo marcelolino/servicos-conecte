@@ -74,17 +74,8 @@ export default function Register() {
           : "Bem-vindo ao Qserviços!",
       });
       
-      // Redirect based on user type
-      switch (data.user.userType) {
-        case "client":
-          setLocation("/client-dashboard");
-          break;
-        case "provider":
-          setLocation("/provider-dashboard");
-          break;
-        default:
-          setLocation("/");
-      }
+      // Redirect to home page after successful registration
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({
