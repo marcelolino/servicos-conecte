@@ -104,12 +104,23 @@ export default function ProviderBookingDetailsPage() {
       setNotes("");
       setIsProcessing(false);
     },
-    onError: () => {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao atualizar o status.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Ocorreu um erro ao atualizar o status.";
+      
+      // Check if error is about provider approval
+      if (errorMessage.includes("aprovação") || errorMessage.includes("precisa ser aprovado")) {
+        toast({
+          title: "Aguarde a liberação de aprovação",
+          description: "Seu perfil precisa ser aprovado antes de aceitar reservas.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
       setIsProcessing(false);
     },
   });
