@@ -140,7 +140,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Wrench className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-foreground">Provedor</span>
+            <span className="text-lg font-bold text-foreground">Qserviços</span>
           </div>
         </div>
 
@@ -240,10 +240,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
           <div className="flex items-center justify-between px-6 py-4">
             {/* Logo and Title */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Wrench className="h-6 w-6 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-900 dark:text-white">Qserviços</span>
-              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Qserviços</span>
               <span className="text-sm text-gray-500 dark:text-gray-400">Como funciona</span>
             </div>
 
