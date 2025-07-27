@@ -235,10 +235,35 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
 
       {/* Main Content */}
       <main className="ml-64">
-        {/* Header with notifications */}
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 py-4">
-          <div className="flex items-center justify-end">
-            <ChatNotification userType="provider" />
+        {/* Top Header Bar */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-6 py-4">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Wrench className="h-6 w-6 text-indigo-600" />
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Qserviços</span>
+              </div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Como funciona</span>
+            </div>
+
+            {/* Right side with user info */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600 dark:text-gray-300">Painel do Prestador</span>
+              
+              {/* User Avatar and Name */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  {(user?.name?.charAt(0) || "P").toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {user?.name || "Prestador"}
+                </span>
+              </div>
+
+              {/* Chat Notification */}
+              <ChatNotification userType="provider" />
+            </div>
           </div>
         </header>
         <div className="p-8">
