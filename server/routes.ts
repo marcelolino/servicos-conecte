@@ -639,6 +639,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get provider info to set providerId
         const provider = await storage.getProviderByUserId(req.user!.id);
         if (provider) {
+          // Check if provider is approved
+          if (provider.status !== "approved") {
+            return res.status(403).json({ 
+              message: "Seu perfil precisa ser aprovado pelo administrador antes de aceitar reservas. Status atual: " + 
+                      (provider.status === "pending" ? "Aguardando aprovação" : 
+                       provider.status === "rejected" ? "Rejeitado" : provider.status)
+            });
+          }
           req.body.providerId = provider.id;
           canUpdate = true;
         }

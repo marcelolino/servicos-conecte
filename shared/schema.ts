@@ -57,6 +57,7 @@ export const providers = pgTable("providers", {
   description: text("description"),
   experience: text("experience"),
   documents: text("documents"), // JSON array of document URLs
+  identityDocument: text("identity_document"), // URL for identity document (RG/CNH)
   portfolioImages: text("portfolio_images"), // JSON array of portfolio image URLs
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalReviews: integer("total_reviews").default(0),

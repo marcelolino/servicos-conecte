@@ -3,8 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
-import { DollarSign, Package, Star, Calendar, TrendingUp, User, MapPin } from "lucide-react";
+import { DollarSign, Package, Star, Calendar, TrendingUp, User, MapPin, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, BarChart, Bar } from "recharts";
 
@@ -57,6 +58,43 @@ export default function ProviderDashboardHome() {
 
   return (
     <div className="space-y-6">
+      {/* Provider Status Alert */}
+      {provider && provider.status !== "approved" && (
+        <Alert className={`${
+          provider.status === "pending" ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20" :
+          provider.status === "rejected" ? "border-red-500 bg-red-50 dark:bg-red-950/20" :
+          "border-gray-500 bg-gray-50 dark:bg-gray-950/20"
+        }`}>
+          <div className="flex items-center gap-2">
+            {provider.status === "pending" ? (
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            ) : provider.status === "rejected" ? (
+              <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            )}
+          </div>
+          <AlertDescription className={`${
+            provider.status === "pending" ? "text-yellow-800 dark:text-yellow-200" :
+            provider.status === "rejected" ? "text-red-800 dark:text-red-200" :
+            "text-gray-800 dark:text-gray-200"
+          }`}>
+            {provider.status === "pending" && (
+              <>
+                <strong>Aguardando aprovação:</strong> Seu perfil está sendo analisado pela equipe. 
+                Você poderá aceitar reservas após a aprovação. Tempo estimado: 24-48 horas.
+              </>
+            )}
+            {provider.status === "rejected" && (
+              <>
+                <strong>Perfil rejeitado:</strong> Infelizmente seu perfil não foi aprovado. 
+                Entre em contato conosco para mais informações sobre como resolver pendências.
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>

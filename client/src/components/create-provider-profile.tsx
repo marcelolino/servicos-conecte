@@ -15,10 +15,11 @@ import ImageUpload from "@/components/image-upload";
 import { User, Settings, MapPin, DollarSign, FileText } from "lucide-react";
 
 const createProviderSchema = z.object({
-  serviceRadius: z.string().min(1, "Raio de atendimento é obrigatório").transform(Number),
+  serviceRadius: z.string().min(1, "Raio de atendimento é obrigatório"),
   basePrice: z.string().min(1, "Preço base é obrigatório"),
   description: z.string().min(20, "Descrição deve ter pelo menos 20 caracteres"),
   experience: z.string().min(10, "Experiência deve ter pelo menos 10 caracteres"),
+  identityDocument: z.string().min(1, "Documento de identidade é obrigatório"),
   portfolioImages: z.array(z.string()).optional(),
 });
 
@@ -33,6 +34,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
+  const [identityDocument, setIdentityDocument] = useState<string>("");
 
   const form = useForm<CreateProviderForm>({
     resolver: zodResolver(createProviderSchema),
@@ -41,6 +43,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
       basePrice: "",
       description: "",
       experience: "",
+      identityDocument: "",
       portfolioImages: [],
     },
   });
@@ -50,6 +53,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
       apiRequest("POST", "/api/providers", {
         userId,
         ...data,
+        serviceRadius: parseInt(data.serviceRadius),
         basePrice: parseFloat(data.basePrice).toFixed(2),
         portfolioImages: JSON.stringify(portfolioImages),
         status: "pending",
@@ -74,6 +78,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
   const onSubmit = (data: CreateProviderForm) => {
     const providerData = {
       ...data,
+      identityDocument,
       portfolioImages,
     };
     createProviderMutation.mutate(providerData);
@@ -85,6 +90,16 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
 
   const handleImageRemove = (imageUrl: string) => {
     setPortfolioImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
+  const handleDocumentUpload = (documentUrl: string) => {
+    setIdentityDocument(documentUrl);
+    form.setValue('identityDocument', documentUrl);
+  };
+
+  const handleDocumentRemove = () => {
+    setIdentityDocument("");
+    form.setValue('identityDocument', "");
   };
 
   return (
@@ -193,6 +208,41 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="identityDocument"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Documento de Identidade *
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Envie uma foto do seu RG, CNH ou outro documento oficial com foto para verificação.
+                    </p>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <ImageUpload
+                          category="provider"
+                          onUpload={handleDocumentUpload}
+                          onRemove={handleDocumentRemove}
+                          currentImages={identityDocument ? [identityDocument] : []}
+                          multiple={false}
+                          maxFiles={1}
+                          accept="image/*"
+                          maxSize={10}
+                          disabled={createProviderMutation.isPending}
+                          showPreview={true}
+                          className="border-2 border-dashed border-primary/50 rounded-lg p-4"
+                        />
+                        <input type="hidden" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="space-y-2">
                 <Label className="text-base font-medium">Portfólio de Trabalhos (Opcional)</Label>
                 <p className="text-sm text-muted-foreground">
@@ -202,7 +252,7 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
                   category="provider"
                   onUpload={handleImageUpload}
                   onRemove={handleImageRemove}
-                  currentImages={portfolioImages.map(url => ({ id: url, url, name: '' }))}
+                  currentImages={portfolioImages}
                   multiple={true}
                   maxFiles={10}
                   accept="image/*"
@@ -212,15 +262,19 @@ export default function CreateProviderProfile({ userId, onSuccess }: CreateProvi
                 />
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  Próximos Passos
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  ⏳ Aguardar Aprovação
                 </h3>
-                <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
+                  Após completar seu cadastro, você precisará aguardar a aprovação do administrador antes de poder aceitar reservas.
+                </p>
+                <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
                   <li>• Seu perfil será enviado para análise da equipe</li>
+                  <li>• Todos os documentos serão verificados</li>
                   <li>• Você receberá uma notificação quando for aprovado</li>
-                  <li>• Após aprovação, você poderá adicionar serviços específicos</li>
-                  <li>• Novos prestadores têm 7 dias de teste gratuito</li>
+                  <li>• Apenas após aprovação poderá aceitar reservas de clientes</li>
+                  <li>• Novos prestadores aprovados têm 7 dias de teste gratuito</li>
                 </ul>
               </div>
 
