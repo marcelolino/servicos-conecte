@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Search, Filter, ShoppingCart, Plus, Star, MapPin } from "lucide-react";
 
@@ -54,6 +55,7 @@ interface ProviderService {
 export default function ServicesPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,9 +80,10 @@ export default function ServicesPage() {
     queryKey: ["/api/services/all"],
   });
 
-  // Fetch cart
+  // Fetch cart (only if user is authenticated)
   const { data: cart } = useQuery({
     queryKey: ["/api/cart"],
+    enabled: !!user,
   });
 
   // Add to cart mutation
@@ -103,7 +106,7 @@ export default function ServicesPage() {
     },
   });
 
-  const filteredServices = services?.filter((service: ProviderService) => {
+  const filteredServices = (services || [])?.filter((service: ProviderService) => {
     const matchesCategory = selectedCategory === "all" || service.categoryId.toString() === selectedCategory;
     const matchesSearch = !searchTerm || 
       service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,6 +127,12 @@ export default function ServicesPage() {
   });
 
   const handleAddToCart = (service: ProviderService) => {
+    // Check if user is authenticated
+    if (!user) {
+      setLocation("/login");
+      return;
+    }
+
     addToCartMutation.mutate({
       providerServiceId: service.id,
       quantity: 1,
@@ -140,7 +149,7 @@ export default function ServicesPage() {
     }
   };
 
-  const cartItemCount = cart?.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+  const cartItemCount = (cart?.items || [])?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
 
   if (categoriesLoading || servicesLoading) {
     return (
@@ -188,7 +197,7 @@ export default function ServicesPage() {
             >
               Todas
             </Button>
-            {categories?.map((category: ServiceCategory) => (
+            {(categories || [])?.map((category: ServiceCategory) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id.toString() ? "default" : "outline"}
