@@ -10,7 +10,8 @@ import {
   ChevronRight,
   User,
   LogOut,
-  MessageCircle
+  MessageCircle,
+  Package
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -32,6 +33,11 @@ const sidebarItems: SidebarItem[] = [
     label: "Reservas",
     icon: Calendar,
     path: "/client-reservas",
+  },
+  {
+    label: "Meu Histórico de Reservas",
+    icon: Package,
+    path: "/client-orders",
   },
   {
     label: "Mensagens",

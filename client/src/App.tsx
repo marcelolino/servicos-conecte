@@ -51,6 +51,7 @@ import OrderSuccess from "@/pages/order-success";
 import ClientBookingDetails from "@/pages/client-booking-details";
 import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
+import ClientOrders from "@/pages/client-orders";
 import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
 import TestMercadoPago from "@/pages/test-mercadopago";
@@ -72,6 +73,7 @@ function Router() {
           <Route path="/client-reservas" component={ClientReservas} />
           <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
           <Route path="/client-offers" component={ClientOffers} />
+          <Route path="/client-orders" component={ClientOrders} />
           <Route path="/client-chat" component={ClientChat} />
           <Route path="/provider-dashboard" component={ProviderDashboard} />
           <Route path="/provider-services" component={ProviderServiceFlow} />

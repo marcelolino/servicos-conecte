@@ -157,13 +157,7 @@ export default function Header() {
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    {user?.userType === "client" && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/orders">
-                          Meus Pedidos
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
+
                     <DropdownMenuItem asChild>
                       <Link href="/profile">
                         Perfil
@@ -216,9 +210,7 @@ export default function Header() {
                     <Calendar className="h-4 w-4 mr-2" />
                     Reservas
                   </Link>
-                  <Link href="/orders" className="text-foreground hover:text-primary transition-colors">
-                    Meus Pedidos
-                  </Link>
+
                 </>
               )}
               <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
