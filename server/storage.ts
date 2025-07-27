@@ -120,6 +120,7 @@ export interface IStorage {
   // Reviews
   getReviewsByProvider(providerId: number): Promise<(Review & { client: User; serviceRequest: ServiceRequest })[]>;
   createReview(review: InsertReview): Promise<Review>;
+  getReviewByServiceRequest(serviceRequestId: number): Promise<Review | undefined>;
   
   // Notifications
   getNotificationsByUser(userId: number): Promise<Notification[]>;
@@ -709,6 +710,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createReview(review: InsertReview): Promise<Review> {
+    // Check if review already exists for this service request
+    const existingReview = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.serviceRequestId, review.serviceRequestId))
+      .limit(1);
+    
+    if (existingReview.length > 0) {
+      throw new Error("Uma avaliação já foi registrada para este serviço");
+    }
+    
     const [newReview] = await db
       .insert(reviews)
       .values(review)
@@ -734,6 +746,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(providers.id, review.providerId));
     
     return newReview;
+  }
+
+  async getReviewByServiceRequest(serviceRequestId: number): Promise<Review | undefined> {
+    const [review] = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.serviceRequestId, serviceRequestId))
+      .limit(1);
+    
+    return review;
   }
 
   async getNotificationsByUser(userId: number): Promise<Notification[]> {

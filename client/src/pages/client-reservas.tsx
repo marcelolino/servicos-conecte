@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth";
 import ClientLayout from "@/components/layout/client-layout";
+import RatingModal from "@/components/rating-modal";
 import { 
   Search, 
   Plus, 
@@ -258,12 +259,25 @@ export default function ClientReservas() {
       );
     }
 
-    if (request.status === "completed") {
+    if (request.status === "completed" && request.provider) {
       return (
-        <Button variant="outline" size="sm">
-          <Star className="h-4 w-4 mr-1" />
-          Avaliar
-        </Button>
+        <RatingModal
+          serviceRequestId={request.id}
+          providerId={request.provider.userId}
+          providerName={request.provider.user?.name || "Prestador"}
+          trigger={
+            <Button variant="outline" size="sm">
+              <Star className="h-4 w-4 mr-1" />
+              Avaliar
+            </Button>
+          }
+          onSuccess={() => {
+            toast({
+              title: "Avaliação enviada!",
+              description: "Sua avaliação foi registrada com sucesso.",
+            });
+          }}
+        />
       );
     }
 

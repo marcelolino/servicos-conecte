@@ -775,10 +775,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
+      // Verify service is completed
+      if (serviceRequest.status !== "completed") {
+        return res.status(400).json({ message: "Só é possível avaliar serviços concluídos" });
+      }
+      
       const review = await storage.createReview(reviewData);
       res.json(review);
     } catch (error) {
       res.status(400).json({ message: "Failed to create review", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/reviews/service-request/:id", authenticateToken, async (req, res) => {
+    try {
+      const serviceRequestId = parseInt(req.params.id);
+      
+      // Verify the service request belongs to the user
+      const serviceRequest = await storage.getServiceRequest(serviceRequestId);
+      if (!serviceRequest || serviceRequest.clientId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const review = await storage.getReviewByServiceRequest(serviceRequestId);
+      res.json(review || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get review", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
