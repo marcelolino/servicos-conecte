@@ -247,10 +247,10 @@ export default function ClientOrdersPage() {
                             <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                               <div>
                                 <p className="font-medium text-gray-900 dark:text-white">
-                                  {item.providerService.name || item.providerService.category.name}
+                                  {item.providerService?.name || item.providerService?.category?.name || "Serviço"}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  Prestador: {item.providerService.provider.user.name}
+                                  Prestador: {item.providerService?.provider?.user?.name || "Não informado"}
                                 </p>
                               </div>
                               <div className="text-right">
