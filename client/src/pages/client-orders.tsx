@@ -267,7 +267,7 @@ export default function ClientOrdersPage() {
                       )}
 
                       <div className="flex justify-end">
-                        <Link href={`/orders/${order.id}`}>
+                        <Link href={`/client-order-details/${order.id}`}>
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalhes
