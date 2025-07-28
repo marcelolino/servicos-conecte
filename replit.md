@@ -252,6 +252,14 @@ Preferred communication style: Simple, everyday language.
 - ✓ Changed confirmation button text to Portuguese "Confirmar Localização"
 - ✓ Optimized map interaction with click-to-select functionality
 - ✓ Added compact control buttons with proper styling
+- ✓ Replaced iframe-based map with real Google Maps JavaScript API implementation
+- ✓ Added draggable marker functionality for precise location selection
+- ✓ Implemented Google Places API address search with auto-suggestions
+- ✓ Created AddressSearchModal component matching user reference designs
+- ✓ Added real-time address suggestions as user types
+- ✓ Integrated address search with interactive map selection
+- ✓ Formatted location display to show only city and state (e.g., "Goiânia - GO")
+- ✓ Enhanced location card to display clean, concise location information
 
 ### Admin Dashboard Improvements (January 15, 2025)
 - ✓ Implemented complete admin dashboard redesign with sidebar navigation

@@ -14,6 +14,89 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   const [shouldShow, setShouldShow] = useState(true);
   const [showPermissionBanner, setShowPermissionBanner] = useState(true);
 
+  // Função para extrair cidade e estado do endereço
+  const formatLocationDisplay = (address: string): string => {
+    try {
+      // Separar por vírgula e limpar espaços
+      const parts = address.split(',').map(part => part.trim());
+      
+      // Procurar pela parte que contém o estado (formato: Cidade - UF)
+      for (const part of parts) {
+        if (part.includes(' - ')) {
+          const segments = part.split(' - ');
+          if (segments.length === 2 && segments[1].match(/^[A-Z]{2}$/)) {
+            return part.trim();
+          }
+        }
+      }
+      
+      // Procurar cidade e estado em partes separadas
+      let city = '';
+      let state = '';
+      
+      // Primeiro, encontrar o estado (formato: "Nome - UF" ou só "UF")
+      for (const part of parts) {
+        if (part.match(/^[A-Z]{2}$/)) {
+          state = part;
+          break;
+        } else if (part.includes(' - ') && part.match(/[A-Z]{2}$/)) {
+          const segments = part.split(' - ');
+          if (segments[segments.length - 1].match(/^[A-Z]{2}$/)) {
+            state = segments[segments.length - 1];
+            city = segments.slice(0, -1).join(' - ');
+            return `${city} - ${state}`;
+          }
+        }
+      }
+      
+      // Se encontrou o estado, procurar a cidade
+      if (state) {
+        // A cidade geralmente está na penúltima posição ou em uma posição anterior
+        const statePart = parts.find(part => part.includes(state));
+        const stateIndex = parts.indexOf(statePart || '');
+        
+        if (stateIndex > 0) {
+          city = parts[stateIndex - 1];
+        } else {
+          // Procurar por uma parte que pareça ser uma cidade
+          city = parts.find(part => 
+            part.length > 2 && 
+            !part.match(/^\d/) && 
+            !part.includes('CEP') &&
+            !part.includes('Brazil') &&
+            part !== state
+          ) || '';
+        }
+        
+        if (city) {
+          return `${city} - ${state}`;
+        }
+      }
+      
+      // Fallback: procurar padrões comuns
+      const relevantParts = parts.filter(part => 
+        part.length > 2 && 
+        !part.match(/^\d/) && 
+        !part.includes('CEP') &&
+        !part.includes('Brazil') &&
+        !part.match(/^\d{5}-?\d{3}$/) // Remove CEPs
+      );
+      
+      if (relevantParts.length >= 2) {
+        // Pegar os dois últimos elementos relevantes (provavelmente cidade e estado)
+        const lastTwo = relevantParts.slice(-2);
+        return lastTwo.join(' - ');
+      }
+      
+      // Último fallback: primeiro elemento significativo
+      return relevantParts[0] || parts[0] || address.substring(0, 20);
+      
+    } catch (error) {
+      console.error('Erro ao formatar localização:', error);
+      return address.length > 20 ? `${address.substring(0, 20)}...` : address;
+    }
+  };
+
   useEffect(() => {
     // Verificar se já temos localização salva
     const savedLocation = localStorage.getItem('userLocation');
@@ -78,10 +161,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-green-600" />
             <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
-              {currentLocation.address.length > 50 
-                ? `${currentLocation.address.substring(0, 50)}...` 
-                : currentLocation.address
-              }
+              {formatLocationDisplay(currentLocation.address)}
             </span>
           </div>
           <div className="flex items-center gap-1">
