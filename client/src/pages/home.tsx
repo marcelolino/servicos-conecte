@@ -19,6 +19,7 @@ import {
   Heart,
   Zap
 } from "lucide-react";
+import { LocationCard } from "@/components/location/LocationCard";
 import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
 
 interface BannerWithCategory extends PromotionalBanner {
@@ -28,6 +29,7 @@ interface BannerWithCategory extends PromotionalBanner {
 export default function Home() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
 
   const { data: banners, isLoading: bannersLoading } = useQuery({
     queryKey: ['/api/banners'],
@@ -44,7 +46,7 @@ export default function Home() {
     enabled: true,
   });
 
-  const filteredCategories = categories?.filter((category: ServiceCategory) =>
+  const filteredCategories = (categories as ServiceCategory[])?.filter((category: ServiceCategory) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -62,7 +64,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-8">
+      <div className="desktop-container py-8">
+        {/* Location Request Card */}
+        <LocationCard onLocationChange={setUserLocation} />
+        
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -85,13 +90,13 @@ export default function Home() {
         </div>
 
         {/* Promotional Banners */}
-        {!bannersLoading && banners && banners.length > 0 && (
+        {!bannersLoading && banners && (banners as BannerWithCategory[]).length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               Ofertas Especiais
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {banners.slice(0, 3).map((banner: BannerWithCategory) => (
+              {(banners as BannerWithCategory[]).slice(0, 3).map((banner: BannerWithCategory) => (
                 <Card 
                   key={banner.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
@@ -178,13 +183,13 @@ export default function Home() {
         </div>
 
         {/* Popular Providers */}
-        {!providersLoading && popularProviders && popularProviders.length > 0 && (
+        {!providersLoading && popularProviders && (popularProviders as any[]).length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               Profissionais Populares
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {popularProviders.slice(0, 6).map((provider: any) => (
+              {(popularProviders as any[]).slice(0, 6).map((provider: any) => (
                 <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center space-x-3">
