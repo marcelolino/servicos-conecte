@@ -3,7 +3,7 @@ import { MapPin, X, Search, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { InteractiveMap } from './InteractiveMap';
+import { GoogleMapModal } from './GoogleMapModal';
 
 interface LocationRequestModalProps {
   isOpen: boolean;
@@ -74,7 +74,7 @@ export function LocationRequestModal({ isOpen, onClose, onLocationSet }: Locatio
 
   if (showMap) {
     return (
-      <InteractiveMap 
+      <GoogleMapModal 
         onLocationSelect={(location) => {
           onLocationSet(location);
           onClose();
