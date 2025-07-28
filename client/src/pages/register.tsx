@@ -87,6 +87,13 @@ export default function Register() {
   });
 
   const onSubmit = (data: RegisterForm) => {
+    // Se é prestador, redirecionar para o wizard
+    if (data.userType === 'provider') {
+      setLocation('/provider-register');
+      return;
+    }
+    
+    // Se é cliente, continuar com o registro normal
     registerMutation.mutate(data);
   };
 
@@ -124,7 +131,10 @@ export default function Register() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="provider" id="provider" />
-                          <Label htmlFor="provider">Prestador - Ofereço serviços</Label>
+                          <Label htmlFor="provider" className="flex items-center gap-2 cursor-pointer">
+                            <Wrench className="h-4 w-4" />
+                            Prestador - Ofereço serviços
+                          </Label>
                         </div>
                       </RadioGroup>
                     </FormControl>

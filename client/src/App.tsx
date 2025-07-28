@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
+import { LocationProvider } from "@/contexts/LocationContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
@@ -13,6 +14,7 @@ import Register from "@/pages/register";
 import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminDashboardEnhanced from "@/pages/admin-dashboard-enhanced";
 import AdminBookings from "@/pages/admin-bookings";
 import AdminPayments from "@/pages/admin/payments";
 import AdminCashPayments from "@/pages/admin/cash-payments";
@@ -55,6 +57,7 @@ import ClientOrders from "@/pages/client-orders";
 import ClientOrderDetails from "@/pages/client-order-details";
 import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
+import ProviderRegister from "@/pages/provider-register";
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 
@@ -70,6 +73,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
+          <Route path="/provider-register" component={ProviderRegister} />
           <Route path="/client-dashboard" component={ClientDashboard} />
           <Route path="/client-reservas" component={ClientReservas} />
           <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
@@ -97,7 +101,8 @@ function Router() {
           <Route path="/provider-add-ons" component={ProviderAddOns} />
           <Route path="/provider-chat" component={ProviderChat} />
           <Route path="/admin-dashboard" component={AdminDashboard} />
-          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/admin" component={AdminDashboardEnhanced} />
+          <Route path="/admin-enhanced" component={AdminDashboardEnhanced} />
           <Route path="/admin-bookings" component={AdminBookings} />
           <Route path="/admin-settings" component={AdminSettings} />
           <Route path="/admin-payments" component={AdminPayments} />
@@ -133,12 +138,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
+        <LocationProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AuthProvider>
+        </LocationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

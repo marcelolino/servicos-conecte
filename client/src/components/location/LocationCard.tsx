@@ -3,6 +3,7 @@ import { MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocationRequestModal } from './LocationRequestModal';
 import { LocationPermissionBanner } from './LocationPermissionBanner';
+import { useLocation } from '@/contexts/LocationContext';
 
 interface LocationCardProps {
   onLocationChange?: (location: { lat: number; lng: number; address: string } | null) => void;
@@ -13,6 +14,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [shouldShow, setShouldShow] = useState(true);
   const [showPermissionBanner, setShowPermissionBanner] = useState(true);
+  const { selectedCity, setSelectedCity } = useLocation();
 
   // Função para extrair cidade e estado do endereço
   const formatLocationDisplay = (address: string): string => {
@@ -117,6 +119,16 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
     localStorage.setItem('userLocation', JSON.stringify(location));
     setShouldShow(false);
     onLocationChange?.(location);
+    
+    // Extrair cidade e estado e salvar no contexto
+    const formattedLocation = formatLocationDisplay(location.address);
+    const cityStateParts = formattedLocation.split(' - ');
+    if (cityStateParts.length === 2) {
+      setSelectedCity({
+        city: cityStateParts[0].trim(),
+        state: cityStateParts[1].trim()
+      });
+    }
   };
 
   const handleClearLocation = () => {
@@ -124,6 +136,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
     localStorage.removeItem('userLocation');
     setShouldShow(true);
     onLocationChange?.(null);
+    setSelectedCity(null);
   };
 
   const handleLocationPermission = (granted: boolean) => {

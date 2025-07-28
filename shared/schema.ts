@@ -52,10 +52,21 @@ export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   status: providerStatusEnum("status").default("pending"),
+  // Location fields for filtering by city
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
   serviceRadius: integer("service_radius").default(10), // in kilometers
   basePrice: decimal("base_price", { precision: 10, scale: 2 }),
   description: text("description"),
   experience: text("experience"),
+  // Registration flow fields
+  cpfCnpj: varchar("cpf_cnpj", { length: 20 }), // CPF or CNPJ
+  registrationStep: integer("registration_step").default(1), // Current step in wizard
+  registrationData: text("registration_data"), // JSON for draft data
+  // Banking information
+  bankName: varchar("bank_name", { length: 100 }),
+  bankAgency: varchar("bank_agency", { length: 10 }),
+  bankAccount: varchar("bank_account", { length: 20 }),
   documents: text("documents"), // JSON array of document URLs
   identityDocument: text("identity_document"), // URL for identity document (RG/CNH)
   portfolioImages: text("portfolio_images"), // JSON array of portfolio image URLs
