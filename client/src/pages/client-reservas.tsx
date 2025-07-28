@@ -452,21 +452,22 @@ export default function ClientReservas() {
   return (
     <ClientLayout>
       <div className="p-6">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Reservas
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Gerencie suas solicitações e reservas de serviços
-              </p>
-            </div>
-            <Button onClick={() => setIsNewRequestOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Solicitação
-            </Button>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Reservas
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Gerencie suas solicitações e reservas de serviços
+            </p>
           </div>
+          <Button 
+            onClick={() => setIsNewRequestOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Solicitação
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
