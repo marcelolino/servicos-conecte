@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useMobileMenu } from "@/hooks/use-mobile-menu";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { 
   Home, 
   Users, 
@@ -12,7 +14,9 @@ import {
   TrendingUp,
   LogOut,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  Menu,
+  X
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -68,6 +72,7 @@ const menuItems = [
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
+  const { isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileMenu();
 
   const isActiveLink = (href: string, exact: boolean = false) => {
     if (exact) {
@@ -82,8 +87,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={closeMobileMenu}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-50">
+      <aside className={cn(
+        "fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transition-transform duration-300",
+        isMobile ? (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
+      )}>
         {/* Logo & Brand */}
         <div className="flex items-center gap-3 px-6 py-6 border-b">
           <div className="flex items-center gap-2">
@@ -117,6 +133,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                             ? "bg-primary/10 text-primary hover:bg-primary/20" 
                             : "text-muted-foreground hover:text-foreground"
                         }`}
+                        onClick={() => isMobile && closeMobileMenu()}
                       >
                         <Icon className="h-4 w-4" />
                         <span className="text-sm">{item.label}</span>
@@ -157,8 +174,33 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64">
-        <div className="px-8 py-6">
+      <main className={cn(
+        "transition-all duration-300",
+        isMobile ? "ml-0" : "ml-64"
+      )}>
+        {/* Header with hamburger menu */}
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMobileMenu}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            )}
+            <h1 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">
+              Painel Administrativo
+            </h1>
+          </div>
+        </header>
+        <div className="px-4 lg:px-8 py-6">
           {children}
         </div>
       </main>

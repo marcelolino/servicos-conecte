@@ -51,7 +51,12 @@ const sidebarItems: SidebarItem[] = [
   }
 ];
 
-export default function ClientSidebar() {
+interface ClientSidebarProps {
+  onMobileMenuClose?: () => void;
+  isMobile?: boolean;
+}
+
+export default function ClientSidebar({ onMobileMenuClose, isMobile }: ClientSidebarProps) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(["Reservas"]);
@@ -93,6 +98,9 @@ export default function ClientSidebar() {
               toggleExpanded(item.label);
             } else if (item.path) {
               setLocation(item.path);
+              if (isMobile && onMobileMenuClose) {
+                onMobileMenuClose();
+              }
             }
           }}
         >

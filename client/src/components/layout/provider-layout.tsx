@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { useMobileMenu } from "@/hooks/use-mobile-menu";
 import { ChatNotification } from "@/components/chat/chat-notification";
 import {
   Home,
@@ -26,7 +27,9 @@ import {
   Eye,
   AlertTriangle,
   Wallet,
-  MessageCircle
+  MessageCircle,
+  Menu,
+  X
 } from "lucide-react";
 import { useState } from "react";
 
@@ -34,7 +37,20 @@ interface ProviderLayoutProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
+interface MenuItem {
+  icon: React.ComponentType<any>;
+  label: string;
+  href: string;
+  exact?: boolean;
+  subItems?: { icon?: React.ComponentType<any>; label: string; href: string }[];
+}
+
+interface MenuSection {
+  section: string;
+  items: MenuItem[];
+}
+
+const menuItems: MenuSection[] = [
   {
     section: "PRINCIPAL",
     items: [
@@ -107,6 +123,7 @@ const menuItems = [
 export function ProviderLayout({ children }: ProviderLayoutProps) {
   const { user } = useAuth();
   const [location] = useLocation();
+  const { isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileMenu();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Auto-expand Reservas menu if on any booking page
     if (location.startsWith('/provider-bookings')) {
@@ -132,8 +149,19 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={closeMobileMenu}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed top-16 bottom-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-40">
+      <aside className={cn(
+        "fixed top-0 bottom-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-50 transition-transform duration-300",
+        isMobile ? (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
+      )}>
 
 
         {/* User Profile Section */}
@@ -196,6 +224,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
                                   "w-full justify-start text-left font-normal px-3 py-1.5 h-auto text-sm",
                                   isActiveLink(subItem.href) && "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
                                 )}
+                                onClick={() => isMobile && closeMobileMenu()}
                               >
                                 {subItem.label}
                               </Button>
@@ -212,6 +241,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
                           "w-full justify-start text-left font-normal px-3 py-2 h-auto",
                           isActiveLink(item.href, item.exact) && "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
                         )}
+                        onClick={() => isMobile && closeMobileMenu()}
                       >
                         <item.icon className="h-4 w-4 mr-3" />
                         <span className="text-sm">{item.label}</span>
@@ -226,18 +256,37 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 flex flex-col">
-        {/* Header with notifications */}
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+      <main className={cn(
+        "flex flex-col transition-all duration-300",
+        isMobile ? "ml-0" : "ml-64"
+      )}>
+        {/* Header with hamburger menu and notifications */}
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Painel do Prestador
-            </h1>
+            <div className="flex items-center gap-4">
+              {isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleMobileMenu}
+                  className="p-2"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-5 w-5" />
+                  ) : (
+                    <Menu className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+              <h1 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">
+                Painel do Prestador
+              </h1>
+            </div>
             <ChatNotification userType="provider" />
           </div>
         </header>
         {/* Content Area */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 lg:p-8">
           {children}
         </div>
       </main>
