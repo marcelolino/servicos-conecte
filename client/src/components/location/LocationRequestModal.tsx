@@ -3,6 +3,7 @@ import { MapPin, X, Search, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { InteractiveMap } from './InteractiveMap';
 
 interface LocationRequestModalProps {
   isOpen: boolean;
@@ -73,53 +74,13 @@ export function LocationRequestModal({ isOpen, onClose, onLocationSet }: Locatio
 
   if (showMap) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[80vh] p-0">
-          <div className="relative h-[600px] bg-gray-900 rounded-lg overflow-hidden">
-            <div className="absolute top-4 left-4 right-4 z-10">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Escolher local</h3>
-                  <Button variant="ghost" size="sm" onClick={onClose}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  Compartilhar sua localização precisa aumenta a precisão nos resultados de pesquisa e estimativas de entrega, 
-                  garantindo a entrega de pedidos sem esforço.
-                </p>
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    4B Kamal Ataturk Ave, Dhaka 1212, Bangladesh
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Simulação do mapa */}
-            <div className="w-full h-full bg-gradient-to-br from-green-800 to-green-900 flex items-center justify-center">
-              <div className="text-center text-white">
-                <MapPin className="h-16 w-16 mx-auto mb-4 text-green-400" />
-                <p className="text-lg font-semibold">Mapa Interativo</p>
-                <p className="text-sm opacity-75">Clique para selecionar sua localização</p>
-                <Button 
-                  className="mt-4 bg-green-600 hover:bg-green-700" 
-                  onClick={() => {
-                    onLocationSet({
-                      lat: -16.6869,
-                      lng: -49.2648,
-                      address: "4B Kamal Ataturk Ave, Dhaka 1212, Bangladesh"
-                    });
-                    onClose();
-                  }}
-                >
-                  Confirmar Localização
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <InteractiveMap 
+        onLocationSelect={(location) => {
+          onLocationSet(location);
+          onClose();
+        }}
+        onClose={() => setShowMap(false)}
+      />
     );
   }
 
