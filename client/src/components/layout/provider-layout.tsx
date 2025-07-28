@@ -164,24 +164,40 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
       )}>
 
 
+        {/* Header with modern logo */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Wrench className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                Qserviços
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Painel do Prestador
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* User Profile Section */}
         <div className="px-6 py-4 border-b">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={user?.avatar || ""} />
-              <AvatarFallback className="bg-indigo-100 text-indigo-600">
+              <AvatarFallback className="bg-indigo-100 text-indigo-600 text-lg font-semibold">
                 {user?.name?.charAt(0).toUpperCase() || "P"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {user?.email?.split('@')[0] || "demo@provider.com"}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-sm font-semibold text-foreground truncate">
                 {user?.name || "Félix Harris"}
               </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email?.split('@')[0] || "demo@provider.com"}
+              </p>
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
 

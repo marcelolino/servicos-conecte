@@ -46,15 +46,17 @@ export function ClientLayout({ children }: ClientLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed on desktop, drawer on mobile */}
       <div className={cn(
         "transition-transform duration-300 z-50",
-        isMobile ? (isMobileMenuOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
-        isMobile ? "fixed inset-y-0 left-0" : ""
+        isMobile 
+          ? `fixed inset-y-0 left-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}` 
+          : "fixed inset-y-0 left-0 translate-x-0"
       )}>
         <ClientSidebar onMobileMenuClose={closeMobileMenu} isMobile={isMobile} />
       </div>
 
+      {/* Main Content */}
       <div className={cn(
         "flex-1 flex flex-col overflow-hidden transition-all duration-300",
         isMobile ? "ml-0" : "ml-64"
@@ -71,13 +73,13 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                   className="p-2"
                 >
                   {isMobileMenuOpen ? (
-                    <X className="h-5 w-5" />
+                    <X className="mobile-menu-icon" />
                   ) : (
-                    <Menu className="h-5 w-5" />
+                    <Menu className="mobile-menu-icon" />
                   )}
                 </Button>
               )}
-              <h1 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">
+              <h1 className="dashboard-title">
                 Painel do Cliente
               </h1>
             </div>
@@ -85,7 +87,9 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <div className="desktop-container">
+            {children}
+          </div>
         </main>
       </div>
     </div>

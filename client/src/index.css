@@ -55,103 +55,132 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Custom styles for the application */
-.hero-gradient {
-  background: linear-gradient(135deg, hsl(207, 90%, 54%) 0%, hsl(207, 90%, 44%) 100%);
-}
-
-.provider-gradient {
-  background: linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 76%, 26%) 100%);
-}
-
-.service-card {
-  @apply bg-muted rounded-xl p-6 text-center transition-all duration-300 cursor-pointer;
-}
-
-.service-card:hover {
-  opacity: 0.8;
-  transform: translateY(-2px);
-  @apply shadow-lg;
-}
-
-.service-icon {
-  @apply w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors;
-}
-
-.provider-card {
-  @apply bg-muted rounded-xl p-6 transition-all duration-300 cursor-pointer;
-}
-
-.provider-card:hover {
-  @apply shadow-lg;
-}
-
-.dashboard-card {
-  @apply bg-card rounded-xl shadow-sm p-6 border;
-}
-
-.stats-card {
-  @apply bg-muted rounded-lg p-6;
-}
-
-.notification-badge {
-  @apply absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center;
-}
-
-.service-status-pending {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-}
-
-.service-status-accepted {
-  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
-}
-
-.service-status-in-progress {
-  @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200;
-}
-
-.service-status-completed {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-}
-
-.service-status-cancelled {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
-}
-
-.rating-stars {
-  @apply flex text-yellow-400;
-}
-
-.rating-star {
-  @apply w-4 h-4 fill-current;
-}
-
-.empty-state {
-  @apply text-center py-12 text-muted-foreground;
-}
-
-.loading-skeleton {
-  @apply animate-pulse bg-muted rounded;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .hero-gradient {
-    @apply py-16;
+@layer components {
+  /* Desktop Container with max-width */
+  .desktop-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
-  
-  .service-card {
-    @apply p-4;
+
+  @media (min-width: 1024px) {
+    .desktop-container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
   }
-  
-  .provider-card {
-    @apply p-4;
+
+  /* Modern Card Styles */
+  .modern-card {
+    border-radius: 16px;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
   }
-  
-  .dashboard-card {
-    @apply p-4;
+
+  /* Stats Grid Layout */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Stats Card with Gradient */
+  .stats-card-gradient {
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    color: white;
+  }
+
+  .stats-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  /* Gradient Backgrounds */
+  .reservas-gradient {
+    background: linear-gradient(to bottom right, rgb(59 130 246), rgb(37 99 235));
+  }
+
+  .services-gradient {
+    background: linear-gradient(to bottom right, rgb(168 85 247), rgb(147 51 234));
+  }
+
+  .earnings-gradient {
+    background: linear-gradient(to bottom right, rgb(34 197 94), rgb(22 163 74));
+  }
+
+  .growth-gradient {
+    background: linear-gradient(to bottom right, rgb(249 115 22), rgb(234 88 12));
+  }
+
+  /* Modern Button Styles */
+  .modern-button {
+    transition: all 0.2s;
+  }
+
+  .modern-button:hover {
+    transform: scale(1.05);
+  }
+
+  .modern-button:active {
+    transform: scale(0.95);
+  }
+
+  /* Typography Improvements */
+  .dashboard-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-title {
+      font-size: 1.875rem;
+    }
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  @media (min-width: 1024px) {
+    .section-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  /* Larger Icons for Mobile */
+  .mobile-menu-icon {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  /* Mobile Menu Drawer */
+  .mobile-drawer-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid hsl(var(--border));
   }
 }

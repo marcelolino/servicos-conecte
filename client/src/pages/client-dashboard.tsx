@@ -264,15 +264,15 @@ export default function ClientDashboard() {
 
   return (
     <ClientLayout>
-      <div className="p-6">
+      <div className="py-6">
         {/* Header with user info and stats */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {user?.name || "Cliente"}
+              <h1 className="dashboard-title">
+                Bem-vindo, {user?.name || "Cliente"}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-base text-gray-500 dark:text-gray-400">
                 {user?.email}
               </p>
             </div>
@@ -286,72 +286,101 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          {/* Stats Cards Row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm">Reserva total</p>
-                    <p className="text-2xl font-bold">
-                      {statsLoading ? <Skeleton className="h-8 w-12 bg-blue-400/30" /> : stats?.totalServices || 17}
-                    </p>
-                  </div>
-                  <Calendar className="h-8 w-8 text-blue-200" />
+          {/* Stats Cards Row with Modern Design */}
+          <div className="stats-grid">
+            <div className="stats-card-gradient reservas-gradient">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-sm font-medium">Reserva Total</p>
+                  <p className="text-3xl font-bold text-white">
+                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : stats?.totalServices || 17}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Calendar className="h-10 w-10 text-white/80" />
+              </div>
+            </div>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm">Serviço total</p>
-                    <p className="text-2xl font-bold">
-                      {statsLoading ? <Skeleton className="h-8 w-12 bg-purple-400/30" /> : stats?.completedServices || 68}
-                    </p>
-                  </div>
-                  <Package className="h-8 w-8 text-purple-200" />
+            <div className="stats-card-gradient services-gradient">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-sm font-medium">Serviços</p>
+                  <p className="text-3xl font-bold text-white">
+                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : stats?.completedServices || 12}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Package className="h-10 w-10 text-white/80" />
+              </div>
+            </div>
 
-            <Card className="bg-gradient-to-br from-blue-400 to-blue-500 text-white border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm">Pagamento restante</p>
-                    <p className="text-2xl font-bold">R$ 0,00</p>
-                  </div>
-                  <CreditCard className="h-8 w-8 text-blue-200" />
+            <div className="stats-card-gradient earnings-gradient">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-sm font-medium">Gasto Total</p>
+                  <p className="text-3xl font-bold text-white">
+                    {statsLoading ? <Skeleton className="h-8 w-16 bg-white/20" /> : `R$ ${(stats?.totalSpent || 1250).toFixed(2)}`}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <CreditCard className="h-10 w-10 text-white/80" />
+              </div>
+            </div>
 
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm">Receita total</p>
-                    <p className="text-2xl font-bold">R$ 0,00</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-green-200" />
+            <div className="stats-card bg-white dark:bg-gray-800 border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Crescimento</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {statsLoading ? <Skeleton className="h-8 w-12" /> : "+23%"}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <TrendingUp className="h-10 w-10 text-green-500" />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Content Area with Service Requests */}
+        {/* Service Request List with Modern Cards */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Suas Solicitações
-            </h2>
-            <Button onClick={() => setIsNewRequestOpen(true)}>
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "all", label: "Todas" },
+              { key: "pending", label: "Pendentes" },
+              { key: "accepted", label: "Aceitas" },
+              { key: "in_progress", label: "Em Andamento" },  
+              { key: "completed", label: "Concluídas" },
+              { key: "cancelled", label: "Canceladas" }
+            ].map((filter) => (
+              <Button
+                key={filter.key}
+                variant={selectedStatus === filter.key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedStatus(filter.key)}
+                className="rounded-full"
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </div>
+
+          {/* New Request Button */}
+          <div className="flex justify-end">
+            <Button onClick={() => setIsNewRequestOpen(true)} className="modern-card bg-primary">
               <Plus className="h-4 w-4 mr-2" />
               Nova Solicitação
             </Button>
+          </div>
+
+          {/* Service Requests */}
+          <div className="space-y-4">
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
+              Minhas Solicitações de Serviço
+            </h2>
           </div>
 
           {/* Service Requests List */}
@@ -390,8 +419,8 @@ export default function ClientDashboard() {
               </Card>
             ) : (
               filteredRequests?.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
-                <Card key={request.id}>
-                  <CardContent className="p-6">
+                <div key={request.id} className="modern-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                  <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -459,8 +488,8 @@ export default function ClientDashboard() {
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))
             )}
           </div>

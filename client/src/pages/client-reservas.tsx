@@ -214,7 +214,7 @@ export default function ClientReservas() {
   };
 
   const getFilteredRequests = (status: string) => {
-    if (!serviceRequests) return [];
+    if (!serviceRequests || !Array.isArray(serviceRequests)) return [];
     if (status === "todas") return serviceRequests;
     return serviceRequests.filter((request: ServiceRequest) => request.status === status);
   };
@@ -285,7 +285,14 @@ export default function ClientReservas() {
   };
 
   const getTabCounts = () => {
-    if (!serviceRequests) return {};
+    if (!serviceRequests) return {
+      todas: 0,
+      pending: 0,
+      accepted: 0,
+      in_progress: 0,
+      completed: 0,
+      cancelled: 0
+    };
     return {
       todas: serviceRequests.length,
       pending: serviceRequests.filter((r: ServiceRequest) => r.status === "pending").length,
@@ -359,20 +366,20 @@ export default function ClientReservas() {
     }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {filteredRequests.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
-          <Card key={request.id}>
-            <CardContent className="p-6">
+          <div key={request.id} className="reservation-card">
+            <div className="space-y-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-foreground">{request.title}</h3>
-                    <Badge className={`px-3 py-1 rounded-full text-xs ${getStatusColor(request.status)}`}>
-                      {getStatusText(request.status)}
+                    <h3 className="text-lg font-semibold text-foreground">{request.title || 'Sem título'}</h3>
+                    <Badge className={`px-3 py-1 rounded-full text-xs ${getStatusColor(request.status || 'pending')}`}>
+                      {getStatusText(request.status || 'pending')}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    {request.category?.name} • {new Date(request.createdAt).toLocaleDateString('pt-BR')}
+                    {request.category?.name} • {request.createdAt ? new Date(request.createdAt).toLocaleDateString('pt-BR') : ''}
                   </p>
                   <p className="text-sm text-foreground mb-3">{request.description}</p>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -442,8 +449,8 @@ export default function ClientReservas() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -452,22 +459,10 @@ export default function ClientReservas() {
   return (
     <ClientLayout>
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Reservas
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Gerencie suas solicitações e reservas de serviços
-            </p>
-          </div>
-          <Button 
-            onClick={() => setIsNewRequestOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Solicitação
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Reservas
+          </h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
