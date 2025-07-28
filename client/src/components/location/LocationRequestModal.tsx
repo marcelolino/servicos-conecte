@@ -3,7 +3,7 @@ import { MapPin, X, Search, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GoogleMapModal } from './GoogleMapModal';
+import { AddressSearchModal } from './AddressSearchModal';
 
 interface LocationRequestModalProps {
   isOpen: boolean;
@@ -56,16 +56,7 @@ export function LocationRequestModal({ isOpen, onClose, onLocationSet }: Locatio
 
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
-    
-    // Simulando busca de endereço
-    const mockResult = {
-      lat: -16.6869,
-      lng: -49.2648,
-      address: searchQuery
-    };
-    
-    onLocationSet(mockResult);
-    onClose();
+    setShowMap(true);
   };
 
   const handleMapSelection = () => {
@@ -74,12 +65,13 @@ export function LocationRequestModal({ isOpen, onClose, onLocationSet }: Locatio
 
   if (showMap) {
     return (
-      <GoogleMapModal 
+      <AddressSearchModal 
         onLocationSelect={(location) => {
           onLocationSet(location);
           onClose();
         }}
         onClose={() => setShowMap(false)}
+        initialQuery={searchQuery}
       />
     );
   }
@@ -96,42 +88,42 @@ export function LocationRequestModal({ isOpen, onClose, onLocationSet }: Locatio
         
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <MapPin className="absolute left-3 top-3 h-4 w-4 text-red-600" />
             <Input
-              placeholder="Pesquise o local aqui..."
+              placeholder="Digite seu endereço..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 pr-20"
+              onKeyPress={(e) => e.key === 'Enter' && handleMapSelection()}
             />
+            <Button 
+              className="absolute right-1 top-1 bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 h-8"
+              onClick={handleMapSelection}
+            >
+              Buscar
+            </Button>
           </div>
           
-          <div className="flex gap-2">
+          <div className="space-y-2">
             <Button 
               variant="outline" 
-              className="flex-1 justify-start"
+              className="w-full justify-start"
               onClick={handleGeolocation}
               disabled={isLocating}
             >
               <Navigation className="h-4 w-4 mr-2" />
-              {isLocating ? 'Localizando...' : 'Localize-me'}
+              {isLocating ? 'Localizando...' : 'Usar minha localização atual'}
             </Button>
             
             <Button 
               variant="outline"
+              className="w-full justify-start"
               onClick={handleMapSelection}
             >
+              <MapPin className="h-4 w-4 mr-2" />
               Escolher no mapa
             </Button>
           </div>
-          
-          <Button 
-            className="w-full bg-green-600 hover:bg-green-700"
-            onClick={handleSearch}
-            disabled={!searchQuery.trim()}
-          >
-            Explorar
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
