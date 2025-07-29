@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { RegistrationImageUpload } from '@/components/registration/RegistrationImageUpload';
-import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2 } from 'lucide-react';
+import { LocationRequestModal } from '@/components/location/LocationRequestModal';
+import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2, MapPin } from 'lucide-react';
 import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +51,8 @@ interface ProviderRegistrationWizardProps {
 export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [registrationData, setRegistrationData] = useState<any>({});
-  const { selectedCity } = useLocation();
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const { selectedCity, setSelectedCity } = useLocation();
   const { toast } = useToast();
 
   // Carregar categorias
@@ -81,6 +83,55 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     const draftData = { ...registrationData, ...data, currentStep };
     setRegistrationData(draftData);
     localStorage.setItem('providerRegistrationDraft', JSON.stringify(draftData));
+  };
+
+  // Lidar com seleção de localização
+  const handleLocationSet = (location: { lat: number; lng: number; address: string }) => {
+    // Extrair cidade e estado do endereço
+    const extractCityState = (address: string) => {
+      const parts = address.split(',').map(part => part.trim());
+      
+      // Procurar por padrão "Cidade - Estado"
+      for (const part of parts) {
+        if (part.includes(' - ')) {
+          const segments = part.split(' - ');
+          if (segments.length === 2 && segments[1].match(/^[A-Z]{2}$/)) {
+            return {
+              city: segments[0].trim(),
+              state: segments[1].trim()
+            };
+          }
+        }
+      }
+      
+      // Fallback: tentar extrair cidade e estado de forma simples
+      if (parts.length >= 2) {
+        const state = parts.find(part => part.match(/^[A-Z]{2}$/));
+        if (state) {
+          const stateIndex = parts.indexOf(state);
+          const city = stateIndex > 0 ? parts[stateIndex - 1] : parts[0];
+          return {
+            city: city.replace(/^\d+\s*-?\s*/, ''), // Remove números do início
+            state
+          };
+        }
+      }
+      
+      // Último fallback
+      return {
+        city: parts[0] || 'Cidade não identificada',
+        state: 'N/A'
+      };
+    };
+
+    const cityState = extractCityState(location.address);
+    setSelectedCity(cityState);
+    setIsLocationModalOpen(false);
+    
+    toast({
+      title: 'Localização selecionada',
+      description: `${cityState.city} - ${cityState.state}`,
+    });
   };
 
   const Step1Form = () => {
@@ -430,22 +481,33 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
 
   if (!selectedCity) {
     return (
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Selecione sua Localização</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 mb-4">
-            Para se cadastrar como prestador, primeiro você precisa selecionar sua cidade.
-          </p>
-          <Button 
-            onClick={() => window.location.reload()}
-            className="w-full"
-          >
-            Selecionar Cidade
-          </Button>
-        </CardContent>
-      </Card>
+      <>
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-green-600" />
+              Selecione sua Localização
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Para se cadastrar como prestador, primeiro você precisa selecionar sua cidade.
+            </p>
+            <Button 
+              onClick={() => setIsLocationModalOpen(true)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              Selecionar Cidade
+            </Button>
+          </CardContent>
+        </Card>
+
+        <LocationRequestModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          onLocationSet={handleLocationSet}
+        />
+      </>
     );
   }
 
