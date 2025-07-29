@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import ImageUpload from '@/components/image-upload';
+import { RegistrationImageUpload } from './RegistrationImageUpload';
 import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -222,11 +222,13 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                   Somente imagens até 5MB
                 </p>
               </div>
-              <ImageUpload
-                category="profile"
-                onUpload={setProfilePhoto}
-                maxFiles={1}
-                currentImages={profilePhoto ? [profilePhoto] : []}
+              <RegistrationImageUpload
+                value={profilePhoto}
+                onChange={setProfilePhoto}
+                folder="avatars"
+                acceptedFormats={['.jpg', '.jpeg', '.png']}
+                maxSizeMB={5}
+                placeholder="Clique ou arraste para enviar sua foto"
               />
             </div>
           </div>
