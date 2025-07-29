@@ -36,6 +36,7 @@ const step3Schema = z.object({
   bankAgency: z.string().min(3, 'Informe a agência'),
   bankAccount: z.string().min(4, 'Informe a conta'),
   avatar: z.string().optional(),
+  documentPhoto: z.string().optional(),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
@@ -52,28 +53,8 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
   const { selectedCity } = useLocation();
   const { toast } = useToast();
 
-  // Carregar dados salvos do localStorage (rascunho)
-  useEffect(() => {
-    const savedData = localStorage.getItem('providerRegistrationDraft');
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData);
-        setRegistrationData(data);
-        setCurrentStep(data.currentStep || 1);
-      } catch (error) {
-        console.error('Erro ao carregar rascunho:', error);
-      }
-    }
-  }, []);
-
-  // Salvar rascunho automaticamente
-  const saveDraft = (data: any) => {
-    const draftData = { ...registrationData, ...data, currentStep };
-    setRegistrationData(draftData);
-    localStorage.setItem('providerRegistrationDraft', JSON.stringify(draftData));
-  };
-
-  const { data: categories = [] } = useQuery({
+  // Carregar categorias
+  const { data: categories = [] } = useQuery<Array<{id: number, name: string}>>({
     queryKey: ['/api/categories'],
   });
 
@@ -94,6 +75,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
       icon: Building2,
     },
   ];
+
+  // Salvar rascunho automaticamente
+  const saveDraft = (data: any) => {
+    const draftData = { ...registrationData, ...data, currentStep };
+    setRegistrationData(draftData);
+    localStorage.setItem('providerRegistrationDraft', JSON.stringify(draftData));
+  };
 
   const Step1Form = () => {
     const form = useForm<Step1Data>({
@@ -166,7 +154,7 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
               name="cpfCnpj"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CPF ou CNPJ</FormLabel>
+                  <FormLabel>CPF/CNPJ</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -186,7 +174,7 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
               <FormItem>
                 <FormLabel>Senha</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                  <Input type="password" placeholder="Sua senha" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -229,7 +217,7 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category: any) => (
+                    {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>
@@ -311,9 +299,14 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     });
 
     const onSubmit = (data: Step3Data) => {
-      const finalData = { ...registrationData, ...data, city: selectedCity?.city, state: selectedCity?.state };
-      onComplete(finalData);
+      const completeData = { 
+        ...registrationData, 
+        ...data,
+        city: selectedCity?.city,
+        state: selectedCity?.state,
+      };
       localStorage.removeItem('providerRegistrationDraft');
+      onComplete(completeData);
     };
 
     return (
@@ -371,9 +364,29 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
                 <FormLabel>Foto de Perfil ou Logo</FormLabel>
                 <FormControl>
                   <ImageUpload
-                    value={field.value || ''}
-                    onChange={field.onChange}
+                    uploadedImagePath={field.value || ''}
+                    onImageUploaded={field.onChange}
                     folder="providers"
+                    acceptedFormats={['.jpg', '.jpeg', '.png']}
+                    maxSizeMB={5}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="documentPhoto"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Documento com Foto (RG/CNH)</FormLabel>
+                <FormControl>
+                  <ImageUpload
+                    uploadedImagePath={field.value || ''}
+                    onImageUploaded={field.onChange}
+                    folder="documents"
                     acceptedFormats={['.jpg', '.jpeg', '.png']}
                     maxSizeMB={5}
                   />

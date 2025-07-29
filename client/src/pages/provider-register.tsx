@@ -30,12 +30,15 @@ export default function ProviderRegister() {
 
       const user = await userResponse.json();
 
-      // Criar perfil de prestador
+      // Criar perfil de prestador com token de autenticação
       const providerResponse = await fetch('/api/providers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user.user.id,
           cpfCnpj: data.cpfCnpj,
           city: data.city,
           state: data.state,
@@ -59,7 +62,10 @@ export default function ProviderRegister() {
       // Associar categoria de serviço
       await fetch('/api/provider-services', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
         body: JSON.stringify({
           providerId: provider.id,
           categoryId: data.categoryId,

@@ -38,7 +38,7 @@ export default function Header() {
     refetchOnWindowFocus: false,
   });
 
-  const cartItemCount = cart?.items ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
+  const cartItemCount = (cart && Array.isArray(cart.items)) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -87,7 +87,7 @@ export default function Header() {
             <Link href="/services" className="text-foreground hover:text-primary transition-colors">
               Serviços
             </Link>
-            <Link href="/register?type=provider" className="text-foreground hover:text-primary transition-colors">
+            <Link href="/provider-register" className="text-foreground hover:text-primary transition-colors">
               Seja um prestador
             </Link>
             <Link href="/support" className="text-foreground hover:text-primary transition-colors">

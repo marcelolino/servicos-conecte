@@ -21,7 +21,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string(),
   phone: z.string().optional(),
-  userType: z.enum(["client", "provider"]),
+  userType: z.enum(["client"]).default("client"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não coincidem",
   path: ["confirmPassword"],
@@ -87,14 +87,8 @@ export default function Register() {
   });
 
   const onSubmit = (data: RegisterForm) => {
-    // Se é prestador, redirecionar para o wizard
-    if (data.userType === 'provider') {
-      setLocation('/provider-register');
-      return;
-    }
-    
-    // Se é cliente, continuar com o registro normal
-    registerMutation.mutate(data);
+    // Registrar sempre como cliente
+    registerMutation.mutate({...data, userType: 'client'});
   };
 
   return (
@@ -107,41 +101,12 @@ export default function Register() {
           </div>
           <CardTitle className="text-2xl">Criar Conta</CardTitle>
           <CardDescription>
-            Junte-se à nossa comunidade de profissionais
+            Cadastre-se como cliente para buscar serviços
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="userType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Conta</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="client" id="client" />
-                          <Label htmlFor="client">Cliente - Busco serviços</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="provider" id="provider" />
-                          <Label htmlFor="provider" className="flex items-center gap-2 cursor-pointer">
-                            <Wrench className="h-4 w-4" />
-                            Prestador - Ofereço serviços
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
