@@ -49,9 +49,17 @@ const { token, user } = await response.json();
 - `PUT /api/categories/:id` - Atualizar categoria (admin)
 - `DELETE /api/categories/:id` - Excluir categoria (admin)
 
-### 🔧 Serviços
-- `GET /api/services` - Listar serviços
-- `GET /api/services/all` - Listar todos os serviços
+### 🔧 Serviços (Endpoints Públicos para App Nativo)
+- `GET /api/services` - Listar serviços com filtros (categoria, cidade, estado, busca)
+- `GET /api/services/:id` - Obter serviço específico com dados do prestador
+- `GET /api/services/category/:categoryId` - Serviços por categoria
+- `GET /api/services/provider/:providerId` - Serviços de um prestador específico
+- `GET /api/services/popular` - Serviços populares baseados em avaliações
+- `GET /api/services/search` - Busca avançada com filtros de preço
+- `GET /api/services/test` - Endpoint de teste para verificar API
+- `GET /api/services/all` - Listar todos os serviços (legacy)
+
+### 🔧 Gerenciamento de Serviços (Autenticado)
 - `POST /api/services` - Criar serviço (provider)
 - `PUT /api/services/:id` - Atualizar serviço (provider)
 - `DELETE /api/services/:id` - Excluir serviço (provider)
@@ -162,6 +170,82 @@ const { token, user } = await response.json();
 }
 ```
 
+## 📱 Detalhamento dos Endpoints /services
+
+### GET /api/services
+Lista todos os serviços com filtros opcionais para apps nativos.
+
+**Query Parameters:**
+- `category` (opcional) - ID da categoria
+- `city` (opcional) - Nome da cidade
+- `state` (opcional) - Estado (UF)
+- `search` (opcional) - Termo de busca no nome/descrição
+
+**Exemplo de Uso:**
+```
+GET /api/services?category=1&city=Goiania&state=GO&search=limpeza
+```
+
+### GET /api/services/:id
+Obter detalhes de um serviço específico incluindo dados do prestador.
+
+**Exemplo de Resposta:**
+```json
+{
+  "id": 1,
+  "providerId": 7,
+  "categoryId": 1,
+  "name": "Limpeza Residencial",
+  "description": "Limpeza completa da residência",
+  "price": "150.00",
+  "provider": {
+    "id": 7,
+    "userId": 14,
+    "status": "approved",
+    "city": "Goiânia",
+    "state": "GO",
+    "rating": "4.80"
+  }
+}
+```
+
+### GET /api/services/search
+Busca avançada de serviços com múltiplos filtros.
+
+**Query Parameters:**
+- `q` (obrigatório) - Termo de busca
+- `category` (opcional) - ID da categoria
+- `city` (opcional) - Nome da cidade
+- `state` (opcional) - Estado (UF)
+- `minPrice` (opcional) - Preço mínimo
+- `maxPrice` (opcional) - Preço máximo
+
+**Exemplo:**
+```
+GET /api/services/search?q=encanamento&category=2&minPrice=50&maxPrice=200
+```
+
+### GET /api/services/test
+Endpoint de diagnóstico para verificar se a API está funcionando.
+
+**Resposta:**
+```json
+{
+  "status": "API Working",
+  "version": "1.0",
+  "servicesCount": 15,
+  "availableEndpoints": [
+    "GET /api/services",
+    "GET /api/services/:id",
+    "GET /api/services/category/:categoryId",
+    "GET /api/services/provider/:providerId",
+    "GET /api/services/popular",
+    "GET /api/services/search?q=term"
+  ],
+  "sampleService": { /* exemplo de serviço */ }
+}
+```
+
 ## 🚀 Exemplo de Integração Mobile
 
 ### React Native
@@ -205,8 +289,31 @@ class QservicosAPI {
   }
 
   // Métodos de serviços
-  async getServices() {
-    return this.request('/api/services');
+  async getServices(filters = {}) {
+    const params = new URLSearchParams(filters);
+    const endpoint = params.toString() ? `/api/services?${params}` : '/api/services';
+    return this.request(endpoint);
+  }
+
+  async getServiceById(id) {
+    return this.request(`/api/services/${id}`);
+  }
+
+  async getServicesByCategory(categoryId) {
+    return this.request(`/api/services/category/${categoryId}`);
+  }
+
+  async getServicesByProvider(providerId) {
+    return this.request(`/api/services/provider/${providerId}`);
+  }
+
+  async getPopularServices() {
+    return this.request('/api/services/popular');
+  }
+
+  async searchServices(searchParams) {
+    const params = new URLSearchParams(searchParams);
+    return this.request(`/api/services/search?${params}`);
   }
 
   async createServiceRequest(data) {
@@ -217,8 +324,25 @@ class QservicosAPI {
   }
 }
 
-// Uso
+// Exemplos de uso
 const api = new QservicosAPI('https://seu-app.replit.app');
+
+// Buscar serviços de limpeza em Goiânia
+const cleaningServices = await api.getServices({
+  category: '1',
+  city: 'Goiania',
+  state: 'GO'
+});
+
+// Buscar serviços por termo
+const searchResults = await api.searchServices({
+  q: 'encanamento',
+  minPrice: '50',
+  maxPrice: '200'
+});
+
+// Obter serviços populares
+const popularServices = await api.getPopularServices();
 ```
 
 ### Flutter
@@ -277,6 +401,38 @@ class QservicosAPI {
     }
     
     return response;
+  }
+
+  // Métodos de serviços
+  Future<List<dynamic>> getServices({Map<String, String>? filters}) async {
+    String endpoint = '/api/services';
+    if (filters != null && filters.isNotEmpty) {
+      final params = Uri(queryParameters: filters).query;
+      endpoint = '/api/services?$params';
+    }
+    final response = await request(endpoint);
+    return response as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getServiceById(int id) async {
+    final response = await request('/api/services/$id');
+    return response;
+  }
+
+  Future<List<dynamic>> getServicesByCategory(int categoryId) async {
+    final response = await request('/api/services/category/$categoryId');
+    return response as List<dynamic>;
+  }
+
+  Future<List<dynamic>> getPopularServices() async {
+    final response = await request('/api/services/popular');
+    return response as List<dynamic>;
+  }
+
+  Future<List<dynamic>> searchServices(Map<String, String> searchParams) async {
+    final params = Uri(queryParameters: searchParams).query;
+    final response = await request('/api/services/search?$params');
+    return response as List<dynamic>;
   }
 }
 ```
