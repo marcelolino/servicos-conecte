@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import ImageUpload from '@/components/image-upload';
+import { RegistrationImageUpload } from '@/components/registration/RegistrationImageUpload';
 import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2 } from 'lucide-react';
 import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
@@ -86,7 +86,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
   const Step1Form = () => {
     const form = useForm<Step1Data>({
       resolver: zodResolver(step1Schema),
-      defaultValues: registrationData,
+      defaultValues: {
+        name: registrationData.name || '',
+        email: registrationData.email || '',
+        phone: registrationData.phone || '',
+        cpfCnpj: registrationData.cpfCnpj || '',
+        password: registrationData.password || '',
+      },
     });
 
     const onSubmit = (data: Step1Data) => {
@@ -193,7 +199,12 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
   const Step2Form = () => {
     const form = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
-      defaultValues: registrationData,
+      defaultValues: {
+        categoryId: registrationData.categoryId || 0,
+        description: registrationData.description || '',
+        experience: registrationData.experience || '',
+        basePrice: registrationData.basePrice || '',
+      },
     });
 
     const onSubmit = (data: Step2Data) => {
@@ -295,7 +306,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
   const Step3Form = () => {
     const form = useForm<Step3Data>({
       resolver: zodResolver(step3Schema),
-      defaultValues: registrationData,
+      defaultValues: {
+        bankName: registrationData.bankName || '',
+        bankAgency: registrationData.bankAgency || '',
+        bankAccount: registrationData.bankAccount || '',
+        avatar: registrationData.avatar || '',
+        documentPhoto: registrationData.documentPhoto || '',
+      },
     });
 
     const onSubmit = (data: Step3Data) => {
@@ -363,12 +380,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
               <FormItem>
                 <FormLabel>Foto de Perfil ou Logo</FormLabel>
                 <FormControl>
-                  <ImageUpload
-                    uploadedImagePath={field.value || ''}
-                    onImageUploaded={field.onChange}
+                  <RegistrationImageUpload
+                    value={field.value || ''}
+                    onChange={field.onChange}
                     folder="providers"
                     acceptedFormats={['.jpg', '.jpeg', '.png']}
                     maxSizeMB={5}
+                    placeholder="Envie sua foto de perfil ou logo"
                   />
                 </FormControl>
                 <FormMessage />
@@ -383,12 +401,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
               <FormItem>
                 <FormLabel>Documento com Foto (RG/CNH)</FormLabel>
                 <FormControl>
-                  <ImageUpload
-                    uploadedImagePath={field.value || ''}
-                    onImageUploaded={field.onChange}
+                  <RegistrationImageUpload
+                    value={field.value || ''}
+                    onChange={field.onChange}
                     folder="documents"
                     acceptedFormats={['.jpg', '.jpeg', '.png']}
                     maxSizeMB={5}
+                    placeholder="Envie seu documento com foto (RG/CNH)"
                   />
                 </FormControl>
                 <FormMessage />

@@ -9,6 +9,15 @@ export default function ProviderRegister() {
 
   const handleRegistrationComplete = async (data: any) => {
     try {
+      // Primeiro, verificar se o email já existe
+      const checkEmailResponse = await fetch(`/api/auth/check-email?email=${encodeURIComponent(data.email)}`);
+      if (checkEmailResponse.ok) {
+        const emailExists = await checkEmailResponse.json();
+        if (emailExists.exists) {
+          throw new Error('Este email já está cadastrado. Tente fazer login ou use outro email.');
+        }
+      }
+
       // Criar usuário
       const userResponse = await fetch('/api/auth/register', {
         method: 'POST',
@@ -25,7 +34,8 @@ export default function ProviderRegister() {
       });
 
       if (!userResponse.ok) {
-        throw new Error('Erro ao criar usuário');
+        const errorData = await userResponse.json();
+        throw new Error(errorData.message || 'Erro ao criar usuário');
       }
 
       const user = await userResponse.json();
@@ -49,6 +59,7 @@ export default function ProviderRegister() {
           bankAgency: data.bankAgency,
           bankAccount: data.bankAccount,
           avatar: data.avatar,
+          documentPhoto: data.documentPhoto,
           registrationStep: 3, // Completado
         }),
       });

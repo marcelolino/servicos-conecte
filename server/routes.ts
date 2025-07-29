@@ -103,6 +103,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *       409:
    *         description: Email já existe
    */
+  
+  // Check if email exists
+  app.get("/api/auth/check-email", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.query;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const existingUser = await storage.getUserByEmail(email as string);
+      res.json({ exists: !!existingUser });
+    } catch (error) {
+      console.error("Email check error:", error);
+      res.status(500).json({ message: "Error checking email" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -1611,6 +1628,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/category", authenticateToken, requireAdmin, upload.single('image'), uploadCategoryImage);
   app.post("/api/upload/provider", authenticateToken, requireProvider, upload.single('image'), uploadProviderImage);
   app.post("/api/upload/multiple", authenticateToken, upload.array('images', 10), uploadMultipleImages);
+  
+  // Public upload routes for registration (no auth required)
+  app.post("/api/upload/public/providers", upload.single('image'), uploadProviderImage);
+  app.post("/api/upload/public/documents", upload.single('image'), async (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      // Ensure documents directory exists
+      const documentsDir = path.join(process.cwd(), 'uploads', 'documents');
+      if (!fs.existsSync(documentsDir)) {
+        fs.mkdirSync(documentsDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const fileExtension = path.extname(req.file.originalname);
+      const filename = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+      const finalPath = path.join(documentsDir, filename);
+
+      // Move file to final location
+      fs.renameSync(req.file.path, finalPath);
+
+      const imageUrl = `/uploads/documents/${filename}`;
+      res.json({ imageUrl, message: 'Document uploaded successfully' });
+    } catch (error) {
+      console.error('Document upload error:', error);
+      res.status(500).json({ message: 'Error uploading document' });
+    }
+  });
   
   // Advanced upload routes with limits, virus scanning, and caching
   app.post("/api/upload/advanced/banner", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('banners'));
