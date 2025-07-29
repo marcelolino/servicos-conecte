@@ -148,8 +148,10 @@ export default function ImageUpload({
           throw new Error('Token de autenticação não encontrado. Faça login novamente.');
         }
 
-        // Use advanced endpoint for profile uploads (avatar)
-        const endpoint = category === 'profile' ? '/api/upload/advanced/avatar' : `/api/upload/${category}`;
+        // Use appropriate endpoint based on category
+        const endpoint = category === 'profile' ? '/api/upload/advanced/avatar' : 
+                        category === 'provider' ? '/api/upload/advanced/provider' : 
+                        `/api/upload/${category}`;
         
         const response = await fetch(endpoint, {
           method: 'POST',
