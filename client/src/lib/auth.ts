@@ -18,6 +18,10 @@ export const register = async (userData: {
   name: string;
   phone?: string;
   userType: "client" | "provider";
+  avatar?: string;
+  address?: string;
+  city?: string;
+  state?: string;
 }): Promise<AuthResponse> => {
   return await apiRequest("POST", "/api/auth/register", userData);
 };

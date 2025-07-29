@@ -18,6 +18,10 @@ export default function Register() {
       password: data.password,
       phone: data.phone,
       userType: 'client',
+      avatar: data.profilePhoto,
+      address: data.address,
+      city: data.city,
+      state: data.state,
     }),
     onSuccess: (data) => {
       authLogin(data.token);
