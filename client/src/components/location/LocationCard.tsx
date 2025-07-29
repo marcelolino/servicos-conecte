@@ -3,6 +3,7 @@ import { MapPin, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocationRequestModal } from './LocationRequestModal';
 import { LocationPermissionBanner } from './LocationPermissionBanner';
+import { IFoodStyleLocationPicker } from './iFoodStyleLocationPicker';
 import { useLocation } from '@/contexts/LocationContext';
 
 interface LocationCardProps {
@@ -11,6 +12,7 @@ interface LocationCardProps {
 
 export function LocationCard({ onLocationChange }: LocationCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isIFoodModalOpen, setIsIFoodModalOpen] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [shouldShow, setShouldShow] = useState(true);
   const [showPermissionBanner, setShowPermissionBanner] = useState(false);
@@ -240,7 +242,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsIFoodModalOpen(true)}
               className="text-green-600 hover:text-green-700 h-6 px-2"
             >
               Alterar
@@ -260,6 +262,12 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onLocationSet={handleLocationSet}
+        />
+        
+        <IFoodStyleLocationPicker
+          isOpen={isIFoodModalOpen}
+          onClose={() => setIsIFoodModalOpen(false)}
+          onLocationSelect={handleLocationSet}
         />
       </div>
     );
@@ -285,7 +293,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
               </div>
             </div>
             <Button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsIFoodModalOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               Permitir
@@ -297,6 +305,12 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onLocationSet={handleLocationSet}
+        />
+        
+        <IFoodStyleLocationPicker
+          isOpen={isIFoodModalOpen}
+          onClose={() => setIsIFoodModalOpen(false)}
+          onLocationSelect={handleLocationSet}
         />
       </>
     );
