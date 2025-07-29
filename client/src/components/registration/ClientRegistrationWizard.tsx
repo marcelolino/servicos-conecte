@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RegistrationImageUpload } from './RegistrationImageUpload';
-import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { validateCPF, formatCPF, getCPFErrorMessage, generateValidCPF } from '@/utils/cpf-validator';
 
 // Schemas para cada passo
 const step1Schema = z.object({
@@ -23,10 +24,17 @@ const step1Schema = z.object({
 });
 
 const step2Schema = z.object({
-  cpf: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
+  cpf: z.string()
+    .min(1, 'CPF é obrigatório')
+    .refine((value) => validateCPF(value), {
+      message: 'CPF inválido',
+    }),
+  address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
+  city: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
+  state: z.string().min(2, 'Estado deve ter pelo menos 2 caracteres'),
+  cep: z.string()
+    .min(8, 'CEP deve ter 8 dígitos')
+    .max(9, 'CEP deve ter 8 dígitos'),
   profilePhoto: z.string().optional(),
 });
 
@@ -43,7 +51,36 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [cpfValue, setCpfValue] = useState('');
+  const [addressValue, setAddressValue] = useState('');
+  const [fillTemporaryAddress, setFillTemporaryAddress] = useState(false);
   const { toast } = useToast();
+
+  // Auto-fill temporary address when requested
+  useEffect(() => {
+    if (fillTemporaryAddress) {
+      setAddressValue('Rua Visconde Santos, 00');
+      const validCpf = generateValidCPF();
+      setCpfValue(validCpf);
+      
+      // Also update registration data with temporary values
+      setRegistrationData(prev => ({
+        ...prev,
+        address: 'Rua Visconde Santos, 00',
+        cpf: validCpf,
+        city: 'São Paulo',
+        state: 'SP',
+        cep: '01310-100'
+      }));
+      
+      setFillTemporaryAddress(false);
+      
+      toast({
+        title: "Dados preenchidos automaticamente",
+        description: "Endereço temporário e CPF válido foram inseridos nos campos.",
+      });
+    }
+  }, [fillTemporaryAddress, toast]);
 
   const Step1Form = () => {
     const form = useForm<Step1Data>({
@@ -188,13 +225,33 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     const form = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
       defaultValues: {
-        cpf: registrationData.cpf || '',
-        address: registrationData.address || '',
+        cpf: cpfValue || registrationData.cpf || '',
+        address: addressValue || registrationData.address || '',
         city: registrationData.city || '',
         state: registrationData.state || '',
+        cep: registrationData.cep || '',
         profilePhoto: profilePhoto,
       },
     });
+
+    // Update form values when auto-fill is triggered
+    useEffect(() => {
+      if (cpfValue) {
+        form.setValue('cpf', cpfValue);
+      }
+      if (addressValue) {
+        form.setValue('address', addressValue);
+      }
+      if (registrationData.city) {
+        form.setValue('city', registrationData.city);
+      }
+      if (registrationData.state) {
+        form.setValue('state', registrationData.state);
+      }
+      if (registrationData.cep) {
+        form.setValue('cep', registrationData.cep);
+      }
+    }, [cpfValue, addressValue, registrationData, form]);
 
     const onSubmit = (data: Step2Data) => {
       const completeData = { 
@@ -253,6 +310,32 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
             </div>
           </div>
 
+          {/* Auto-fill Button */}
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Preenchimento Rápido
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    Preencher dados temporários para teste
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFillTemporaryAddress(true)}
+                className="border-green-300 text-green-700 hover:bg-green-100"
+              >
+                Preencher
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -302,8 +385,17 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 <FormItem>
                   <FormLabel>CPF</FormLabel>
                   <FormControl>
-                    <Input placeholder="000000000" {...field} />
+                    <Input 
+                      placeholder="000.000.000-00" 
+                      {...field}
+                      onChange={(e) => {
+                        const formatted = formatCPF(e.target.value);
+                        field.onChange(formatted);
+                        setCpfValue(formatted);
+                      }}
+                    />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -317,8 +409,16 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 <FormItem>
                   <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Rua Visconde Santos, 00" {...field} />
+                    <Input 
+                      placeholder="Rua Visconde Santos, 00" 
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        setAddressValue(e.target.value);
+                      }}
+                    />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -332,6 +432,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                   <FormControl>
                     <Input placeholder="Selecione o estado" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -347,19 +448,31 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                   <FormControl>
                     <Input placeholder="Selecione a cidade" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
             <FormField
               control={form.control}
-              name="cpf"
+              name="cep"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>CEP</FormLabel>
                   <FormControl>
-                    <Input placeholder="00000000" />
+                    <Input 
+                      placeholder="00000-000" 
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        const formatted = value.length > 5 
+                          ? `${value.slice(0, 5)}-${value.slice(5, 8)}` 
+                          : value;
+                        field.onChange(formatted);
+                      }}
+                    />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
