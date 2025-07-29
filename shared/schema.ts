@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   userType: userTypeEnum("user_type").notNull().default("client"),
   address: text("address"),
   cep: varchar("cep", { length: 10 }),
+  cpf: varchar("cpf", { length: 14 }), // Campo CPF para clientes
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 50 }),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),

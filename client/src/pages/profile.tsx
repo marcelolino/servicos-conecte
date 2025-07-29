@@ -33,6 +33,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { Link } from "wouter";
+import { formatCPF } from "@/utils/cpf-validator";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -42,6 +43,7 @@ const profileSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   cep: z.string().optional(),
+  cpf: z.string().optional(),
   avatar: z.string().optional(),
 });
 
@@ -74,6 +76,7 @@ export default function Profile() {
       city: user?.city || "",
       state: user?.state || "",
       cep: user?.cep || "",
+      cpf: user?.cpf || "",
       avatar: user?.avatar || "",
     },
   });
@@ -98,6 +101,7 @@ export default function Profile() {
         city: user.city || "",
         state: user.state || "",
         cep: user.cep || "",
+        cpf: user.cpf || "",
         avatar: user.avatar || "",
       });
       setAvatarUrl(user.avatar || "");
@@ -394,12 +398,43 @@ export default function Profile() {
 
                       <FormField
                         control={profileForm.control}
+                        name="cpf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CPF</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="000.000.000-00" 
+                                {...field}
+                                onChange={(e) => {
+                                  const formatted = formatCPF(e.target.value);
+                                  field.onChange(formatted);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={profileForm.control}
                         name="cep"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>CEP</FormLabel>
                             <FormControl>
-                              <Input placeholder="00000-000" {...field} />
+                              <Input 
+                                placeholder="00000-000" 
+                                {...field}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  const formatted = value.length > 5 
+                                    ? `${value.slice(0, 5)}-${value.slice(5, 8)}` 
+                                    : value;
+                                  field.onChange(formatted);
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

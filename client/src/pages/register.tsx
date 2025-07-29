@@ -22,6 +22,8 @@ export default function Register() {
       address: data.address,
       city: data.city,
       state: data.state,
+      cep: data.cep,
+      cpf: data.cpf,
     }),
     onSuccess: (data) => {
       authLogin(data.token);
