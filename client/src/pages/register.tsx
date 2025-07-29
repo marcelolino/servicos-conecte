@@ -47,19 +47,20 @@ export default function Register() {
   };
 
   return (
-    <>
-      <ClientRegistrationWizard onComplete={handleRegistrationComplete} />
-      
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2">
-        <div className="text-center text-sm">
-          <p className="text-muted-foreground">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-muted px-4 py-8">
+      <div className="w-full max-w-md">
+        <ClientRegistrationWizard onComplete={handleRegistrationComplete} />
+        
+        {/* Link para login fora do card */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-muted-foreground">
             Já tem uma conta?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Faça login
             </Link>
           </p>
         </div>
       </div>
-    </>
+    </div>
   );
 }

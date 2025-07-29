@@ -82,7 +82,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
         
         // Se não encontrou no formato acima, tentar extrair estado
         if (!state) {
-          const stateMatch = addressParts.find(part => part.match(/^[A-Z]{2}$/));
+          const stateMatch = addressParts.find((part: string) => part.match(/^[A-Z]{2}$/));
           if (stateMatch) {
             state = stateMatch;
             const stateIndex = addressParts.indexOf(stateMatch);
@@ -115,10 +115,14 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
         password: registrationData.password || '',
         confirmPassword: registrationData.confirmPassword || '',
       },
+      mode: 'onChange', // Validar em tempo real sem limpar campos
+      shouldUnregister: false, // Manter valores dos campos mesmo com erros
     });
 
     const onSubmit = (data: Step1Data) => {
-      setRegistrationData({ ...registrationData, ...data });
+      // Preservar todos os dados do formulário
+      const updatedData = { ...registrationData, ...data };
+      setRegistrationData(updatedData);
       setCurrentStep(2);
     };
 
@@ -255,17 +259,21 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
         cep: registrationData.cep || '',
         profilePhoto: profilePhoto,
       },
+      mode: 'onChange', // Validar em tempo real sem limpar campos
+      shouldUnregister: false, // Manter valores dos campos mesmo com erros
     });
 
-    // Atualizar valores do formulário quando registrationData for carregado
+    // Atualizar valores do formulário quando registrationData for carregado (apenas se os campos estiverem vazios)
     useEffect(() => {
-      if (registrationData.address) {
+      const currentValues = form.getValues();
+      
+      if (registrationData.address && !currentValues.address) {
         form.setValue('address', registrationData.address);
       }
-      if (registrationData.city) {
+      if (registrationData.city && !currentValues.city) {
         form.setValue('city', registrationData.city);
       }
-      if (registrationData.state) {
+      if (registrationData.state && !currentValues.state) {
         form.setValue('state', registrationData.state);
       }
     }, [registrationData, form]);
@@ -515,54 +523,52 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4 py-8">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center mb-4">
-                <Wrench className="h-8 w-8 text-primary mr-2" />
-                <h1 className="text-2xl font-bold text-foreground">Qserviços</h1>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {currentStep === 1 ? 'Criar Conta' : 'Informações Pessoais'}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                {currentStep === 1 
-                  ? 'Cadastre-se como cliente para buscar serviços' 
-                  : 'Passo 2 do Perfil'
-                }
-              </p>
+    <>
+      {/* Header */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center mb-4">
+              <Wrench className="h-8 w-8 text-primary mr-2" />
+              <h1 className="text-2xl font-bold text-foreground">Qserviços</h1>
             </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {currentStep === 1 ? 'Criar Conta' : 'Informações Pessoais'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              {currentStep === 1 
+                ? 'Cadastre-se como cliente para buscar serviços' 
+                : 'Passo 2 do Perfil'
+              }
+            </p>
+          </div>
 
-            {/* Progress */}
-            <div className="flex items-center justify-center mb-6">
-              <div className="flex items-center space-x-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  1
-                </div>
-                <div className={`w-16 h-1 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  2
-                </div>
+          {/* Progress */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
+                1
+              </div>
+              <div className={`w-16 h-1 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
+                2
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Form Content */}
-        <Card>
-          <CardContent className="pt-6">
-            {currentStep === 1 && <Step1Form />}
-            {currentStep === 2 && <Step2Form />}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      {/* Form Content */}
+      <Card>
+        <CardContent className="pt-6">
+          {currentStep === 1 && <Step1Form />}
+          {currentStep === 2 && <Step2Form />}
+        </CardContent>
+      </Card>
+    </>
   );
 }
