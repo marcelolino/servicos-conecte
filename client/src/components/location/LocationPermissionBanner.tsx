@@ -10,18 +10,46 @@ export function LocationPermissionBanner({ onLocationPermission }: LocationPermi
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Verificar se já pedimos permissão antes
-    const hasAskedPermission = localStorage.getItem('locationPermissionAsked');
-    const hasLocation = localStorage.getItem('userLocation');
-    
-    // Só mostrar se nunca perguntamos e não temos localização salva
-    if (!hasAskedPermission && !hasLocation) {
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 2000); // Aparecer após 2 segundos
-      
-      return () => clearTimeout(timer);
-    }
+    const checkLocationPermission = async () => {
+      try {
+        // Verificar se já temos permissão concedida do browser
+        if (navigator.permissions) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          
+          // Se já foi concedida ou negada permanentemente, não mostrar banner
+          if (permission.state === 'granted' || permission.state === 'denied') {
+            return;
+          }
+        }
+
+        // Verificar se já pedimos permissão antes ou temos localização salva
+        const hasAskedPermission = localStorage.getItem('locationPermissionAsked');
+        const hasLocation = localStorage.getItem('userLocation') || localStorage.getItem('selectedCity');
+        
+        // Só mostrar se nunca perguntamos e não temos localização salva
+        if (!hasAskedPermission && !hasLocation) {
+          const timer = setTimeout(() => {
+            setIsVisible(true);
+          }, 2000); // Aparecer após 2 segundos
+          
+          return () => clearTimeout(timer);
+        }
+      } catch (error) {
+        // Fallback para browsers que não suportam navigator.permissions
+        const hasAskedPermission = localStorage.getItem('locationPermissionAsked');
+        const hasLocation = localStorage.getItem('userLocation') || localStorage.getItem('selectedCity');
+        
+        if (!hasAskedPermission && !hasLocation) {
+          const timer = setTimeout(() => {
+            setIsVisible(true);
+          }, 2000);
+          
+          return () => clearTimeout(timer);
+        }
+      }
+    };
+
+    checkLocationPermission();
   }, []);
 
   const handlePermission = (granted: boolean) => {

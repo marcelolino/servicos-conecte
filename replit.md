@@ -1,380 +1,58 @@
-# Qserviços - Service Provider Platform
+# Qserviços - Service Marketplace Platform
 
-## Overview
+## Project Overview
+A comprehensive service marketplace platform that connects service providers and clients through an intelligent, secure, and user-friendly ecosystem. Built with React frontend, Node.js backend, PostgreSQL database, and includes features like geolocation services, payment integrations, and real-time communication.
 
-Qserviços is a full-stack service provider platform that connects clients with service providers across various categories (plumbing, cleaning, driving, etc.). The application features a modern React frontend with a Node.js/Express backend, using PostgreSQL for data storage and Drizzle ORM for database operations.
+## Recent Changes (January 2025)
+
+### Image Upload System Fixes ✓
+- **Date**: January 29, 2025
+- **Issue**: Provider registration failing due to upload errors for profile photos, logos, and documents
+- **Solution**: 
+  - Fixed TypeScript type definitions for multer file uploads
+  - Created separate upload configurations for images vs documents  
+  - Added support for both images and PDFs for document uploads
+  - Implemented simplified upload handlers for registration process
+  - Fixed memory storage handling in multer configuration
+
+### Geolocation Permission Improvements ✓
+- **Date**: January 29, 2025
+- **Issue**: Browser requesting location permission repeatedly on every site visit
+- **Solution**:
+  - Enhanced permission checking using `navigator.permissions` API
+  - Added localStorage tracking for permission requests
+  - Improved logic to only request permission once unless denied
+  - Added automatic location detection for granted permissions
+
+## Current State
+- ✅ Provider registration process working with image/document uploads
+- ✅ Geolocation system properly manages permissions
+- ✅ Authentication and user management functional
+- ✅ Database operations working with PostgreSQL
+- ✅ Static file serving for uploads configured
+
+## Architecture
+- **Frontend**: React with TypeScript, Vite, TailwindCSS, shadcn/ui
+- **Backend**: Node.js with Express, TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **File Storage**: Local file system with multer for uploads
+- **Payment**: Stripe and MercadoPago integrations
+- **Real-time**: WebSocket support for chat functionality
 
 ## User Preferences
+- Language: Portuguese (Brazilian)
+- Focus on practical functionality over complex features
+- Prefer simple, direct solutions that work reliably
+- Prioritize user experience and error-free operations
 
-Preferred communication style: Simple, everyday language.
+## Technical Decisions
+- Use simplified upload handlers for registration to avoid Sharp processing issues
+- Implement progressive permission checking for geolocation
+- Store user preferences and location data in localStorage
+- Separate upload endpoints for different file types (images vs documents)
 
-## Recent Changes
-
-### Advanced Image Upload System Implementation (January 16, 2025)
-- ✓ Implemented comprehensive image upload system with multer and sharp
-- ✓ Created reusable ImageUpload component with drag-and-drop functionality
-- ✓ Added image processing and optimization (WebP conversion, resizing)
-- ✓ Built media management page for admin dashboard
-- ✓ Integrated image upload with banner management system
-- ✓ Created upload test page for demonstration
-- ✓ Added file validation and error handling
-- ✓ Implemented progress tracking for uploads
-- ✓ Added static file serving for uploaded images
-- ✓ Created organized folder structure for different image types
-- ✓ Fixed authentication issue in ImageUpload component
-- ✓ Added image upload to admin service creation form
-- ✓ Enhanced category listings to display uploaded images
-- ✓ Integrated service image upload in provider dashboard
-- ✓ Created comprehensive media management interface with statistics
-- ✓ Added portfolio image management for providers
-- ✓ Connected all image uploads with core business logic
-- ✓ Implemented image display across category and service listings
-- ✓ Completed service management form image upload integration
-- ✓ Created comprehensive user profile page with avatar upload
-- ✓ Added image upload functionality to service creation and editing
-- ✓ Integrated image upload system with all key business processes
-- ✓ Fixed service request acceptance authentication bug (403 error resolved)
-- ✓ Added professional category images for all 25+ service categories
-- ✓ Downloaded high-quality images from Unsplash for better visual appeal
-- ✓ Implemented complete category management system with edit/delete functionality
-- ✓ Added category images display on home page for enhanced user experience
-- ✓ Built comprehensive admin category editing interface with image upload
-
-### Advanced Upload Features Implementation (January 16, 2025)
-- ✓ Implemented user upload limits based on user type (client/provider/admin)
-- ✓ Added virus scanning simulation for uploaded files
-- ✓ Created intelligent image cache system with 1-hour TTL
-- ✓ Built automatic file cleanup system running daily at 2 AM
-- ✓ Added comprehensive file tracking in database
-- ✓ Implemented upload statistics and monitoring
-- ✓ Created advanced upload component with progress tracking
-- ✓ Added file format conversion and quality optimization
-- ✓ Built file history management with delete functionality
-- ✓ Integrated with existing upload endpoints seamlessly
-- ✓ Added upload demo page showcasing all features
-- ✓ Implemented proper error handling and user feedback
-- ✓ Created database schema for file uploads and user stats
-- ✓ Added comprehensive upload API endpoints
-- ✓ Tested all functionality including limits and virus scanning
-
-### Transaction Management System Implementation (January 21, 2025)
-- ✓ Implemented hierarchical "Transações" menu in admin dashboard with 4 organized submenus
-- ✓ Extended database schema with provider earnings and withdrawal request tables
-- ✓ Added provider_earnings table with platform fee calculation and withdrawal tracking
-- ✓ Created withdrawal_requests table with bank info, PIX key support, and admin processing
-- ✓ Implemented comprehensive backend storage methods for earnings and withdrawals
-- ✓ Added API routes for provider earnings tracking and withdrawal request management
-- ✓ Built AdminPayments page with transaction overview and payment method filtering
-- ✓ Created AdminCashPayments page for cash payment confirmation workflow
-- ✓ Implemented AdminEarnings page with platform fee breakdown and provider statistics
-- ✓ Built AdminWithdrawalRequests page with approve/reject workflow and admin notes
-- ✓ Added expand/collapse functionality for hierarchical menu navigation in admin sidebar
-- ✓ Integrated all transaction pages with admin dashboard routing system
-- ✓ Created comprehensive statistics cards for each transaction page
-- ✓ Added proper authentication middleware for provider and admin transaction endpoints
-- ✓ Implemented withdrawal request validation with available balance checking
-
-### MercadoPago Checkout Integration Enhancement (January 26, 2025)  
-- ✓ Updated checkout page card payment implementation to match working test pattern
-- ✓ Fixed card info detection during form input with proper correction logic  
-- ✓ Applied same payment processing flow as successful test-mercadopago-simple
-- ✓ Added comprehensive console logging for better debugging of payment process
-- ✓ Ensured proper handling of consumer_credits API detection issues
-- ✓ Implemented detailed error message handling for different rejection reasons
-- ✓ Added specific error messages for common MercadoPago rejection codes
-- ✓ Enhanced payment response logging to debug approval/rejection flow
-- ✓ Added automatic earnings withdrawal marking when requests are approved
-- ✓ Fixed API parameter order issue in admin withdrawal processing
-- ✓ Completed end-to-end testing with successful withdrawal approval workflow
-
-### Provider Booking Management System Implementation (January 21, 2025)
-- ✓ Implemented hierarchical "Reservas" menu in provider dashboard with 6 organized submenus
-- ✓ Added comprehensive booking icons and navigation structure in provider layout
-- ✓ Created ProviderBookingsPage with tabbed interface matching reference designs
-- ✓ Built booking statistics cards showing total, pending, accepted, and completed bookings
-- ✓ Implemented search and filtering functionality for booking management
-- ✓ Added BookingsTable component with detailed booking information display
-- ✓ Created status-based filtering system with color-coded badges
-- ✓ Integrated URL-based tab navigation for different booking status views
-- ✓ Built ProviderBookingDetailsPage with comprehensive booking details view
-- ✓ Added booking status management with accept, start, complete, and cancel actions
-- ✓ Implemented modal dialogs for booking status updates with notes support
-- ✓ Created responsive booking layout with service and customer information cards
-- ✓ Added location display and service scheduling information
-- ✓ Integrated booking navigation with "View Details" functionality
-- ✓ Registered all booking routes in App.tsx routing system
-- ✓ Implemented booking status progression control for providers
-- ✓ Added proper Portuguese translations for all booking interface elements
-- ✓ Fixed booking details page routing and mutation errors
-- ✓ Implemented action buttons (visualizar, imprimir, aceitar, ignorar) matching reference design
-- ✓ Added booking summary layout with detailed cost breakdown in Portuguese
-- ✓ Integrated booking setup sidebar with payment status and action buttons
-- ✓ Fixed menu navigation bug - maintains expanded state across booking pages
-
-### Service Scheduling Control Implementation (January 18, 2025)
-- ✓ Added service status progression control for clients
-- ✓ Implemented "Iniciar Serviço" button for accepted services
-- ✓ Created "Finalizar Serviço" button for in-progress services
-- ✓ Added service control mutations with proper error handling
-- ✓ Integrated scheduled time display in service request cards
-- ✓ Removed time restrictions from checkout to allow immediate service testing
-- ✓ Enhanced client dashboard with action buttons based on service status
-- ✓ Added debugging logs to troubleshoot button visibility
-- ✓ Updated storage layer to include provider user information
-- ✓ Fixed "toString is not a function" error in service completion
-- ✓ Implemented proper date handling for completedAt field
-- ✓ Added loading states to prevent "Acesso Negado" flash during auth check
-- ✓ Corrected authentication loading state in client and provider dashboards
-- ✓ Fixed logout "Acesso Negado" issue by adding isLoggingOut state
-- ✓ Applied loading state fix to all protected pages (admin, profile, service-management, etc.)
-- ✓ Improved logout flow with proper redirection and loading states
-
-### Provider Wallet Implementation (January 22, 2025)  
-- ✓ Replaced "Transações" menu with unified "Carteira do Provedor" section
-- ✓ Created comprehensive provider wallet page with 6 key statistics cards
-- ✓ Implemented wallet layout matching reference design with cash balance, withdrawal balance, and total earnings
-- ✓ Added tabbed interface with withdrawal requests, payment history, and upcoming payments
-- ✓ Integrated with existing provider earnings and withdrawal request APIs
-- ✓ Added proper currency formatting and status badge displays
-- ✓ Created responsive card layout with action buttons for balance adjustment and withdrawal requests
-- ✓ Unified all transaction-related functionality into single wallet interface
-
-### MercadoPago Transparent Checkout Implementation (January 26, 2025)
-- ✓ Fixed database schema to support 'debit_card' payment method enum
-- ✓ Created comprehensive CardPaymentModal component with MercadoPago Brick integration
-- ✓ Implemented card payment backend API endpoint with proper MercadoPago SDK integration
-- ✓ Added support for both credit and debit card payments through transparent checkout
-- ✓ Integrated Card Payment Brick with dynamic rendering and error handling
-- ✓ Added proper payment method selection logic in checkout page
-- ✓ Created secure token-based card payment processing with MercadoPago
-- ✓ Implemented comprehensive error handling and user feedback for card payments
-- ✓ Added test card information display for development environment
-- ✓ Connected card payment system with existing payment gateway configuration
-- ✓ Added loading states and payment processing indicators
-- ✓ Integrated with existing order creation flow for seamless user experience
-- ✓ Payment methods now display in 2x2 grid: Cash, PIX, Credit Card, Debit Card
-- ✓ All payment gateways properly configured and accessible from database
-- ✓ Updated API structure to match MercadoPago requirements (transaction_amount vs amount)
-- ✓ Corrected card payment data formatting in frontend to include issuer_id and proper payer structure
-- ✓ Fixed PIX payment request structure to follow MercadoPago API specifications
-- ✓ Enhanced error handling and response formatting for both card and PIX payments
-- ✓ Aligned frontend and backend implementations for transparent checkout workflow
-- ✓ Removed modal-based payment forms and implemented inline checkout forms
-- ✓ Fixed card detection system to handle MercadoPago API inconsistencies
-- ✓ Updated to official MercadoPago test cards for Brazil (Visa: 4235647728025682, etc.)
-- ✓ Implemented correction logic for consumer_credits detection on Visa/Mastercard
-- ✓ Completed comprehensive test environment with working Visa payment processing
-- ✓ Successfully resolved bin_not_found errors by using current official test cards
-- ✓ Implemented server-side retry logic to bypass BIN detection issues for test cards
-- ✓ Added two-phase payment approach: first without issuer_id, then with issuer_id if needed
-- ✓ Successfully achieved working card payments in checkout with official MercadoPago test cards
-- ✓ Applied robust fallback mechanisms for both frontend card detection and backend payment processing
-
-### Complete 5-Star Rating System Implementation (January 27, 2025)
-- ✓ Implemented comprehensive 5-star rating system for client evaluation of providers
-- ✓ Created interactive RatingModal component with star selection and comment functionality
-- ✓ Added validation to prevent duplicate reviews for the same service request
-- ✓ Integrated rating system with client dashboard and reservations pages
-- ✓ System automatically updates provider rating and total review count
-- ✓ Added endpoint to check existing reviews and display previous ratings
-- ✓ Only allows rating after service completion with proper authorization checks
-- ✓ Fixed provider ID reference bug (was using userId instead of provider.id)
-- ✓ Rating modal shows existing review if already submitted or allows new submission
-- ✓ Complete business logic ensures only completed services can be rated by clients
-- ✓ Integrated with existing service request workflow and provider statistics
-
-### Complete Chat System Implementation (July 23, 2025)
-- ✓ Implemented business rule that chat is only allowed after provider accepts service request
-- ✓ Added canUsersChat function to verify accepted service requests between users
-- ✓ Enhanced chat conversation creation with service request validation  
-- ✓ Added validation to message sending to ensure continued chat permissions
-- ✓ Filtered conversation lists to show only authorized chats for clients and providers
-- ✓ Admin users maintain full chat access with all users regardless of service status
-- ✓ Applied Portuguese error messages for unauthorized chat attempts
-- ✓ Updated all chat endpoints with comprehensive authorization checks
-- ✓ Integrated chat buttons directly into provider and client reservation pages
-- ✓ Fixed authentication issues with proper apiRequest implementation
-- ✓ Added chat buttons for accepted, in-progress, and completed service requests
-- ✓ Implemented automatic redirection to chat pages after conversation creation
-- ✓ Created seamless user experience connecting service management with communication
-- ✓ Unified admin dashboard with chat functionality directly integrated
-- ✓ Removed duplicate admin layout and consolidated all admin features in single interface
-- ✓ Added admin account (admin@qservicos.com/password) and resolved login authentication issues
-- ✓ Created comprehensive chat management interface within main admin dashboard
-- ✓ Admin can now search, filter, and initiate conversations with any user directly from dashboard
-- ✓ Fixed admin panel configuration layout issue - settings now remain within consistent dashboard layout
-- ✓ Fixed chat message rendering error - resolved React child object error that prevented messages from displaying properly
-- ✓ Implemented auto-refresh chat system - messages now sync automatically every 3 seconds for real-time communication
-- ✓ Fixed admin-client chat permission issue - admins can now chat with any user regardless of service request status
-- ✓ Eliminated duplicate admin panel interfaces - chat now works inline within main dashboard
-- ✓ Modified canUsersChat function to allow admin users to bypass service request requirements
-- ✓ Fixed chat permission issue - now allows chat for accepted, in_progress, and completed service requests
-- ✓ Resolved database constraint error in service completion by fixing duplicate function names
-- ✓ Separated insertProviderEarning and createProviderEarning functions for proper earnings management
-
-### Chat Notifications and Client Reservations Button Implementation (January 24, 2025)
-- ✓ Created ChatNotification component with real-time unread message count display
-- ✓ Added `/api/chat/unread-count` endpoint for tracking unread messages per user
-- ✓ Integrated chat notifications in client layout header with "Reservas" button
-- ✓ Integrated chat notifications in provider layout header 
-- ✓ Integrated chat notifications in admin dashboard header
-- ✓ Implemented 3-second polling for automatic notification updates
-- ✓ Added visual badge indicators showing unread message counts
-- ✓ Connected notification system with existing chat infrastructure
-- ✓ Enhanced user experience with prominent access to chat and reservations
-
-### Responsive Dashboard Design with Hamburger Menus (January 28, 2025)
-- ✓ Implemented responsive design for all dashboard panels (client, provider, admin)
-- ✓ Created useMobileMenu hook for consistent mobile menu behavior across layouts
-- ✓ Added hamburger menu functionality with smooth slide-in/out animations
-- ✓ Implemented mobile overlay for better user experience on small screens
-- ✓ Updated Provider Layout with TypeScript interfaces and responsive sidebar
-- ✓ Enhanced Client Layout with mobile-first approach and hamburger navigation
-- ✓ Upgraded Admin Layout with responsive header and mobile menu controls
-- ✓ Added automatic menu closing on mobile when navigating to different pages
-- ✓ Implemented screen size detection with automatic mobile menu management
-- ✓ Created professional mobile experience with proper touch targets and transitions
-
-### Location Request System Implementation (January 28, 2025)
-- ✓ Implemented automatic location permission banner that appears on site entry
-- ✓ Created LocationCard component with search field and "Localize-me" button
-- ✓ Built LocationRequestModal with multiple location selection options
-- ✓ Added InteractiveMap component with visual grid and clickable location selection
-- ✓ Integrated automatic geolocation when user grants permission
-- ✓ Added localStorage persistence for user location across sessions
-- ✓ Created responsive design matching reference images provided by user
-- ✓ Implemented location state management throughout the application
-- ✓ Added address geocoding simulation and coordinate handling
-- ✓ Built comprehensive location selection workflow with fallback options
-- ✓ Fixed Google Maps integration with proper iframe embedding
-- ✓ Simplified controls to prevent map freezing issues
-- ✓ Reduced button sizes to match reference design
-- ✓ Changed confirmation button text to Portuguese "Confirmar Localização"
-- ✓ Optimized map interaction with click-to-select functionality
-- ✓ Added compact control buttons with proper styling
-- ✓ Replaced iframe-based map with real Google Maps JavaScript API implementation
-- ✓ Added draggable marker functionality for precise location selection
-- ✓ Implemented Google Places API address search with auto-suggestions
-- ✓ Created AddressSearchModal component matching user reference designs
-- ✓ Added real-time address suggestions as user types
-- ✓ Integrated address search with interactive map selection
-- ✓ Formatted location display to show only city and state (e.g., "Goiânia - GO")
-- ✓ Enhanced location card to display clean, concise location information
-
-### Admin Dashboard Improvements (January 15, 2025)
-- ✓ Implemented complete admin dashboard redesign with sidebar navigation
-- ✓ Added proper provider management with approval/rejection functionality
-- ✓ Fixed issue where providers weren't displaying for approval
-- ✓ Created comprehensive statistics dashboard with real-time data
-- ✓ Added search and filter functionality for provider management
-- ✓ Implemented detailed provider profile modal with action buttons
-- ✓ Fixed rating display errors for providers with null ratings
-- ✓ Added responsive table layout for provider listings
-
-## System Architecture
-
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **UI Library**: Radix UI components with custom shadcn/ui styling
-- **Styling**: Tailwind CSS with CSS variables for theming
-- **Routing**: Wouter for lightweight client-side routing
-- **State Management**: TanStack Query for server state, React Context for authentication
-- **Build Tool**: Vite for development and production builds
-
-### Backend Architecture
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript with ES modules
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: JWT tokens with bcrypt for password hashing
-- **Session Management**: PostgreSQL sessions with connect-pg-simple
-
-### Database Architecture
-- **ORM**: Drizzle ORM with type-safe queries
-- **Database**: PostgreSQL (configured for Neon serverless)
-- **Schema**: Located in `shared/schema.ts` for type sharing between frontend and backend
-- **Migrations**: Managed through Drizzle Kit
-
-## Key Components
-
-### User Management
-- Multi-role system: clients, providers, and admins
-- JWT-based authentication with secure token storage
-- Password hashing with bcrypt
-- User profile management with location data
-
-### Service System
-- Service categories with icons and descriptions
-- Provider-service relationships with pricing
-- Service requests with status tracking
-- Review and rating system
-
-### Geographic Features
-- Location-based provider search
-- CEP (postal code) integration
-- Distance calculation for service matching
-- Service radius configuration for providers
-
-### Dashboard System
-- Role-specific dashboards (client, provider, admin)
-- Real-time data updates with TanStack Query
-- Responsive design for mobile and desktop
-
-## Data Flow
-
-### Authentication Flow
-1. User registers/logs in through frontend forms
-2. Backend validates credentials and generates JWT token
-3. Token stored in localStorage and used for API authentication
-4. Auth context manages user state across the application
-
-### Service Request Flow
-1. Client searches for services by category and location
-2. System queries providers within service radius
-3. Client creates service request with details
-4. Providers receive notifications and can accept requests
-5. Status updates tracked through completion
-
-### Provider Management
-1. Providers register and await admin approval
-2. Admin dashboard manages provider status
-3. Providers configure services, pricing, and availability
-4. Rating system tracks provider performance
-
-## External Dependencies
-
-### UI Components
-- Radix UI for accessible component primitives
-- Lucide React for consistent iconography
-- React Hook Form with Zod validation
-- Date-fns for date manipulation
-
-### Backend Services
-- Neon Database for PostgreSQL hosting
-- WebSocket support for real-time features
-- Express middleware for security and CORS
-
-### Development Tools
-- Vite with React plugin for fast development
-- TypeScript for type safety
-- Tailwind CSS for utility-first styling
-- Drizzle Kit for database migrations
-
-## Deployment Strategy
-
-### Build Process
-- Frontend: Vite builds optimized static assets
-- Backend: ESBuild bundles server code for production
-- Database: Drizzle pushes schema changes to production
-
-### Environment Configuration
-- Database URL required for PostgreSQL connection
-- JWT secret for token signing
-- Development vs production environment handling
-
-### File Structure
-- `client/` - Frontend React application
-- `server/` - Backend Express application
-- `shared/` - Shared TypeScript types and schemas
-- `migrations/` - Database migration files
-
-The application follows a monorepo structure with clear separation between frontend, backend, and shared code, enabling efficient development and deployment workflows.
+## Next Steps
+- Monitor upload functionality in production
+- Consider implementing image compression for uploaded files
+- Add user feedback mechanisms for location services
+- Optimize geolocation accuracy and reverse geocoding

@@ -13,7 +13,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [shouldShow, setShouldShow] = useState(true);
-  const [showPermissionBanner, setShowPermissionBanner] = useState(true);
+  const [showPermissionBanner, setShowPermissionBanner] = useState(false);
   const { selectedCity, setSelectedCity } = useLocation();
 
   // Função para extrair cidade e estado do endereço
@@ -100,18 +100,77 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   };
 
   useEffect(() => {
-    // Verificar se já temos localização salva
-    const savedLocation = localStorage.getItem('userLocation');
-    if (savedLocation) {
-      try {
-        const location = JSON.parse(savedLocation);
-        setCurrentLocation(location);
-        setShouldShow(false);
-        onLocationChange?.(location);
-      } catch (error) {
-        console.error('Erro ao carregar localização salva:', error);
+    const checkLocationStatus = async () => {
+      // Verificar se já temos localização salva
+      const savedLocation = localStorage.getItem('userLocation');
+      const selectedCityData = localStorage.getItem('selectedCity');
+      
+      if (savedLocation) {
+        try {
+          const location = JSON.parse(savedLocation);
+          setCurrentLocation(location);
+          setShouldShow(false);
+          onLocationChange?.(location);
+          return; // Já temos localização, não mostrar banner
+        } catch (error) {
+          console.error('Erro ao carregar localização salva:', error);
+        }
       }
-    }
+
+      // Se temos uma cidade selecionada, não mostrar banner
+      if (selectedCityData) {
+        setShouldShow(false);
+        return;
+      }
+
+      // Verificar permissão do browser
+      try {
+        if (navigator.permissions) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          
+          // Se já foi negada permanentemente, não mostrar banner
+          if (permission.state === 'denied') {
+            return;
+          }
+          
+          // Se já foi concedida, tentar obter localização automaticamente
+          if (permission.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const location = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                  address: `Localização atual`
+                };
+                handleLocationSet(location);
+              },
+              (error) => {
+                console.error('Erro ao obter localização automática:', error);
+                // Mostrar banner se falhar
+                setShowPermissionBanner(true);
+              }
+            );
+            return;
+          }
+        }
+
+        // Verificar se já perguntamos antes
+        const hasAskedPermission = localStorage.getItem('locationPermissionAsked');
+        
+        // Só mostrar banner se nunca perguntamos antes
+        if (!hasAskedPermission) {
+          setShowPermissionBanner(true);
+        }
+      } catch (error) {
+        // Fallback para browsers sem suporte a navigator.permissions
+        const hasAskedPermission = localStorage.getItem('locationPermissionAsked');
+        if (!hasAskedPermission) {
+          setShowPermissionBanner(true);
+        }
+      }
+    };
+
+    checkLocationStatus();
   }, [onLocationChange]);
 
   const handleLocationSet = (location: { lat: number; lng: number; address: string }) => {
