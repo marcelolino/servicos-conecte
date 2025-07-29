@@ -1191,7 +1191,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all provider services (public endpoint)
+  // ===========================================
+  // SERVICES ENDPOINTS FOR MOBILE APP
+  // ===========================================
+
+  // Test endpoint to verify API is working
+  app.get("/api/services/test", async (req, res) => {
+    try {
+      const services = await storage.getAllProviderServices();
+      res.json({
+        status: "API Working",
+        version: "1.0",
+        servicesCount: services.length,
+        availableEndpoints: [
+          "GET /api/services",
+          "GET /api/services/:id",
+          "GET /api/services/category/:categoryId",
+          "GET /api/services/provider/:providerId",
+          "GET /api/services/popular",
+          "GET /api/services/search?q=term"
+        ],
+        sampleService: services[0] || null
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        status: "Error",
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get all services (public endpoint for mobile app)
+  app.get("/api/services", async (req, res) => {
+    try {
+      const { category, city, state, search } = req.query;
+      
+      let services = await storage.getAllProviderServices();
+      
+      // Filter by category if provided
+      if (category) {
+        services = services.filter(service => 
+          service.categoryId === parseInt(category as string)
+        );
+      }
+      
+      // Filter by location if provided
+      if (city || state) {
+        const providers = await storage.getAllProviders();
+        const filteredProviderIds = providers
+          .filter(provider => 
+            (!city || provider.city === city) &&
+            (!state || provider.state === state)
+          )
+          .map(provider => provider.id);
+        
+        services = services.filter(service => 
+          filteredProviderIds.includes(service.providerId)
+        );
+      }
+      
+      // Filter by search term if provided
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        services = services.filter(service => 
+          service.name?.toLowerCase().includes(searchTerm) ||
+          service.description?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      res.json(services);
+    } catch (error) {
+      console.error("Error in /api/services:", error);
+      res.status(500).json({ 
+        message: "Failed to get services", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get specific service by ID (public endpoint)
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const service = await storage.getProviderService(serviceId);
+      
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      // Get provider info for the service
+      const provider = await storage.getProvider(service.providerId);
+      const serviceWithProvider = {
+        ...service,
+        provider: provider
+      };
+      
+      res.json(serviceWithProvider);
+    } catch (error) {
+      console.error("Error in /api/services/:id:", error);
+      res.status(500).json({ 
+        message: "Failed to get service", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get services by category (public endpoint)
+  app.get("/api/services/category/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const services = await storage.getAllProviderServices();
+      
+      const categoryServices = services.filter(service => 
+        service.categoryId === categoryId
+      );
+      
+      res.json(categoryServices);
+    } catch (error) {
+      console.error("Error in /api/services/category/:categoryId:", error);
+      res.status(500).json({ 
+        message: "Failed to get services by category", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get services by provider (public endpoint)
+  app.get("/api/services/provider/:providerId", async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.providerId);
+      const services = await storage.getProviderServices(providerId);
+      res.json(services);
+    } catch (error) {
+      console.error("Error in /api/services/provider/:providerId:", error);
+      res.status(500).json({ 
+        message: "Failed to get services by provider", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get popular/featured services (public endpoint)
+  app.get("/api/services/popular", async (req, res) => {
+    try {
+      const services = await storage.getAllProviderServices();
+      const providers = await storage.getAllProviders();
+      
+      // Get providers with high ratings
+      const popularProviders = providers
+        .filter(provider => provider.status === "approved")
+        .sort((a, b) => {
+          const aScore = (parseFloat(a.rating) || 0) * (a.totalReviews || 0);
+          const bScore = (parseFloat(b.rating) || 0) * (b.totalReviews || 0);
+          return bScore - aScore;
+        })
+        .slice(0, 10)
+        .map(p => p.id);
+      
+      const popularServices = services
+        .filter(service => popularProviders.includes(service.providerId))
+        .slice(0, 20);
+      
+      res.json(popularServices);
+    } catch (error) {
+      console.error("Error in /api/services/popular:", error);
+      res.status(500).json({ 
+        message: "Failed to get popular services", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Search services (public endpoint)
+  app.get("/api/services/search", async (req, res) => {
+    try {
+      const { q, category, city, state, minPrice, maxPrice } = req.query;
+      
+      if (!q) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      let services = await storage.getAllProviderServices();
+      const searchTerm = (q as string).toLowerCase();
+      
+      // Filter by search term
+      services = services.filter(service => 
+        service.name?.toLowerCase().includes(searchTerm) ||
+        service.description?.toLowerCase().includes(searchTerm)
+      );
+      
+      // Apply additional filters
+      if (category) {
+        services = services.filter(service => 
+          service.categoryId === parseInt(category as string)
+        );
+      }
+      
+      if (minPrice || maxPrice) {
+        services = services.filter(service => {
+          const price = parseFloat(service.price || "0");
+          return (!minPrice || price >= parseFloat(minPrice as string)) &&
+                 (!maxPrice || price <= parseFloat(maxPrice as string));
+        });
+      }
+      
+      if (city || state) {
+        const providers = await storage.getAllProviders();
+        const filteredProviderIds = providers
+          .filter(provider => 
+            (!city || provider.city === city) &&
+            (!state || provider.state === state)
+          )
+          .map(provider => provider.id);
+        
+        services = services.filter(service => 
+          filteredProviderIds.includes(service.providerId)
+        );
+      }
+      
+      res.json(services);
+    } catch (error) {
+      console.error("Error in /api/services/search:", error);
+      res.status(500).json({ 
+        message: "Failed to search services", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Legacy endpoint (keep for backward compatibility)
   app.get("/api/services/all", async (req, res) => {
     try {
       console.log("Getting all provider services...");
