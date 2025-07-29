@@ -1,4 +1,4 @@
-import { ProviderRegistrationWizard2Step } from '@/components/registration/ProviderRegistrationWizard2Step';
+import { ProviderRegistrationWizard } from '@/components/registration/ProviderRegistrationWizard';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -103,7 +103,7 @@ export default function ProviderRegister() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <ProviderRegistrationWizard2Step onComplete={handleRegistrationComplete} />
+      <ProviderRegistrationWizard onComplete={handleRegistrationComplete} />
     </div>
   );
 }
