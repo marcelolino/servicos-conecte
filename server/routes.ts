@@ -3,13 +3,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import fs from "fs";
+import path from "path";
 import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema } from "@shared/schema";
 import { 
   upload, 
+  uploadDocument,
   uploadBannerImage, 
   uploadServiceImage, 
   uploadCategoryImage, 
   uploadProviderImage, 
+  uploadSimpleProviderImage,
   uploadMultipleImages, 
   deleteImage, 
   getImageInfo 
@@ -22,7 +26,7 @@ import {
   trackFileAccess 
 } from "./advanced-upload";
 
-// Extend Request type to include user
+// Extend Request type to include user and file
 declare global {
   namespace Express {
     interface Request {
@@ -31,6 +35,8 @@ declare global {
         email: string;
         userType: string;
       };
+      file?: Express.Multer.File;
+      files?: Express.Multer.File[];
     }
   }
 }
@@ -1630,12 +1636,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/upload/multiple", authenticateToken, upload.array('images', 10), uploadMultipleImages);
   
   // Public upload routes for registration (no auth required)
-  app.post("/api/upload/public/providers", upload.single('image'), uploadProviderImage);
-  app.post("/api/upload/public/documents", upload.single('image'), async (req, res) => {
+  app.post("/api/upload/public/providers", upload.single('image'), uploadSimpleProviderImage);
+  app.post("/api/upload/public/documents", uploadDocument.single('image'), async (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
@@ -1651,8 +1654,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filename = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
       const finalPath = path.join(documentsDir, filename);
 
-      // Move file to final location
-      fs.renameSync(req.file.path, finalPath);
+      // Write buffer to file (since we're using memory storage)
+      fs.writeFileSync(finalPath, req.file.buffer);
 
       const imageUrl = `/uploads/documents/${filename}`;
       res.json({ imageUrl, message: 'Document uploaded successfully' });

@@ -40,6 +40,71 @@ export const upload = multer({
   },
 });
 
+// Document upload configuration that accepts both images and PDFs
+const documentFileFilter = (req: any, file: any, cb: any) => {
+  // Accept image files and PDFs for document uploads
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files and PDFs are allowed for documents'), false);
+  }
+};
+
+export const uploadDocument = multer({
+  storage,
+  fileFilter: documentFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for documents
+  },
+});
+
+// Simple provider image upload handler for registration (no processing)
+export const uploadSimpleProviderImage = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Ensure providers directory exists
+    const providersDir = path.join(process.cwd(), 'uploads', 'providers');
+    if (!fs.existsSync(providersDir)) {
+      fs.mkdirSync(providersDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(req.file.originalname);
+    const filename = `provider_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+    const finalPath = path.join(providersDir, filename);
+
+    // Write buffer to file (since we're using memory storage)
+    fs.writeFileSync(finalPath, req.file.buffer);
+
+    const imageUrl = `/uploads/providers/${filename}`;
+    res.json({ 
+      message: 'Provider image uploaded successfully',
+      imageUrl,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Simple provider image upload error:', error);
+    res.status(500).json({ 
+      message: 'Failed to upload provider image',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// Extend Request type to include file
+declare global {
+  namespace Express {
+    interface Request {
+      file?: Express.Multer.File;
+      files?: Express.Multer.File[];
+    }
+  }
+}
+
 // Image processing and saving function
 export const processAndSaveImage = async (
   file: Express.Multer.File,
