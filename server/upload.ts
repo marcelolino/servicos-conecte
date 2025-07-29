@@ -95,6 +95,43 @@ export const uploadSimpleProviderImage = async (req: Request, res: Response) => 
   }
 };
 
+// Simple client avatar upload handler for registration (no processing)
+export const uploadSimpleClientAvatar = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Ensure avatars directory exists
+    const avatarsDir = path.join(process.cwd(), 'uploads', 'avatars');
+    if (!fs.existsSync(avatarsDir)) {
+      fs.mkdirSync(avatarsDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(req.file.originalname);
+    const filename = `avatar_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+    const finalPath = path.join(avatarsDir, filename);
+
+    // Write buffer to file (since we're using memory storage)
+    fs.writeFileSync(finalPath, req.file.buffer);
+
+    const imageUrl = `/uploads/avatars/${filename}`;
+    res.json({ 
+      message: 'Avatar uploaded successfully',
+      imageUrl,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Simple avatar upload error:', error);
+    res.status(500).json({ 
+      message: 'Failed to upload avatar',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
 // Extend Request type to include file
 declare global {
   namespace Express {

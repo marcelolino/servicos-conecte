@@ -143,21 +143,36 @@ export default function ImageUpload({
         const formData = new FormData();
         formData.append('image', validFiles[0]);
 
+        // Get auth token
         const authToken = getAuthToken();
-        if (!authToken) {
-          throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+        
+        // Use appropriate endpoint based on category and authentication status
+        let endpoint: string;
+        
+        if (!authToken && category === 'profile') {
+          // Use public endpoint for profile uploads during registration
+          endpoint = '/api/upload/public/avatars';
+        } else if (category === 'profile') {
+          endpoint = '/api/upload/advanced/avatar';
+        } else if (category === 'provider') {
+          endpoint = '/api/upload/advanced/provider';
+        } else {
+          endpoint = `/api/upload/${category}`;
         }
 
-        // Use appropriate endpoint based on category
-        const endpoint = category === 'profile' ? '/api/upload/advanced/avatar' : 
-                        category === 'provider' ? '/api/upload/advanced/provider' : 
-                        `/api/upload/${category}`;
+        // Only require auth token for non-public endpoints
+        if (!authToken && !endpoint.includes('/public/')) {
+          throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+        }
         
+        const headers: Record<string, string> = {};
+        if (authToken && !endpoint.includes('/public/')) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          },
+          headers,
           body: formData
         });
 

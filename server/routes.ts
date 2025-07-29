@@ -14,6 +14,7 @@ import {
   uploadCategoryImage, 
   uploadProviderImage, 
   uploadSimpleProviderImage,
+  uploadSimpleClientAvatar,
   uploadMultipleImages, 
   deleteImage, 
   getImageInfo 
@@ -1637,6 +1638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Public upload routes for registration (no auth required)
   app.post("/api/upload/public/providers", upload.single('image'), uploadSimpleProviderImage);
+  app.post("/api/upload/public/avatars", upload.single('image'), uploadSimpleClientAvatar);
   app.post("/api/upload/public/documents", uploadDocument.single('image'), async (req, res) => {
     try {
       if (!req.file) {
