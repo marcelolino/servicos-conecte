@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -86,6 +86,23 @@ export default function Profile() {
       confirmPassword: "",
     },
   });
+
+  // Update form values when user data is loaded
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        cep: user.cep || "",
+        avatar: user.avatar || "",
+      });
+      setAvatarUrl(user.avatar || "");
+    }
+  }, [user, profileForm]);
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: ProfileForm) => 
