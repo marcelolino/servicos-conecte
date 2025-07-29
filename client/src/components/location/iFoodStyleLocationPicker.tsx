@@ -130,8 +130,19 @@ export function IFoodStyleLocationPicker({ isOpen, onClose, onLocationSelect, in
       zoomControlOptions: {
         position: window.google.maps.ControlPosition.RIGHT_BOTTOM,
       },
+      disableDefaultUI: false,
+      clickableIcons: false,
+      gestureHandling: 'greedy',
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }]
+        }
+      ]
     });
 
+    // Criar marcador customizado estilo iFood
     markerRef.current = new window.google.maps.Marker({
       position: selectedLocation,
       map: googleMapRef.current,
@@ -139,18 +150,48 @@ export function IFoodStyleLocationPicker({ isOpen, onClose, onLocationSelect, in
       title: 'Arraste para ajustar a localização',
       icon: {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="16" fill="#E53E3E"/>
-            <circle cx="16" cy="16" r="8" fill="white"/>
-            <circle cx="16" cy="16" r="4" fill="#E53E3E"/>
+          <svg width="48" height="58" viewBox="0 0 48 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Shadow -->
+            <ellipse cx="24" cy="54" rx="8" ry="3" fill="rgba(0,0,0,0.2)"/>
+            <!-- Pin body -->
+            <path d="M24 0C10.7452 0 0 10.7452 0 24C0 37.2548 24 58 24 58C24 58 48 37.2548 48 24C48 10.7452 37.2548 0 24 0Z" fill="#E53E3E"/>
+            <!-- White circle -->
+            <circle cx="24" cy="24" r="12" fill="white"/>
+            <!-- Red center dot -->
+            <circle cx="24" cy="24" r="6" fill="#E53E3E"/>
+            <!-- Highlight -->
+            <circle cx="20" cy="20" r="3" fill="rgba(255,255,255,0.4)"/>
           </svg>
         `),
-        scaledSize: new window.google.maps.Size(32, 32),
-        anchor: new window.google.maps.Point(16, 16),
+        scaledSize: new window.google.maps.Size(48, 58),
+        anchor: new window.google.maps.Point(24, 58),
       }
     });
 
     placesServiceRef.current = new window.google.maps.places.PlacesService(googleMapRef.current);
+
+    // Evento quando o marcador é arrastado
+    markerRef.current.addListener('dragstart', () => {
+      // Adicionar efeito visual durante o arrasto
+      markerRef.current.setIcon({
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="48" height="58" viewBox="0 0 48 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Shadow larger during drag -->
+            <ellipse cx="24" cy="54" rx="12" ry="4" fill="rgba(0,0,0,0.3)"/>
+            <!-- Pin body with elevation -->
+            <path d="M24 0C10.7452 0 0 10.7452 0 24C0 37.2548 24 58 24 58C24 58 48 37.2548 48 24C48 10.7452 37.2548 0 24 0Z" fill="#E53E3E" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.3))"/>
+            <!-- White circle -->
+            <circle cx="24" cy="24" r="12" fill="white"/>
+            <!-- Red center dot -->
+            <circle cx="24" cy="24" r="6" fill="#E53E3E"/>
+            <!-- Highlight -->
+            <circle cx="20" cy="20" r="3" fill="rgba(255,255,255,0.4)"/>
+          </svg>
+        `),
+        scaledSize: new window.google.maps.Size(48, 58),
+        anchor: new window.google.maps.Point(24, 58),
+      });
+    });
 
     markerRef.current.addListener('dragend', (event: any) => {
       const newPos = {
@@ -158,6 +199,27 @@ export function IFoodStyleLocationPicker({ isOpen, onClose, onLocationSelect, in
         lng: event.latLng.lng(),
       };
       setSelectedLocation(newPos);
+      
+      // Restaurar ícone normal
+      markerRef.current.setIcon({
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="48" height="58" viewBox="0 0 48 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Shadow -->
+            <ellipse cx="24" cy="54" rx="8" ry="3" fill="rgba(0,0,0,0.2)"/>
+            <!-- Pin body -->
+            <path d="M24 0C10.7452 0 0 10.7452 0 24C0 37.2548 24 58 24 58C24 58 48 37.2548 48 24C48 10.7452 37.2548 0 24 0Z" fill="#E53E3E"/>
+            <!-- White circle -->
+            <circle cx="24" cy="24" r="12" fill="white"/>
+            <!-- Red center dot -->
+            <circle cx="24" cy="24" r="6" fill="#E53E3E"/>
+            <!-- Highlight -->
+            <circle cx="20" cy="20" r="3" fill="rgba(255,255,255,0.4)"/>
+          </svg>
+        `),
+        scaledSize: new window.google.maps.Size(48, 58),
+        anchor: new window.google.maps.Point(24, 58),
+      });
+      
       reverseGeocode(newPos);
     });
 
@@ -167,7 +229,18 @@ export function IFoodStyleLocationPicker({ isOpen, onClose, onLocationSelect, in
         lng: event.latLng.lng(),
       };
       setSelectedLocation(newPos);
+      
+      // Animar o movimento do marcador
       markerRef.current.setPosition(newPos);
+      
+      // Adicionar pequena animação de "bounce"
+      setTimeout(() => {
+        markerRef.current.setAnimation(window.google.maps.Animation.BOUNCE);
+        setTimeout(() => {
+          markerRef.current.setAnimation(null);
+        }, 700);
+      }, 100);
+      
       reverseGeocode(newPos);
     });
 
@@ -270,36 +343,57 @@ export function IFoodStyleLocationPicker({ isOpen, onClose, onLocationSelect, in
   };
 
   const saveAddressToProfile = async () => {
-    if (!user) return;
-
     try {
       const fullAddress = `${selectedAddress}${addressDetails.number ? ', ' + addressDetails.number : ''}${addressDetails.complement ? ', ' + addressDetails.complement : ''}`;
       
-      // Atualizar perfil do usuário com o novo endereço
-      await apiRequest({
-        url: '/api/users/profile',
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address: fullAddress,
-          latitude: selectedLocation.lat.toString(),
-          longitude: selectedLocation.lng.toString(),
-        }),
-      });
-
-      // Chamar callback com a localização
-      onLocationSelect({
+      const locationData = {
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
         address: fullAddress
-      });
+      };
 
-      toast({
-        title: "Sucesso",
-        description: "Endereço salvo no seu perfil!",
-      });
+      // Se o usuário estiver logado, salvar no perfil
+      if (user) {
+        try {
+          await apiRequest({
+            url: '/api/users/profile',
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              address: fullAddress,
+              latitude: selectedLocation.lat.toString(),
+              longitude: selectedLocation.lng.toString(),
+            }),
+          });
+
+          toast({
+            title: "Sucesso",
+            description: "Endereço salvo no seu perfil!",
+          });
+        } catch (error) {
+          console.error('Erro ao salvar no perfil:', error);
+          // Mesmo que falhe ao salvar no perfil, continuar salvando em memória
+          toast({
+            title: "Aviso",
+            description: "Endereço salvo temporariamente. Faça login para salvar permanentemente.",
+            variant: "default"
+          });
+        }
+      } else {
+        // Se não estiver logado, salvar apenas em memória
+        toast({
+          title: "Endereço salvo",
+          description: "Endereço salvo temporariamente. Faça login para salvar permanentemente.",
+        });
+      }
+
+      // Sempre salvar em localStorage como backup
+      localStorage.setItem('userLocation', JSON.stringify(locationData));
+      
+      // Chamar callback com a localização
+      onLocationSelect(locationData);
 
       onClose();
     } catch (error) {
