@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { RegistrationImageUpload } from './RegistrationImageUpload';
 import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { validateCPF, formatCPF, getCPFErrorMessage, generateValidCPF } from '@/utils/cpf-validator';
+import { validateCPF, formatCPF, getCPFErrorMessage } from '@/utils/cpf-validator';
 
 // Schemas para cada passo
 const step1Schema = z.object({
@@ -51,36 +51,59 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [cpfValue, setCpfValue] = useState('');
-  const [addressValue, setAddressValue] = useState('');
-  const [fillTemporaryAddress, setFillTemporaryAddress] = useState(false);
+  const [savedLocation, setSavedLocation] = useState<any>(null);
   const { toast } = useToast();
 
-  // Auto-fill temporary address when requested
+  // Carregar endereço salvo na memória ao carregar o componente
   useEffect(() => {
-    if (fillTemporaryAddress) {
-      setAddressValue('Rua Visconde Santos, 00');
-      const validCpf = generateValidCPF();
-      setCpfValue(validCpf);
-      
-      // Also update registration data with temporary values
-      setRegistrationData(prev => ({
-        ...prev,
-        address: 'Rua Visconde Santos, 00',
-        cpf: validCpf,
-        city: 'São Paulo',
-        state: 'SP',
-        cep: '01310-100'
-      }));
-      
-      setFillTemporaryAddress(false);
-      
-      toast({
-        title: "Dados preenchidos automaticamente",
-        description: "Endereço temporário e CPF válido foram inseridos nos campos.",
-      });
+    const userLocation = localStorage.getItem('userLocation');
+    if (userLocation) {
+      try {
+        const location = JSON.parse(userLocation);
+        setSavedLocation(location);
+        
+        // Extrair informações do endereço
+        const addressParts = location.address.split(',').map((part: string) => part.trim());
+        let city = '';
+        let state = '';
+        let mainAddress = location.address;
+        
+        // Procurar por cidade e estado no formato "Cidade - Estado"
+        for (const part of addressParts) {
+          if (part.includes(' - ')) {
+            const segments = part.split(' - ');
+            if (segments.length === 2 && segments[1].match(/^[A-Z]{2}$/)) {
+              city = segments[0].trim();
+              state = segments[1].trim();
+              break;
+            }
+          }
+        }
+        
+        // Se não encontrou no formato acima, tentar extrair estado
+        if (!state) {
+          const stateMatch = addressParts.find(part => part.match(/^[A-Z]{2}$/));
+          if (stateMatch) {
+            state = stateMatch;
+            const stateIndex = addressParts.indexOf(stateMatch);
+            if (stateIndex > 0) {
+              city = addressParts[stateIndex - 1];
+            }
+          }
+        }
+        
+        setRegistrationData((prev: any) => ({
+          ...prev,
+          address: mainAddress,
+          city: city || 'Cidade não identificada',
+          state: state || 'N/A'
+        }));
+        
+      } catch (error) {
+        console.error('Erro ao carregar localização:', error);
+      }
     }
-  }, [fillTemporaryAddress, toast]);
+  }, []);
 
   const Step1Form = () => {
     const form = useForm<Step1Data>({
@@ -225,8 +248,8 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     const form = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
       defaultValues: {
-        cpf: cpfValue || registrationData.cpf || '',
-        address: addressValue || registrationData.address || '',
+        cpf: registrationData.cpf || '',
+        address: registrationData.address || '',
         city: registrationData.city || '',
         state: registrationData.state || '',
         cep: registrationData.cep || '',
@@ -234,13 +257,10 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       },
     });
 
-    // Update form values when auto-fill is triggered
+    // Atualizar valores do formulário quando registrationData for carregado
     useEffect(() => {
-      if (cpfValue) {
-        form.setValue('cpf', cpfValue);
-      }
-      if (addressValue) {
-        form.setValue('address', addressValue);
+      if (registrationData.address) {
+        form.setValue('address', registrationData.address);
       }
       if (registrationData.city) {
         form.setValue('city', registrationData.city);
@@ -248,10 +268,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       if (registrationData.state) {
         form.setValue('state', registrationData.state);
       }
-      if (registrationData.cep) {
-        form.setValue('cep', registrationData.cep);
-      }
-    }, [cpfValue, addressValue, registrationData, form]);
+    }, [registrationData, form]);
 
     const onSubmit = (data: Step2Data) => {
       const completeData = { 
@@ -310,31 +327,41 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
             </div>
           </div>
 
-          {/* Auto-fill Button */}
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <MapPin className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                    Preenchimento Rápido
+          {/* Endereço Salvo na Memória */}
+          {savedLocation && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
+                    Endereço Encontrado na Memória
                   </p>
-                  <p className="text-xs text-green-700 dark:text-green-300">
-                    Preencher dados temporários para teste
+                  <p className="text-xs text-green-700 dark:text-green-300 mb-2">
+                    {savedLocation.address}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    Este endereço será usado automaticamente no cadastro
                   </p>
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFillTemporaryAddress(true)}
-                className="border-green-300 text-green-700 hover:bg-green-100"
-              >
-                Preencher
-              </Button>
             </div>
-          </div>
+          )}
+
+          {!savedLocation && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <MapPin className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                    Nenhum Endereço Salvo
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                    Você pode definir um endereço na página inicial antes de se cadastrar
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -391,7 +418,6 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       onChange={(e) => {
                         const formatted = formatCPF(e.target.value);
                         field.onChange(formatted);
-                        setCpfValue(formatted);
                       }}
                     />
                   </FormControl>
@@ -412,10 +438,6 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                     <Input 
                       placeholder="Rua Visconde Santos, 00" 
                       {...field}
-                      onChange={(e) => {
-                        field.onChange(e.target.value);
-                        setAddressValue(e.target.value);
-                      }}
                     />
                   </FormControl>
                   <FormMessage />
