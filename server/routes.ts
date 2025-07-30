@@ -1353,6 +1353,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all services (specific endpoint)
+  app.get("/api/services/all", async (req, res) => {
+    try {
+      const { category, city, state, search } = req.query;
+      
+      let services = await storage.getAllProviderServices();
+      
+      // Filter by category if provided
+      if (category) {
+        services = services.filter(service => 
+          service.categoryId === parseInt(category as string)
+        );
+      }
+      
+      // Filter by location if provided
+      if (city || state) {
+        const providers = await storage.getAllProviders();
+        const filteredProviderIds = providers
+          .filter(provider => 
+            (!city || provider.city === city) &&
+            (!state || provider.state === state)
+          )
+          .map(provider => provider.id);
+        
+        services = services.filter(service => 
+          filteredProviderIds.includes(service.providerId)
+        );
+      }
+      
+      // Filter by search term if provided
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        services = services.filter(service => 
+          service.name?.toLowerCase().includes(searchTerm) ||
+          service.description?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      res.json(services);
+    } catch (error) {
+      console.error("Error in /api/services/all:", error);
+      res.status(500).json({ 
+        message: "Failed to get services", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Get all services (public endpoint for mobile app)
   app.get("/api/services", async (req, res) => {
     try {
@@ -1396,33 +1444,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error in /api/services:", error);
       res.status(500).json({ 
         message: "Failed to get services", 
-        error: error instanceof Error ? error.message : "Unknown error" 
-      });
-    }
-  });
-
-  // Get specific service by ID (public endpoint)
-  app.get("/api/services/:id", async (req, res) => {
-    try {
-      const serviceId = parseInt(req.params.id);
-      const service = await storage.getProviderService(serviceId);
-      
-      if (!service) {
-        return res.status(404).json({ message: "Service not found" });
-      }
-      
-      // Get provider info for the service
-      const provider = await storage.getProvider(service.providerId);
-      const serviceWithProvider = {
-        ...service,
-        provider: provider
-      };
-      
-      res.json(serviceWithProvider);
-    } catch (error) {
-      console.error("Error in /api/services/:id:", error);
-      res.status(500).json({ 
-        message: "Failed to get service", 
         error: error instanceof Error ? error.message : "Unknown error" 
       });
     }

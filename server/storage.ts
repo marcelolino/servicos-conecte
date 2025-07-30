@@ -109,6 +109,8 @@ export interface IStorage {
   
   // Provider services
   getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]>;
+  getProviderServiceById(serviceId: number): Promise<any | null>;
+  getAllProviderServices(): Promise<any[]>;
   createProviderService(service: InsertProviderService): Promise<ProviderService>;
   updateProviderService(id: number, service: Partial<InsertProviderService>): Promise<ProviderService>;
   deleteProviderService(id: number): Promise<void>;
@@ -551,6 +553,36 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error('Error in getAllProviderServices:', error);
+      throw error;
+    }
+  }
+
+  async getProviderServiceById(serviceId: number): Promise<any | null> {
+    try {
+      const results = await db
+        .select()
+        .from(providerServices)
+        .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+        .innerJoin(providers, eq(providerServices.providerId, providers.id))
+        .innerJoin(users, eq(providers.userId, users.id))
+        .where(eq(providerServices.id, serviceId))
+        .limit(1);
+
+      if (results.length === 0) {
+        return null;
+      }
+
+      const row = results[0];
+      return {
+        ...row.provider_services,
+        category: row.service_categories,
+        provider: {
+          ...row.providers,
+          user: row.users
+        }
+      };
+    } catch (error) {
+      console.error('Error in getProviderServiceById:', error);
       throw error;
     }
   }
