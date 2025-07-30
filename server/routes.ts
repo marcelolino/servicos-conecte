@@ -2132,8 +2132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '--port', dbPort,
         '--username', dbUser,
         '--dbname', dbName,
-        '--file', backupFilePath,
-        '--verbose'
+        '--file', backupFilePath
       ];
       
       // Set environment variable for password
@@ -2156,8 +2155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       psql.on('close', (code) => {
         // Clean up uploaded file
-        if (fs.existsSync(backupFilePath)) {
-          fs.unlinkSync(backupFilePath);
+        if (fs.default.existsSync(backupFilePath)) {
+          fs.default.unlinkSync(backupFilePath);
         }
         
         if (code === 0) {
@@ -2180,8 +2179,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('psql error:', error);
         
         // Clean up uploaded file
-        if (fs.existsSync(backupFilePath)) {
-          fs.unlinkSync(backupFilePath);
+        if (fs.default.existsSync(backupFilePath)) {
+          fs.default.unlinkSync(backupFilePath);
         }
         
         res.status(500).json({ 
