@@ -465,7 +465,7 @@ export default function CartPage() {
 
                   <Button
                     className="w-full"
-                    onClick={() => setLocation("/checkout")}
+                    onClick={() => setLocation("/checkout/scheduling")}
                     disabled={isEmpty}
                   >
                     Finalizar Pedido

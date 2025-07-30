@@ -47,6 +47,9 @@ import Profile from "@/pages/profile";
 import Services from "@/pages/services";
 import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
+import CheckoutStep1 from "@/pages/checkout-step1";
+import CheckoutStep2 from "@/pages/checkout-step2";
+import CheckoutStep3 from "@/pages/checkout-step3";
 import Orders from "@/pages/orders";
 import OrderDetails from "@/pages/order-details";
 import OrderSuccess from "@/pages/order-success";
@@ -123,6 +126,9 @@ function Router() {
           <Route path="/services" component={Services} />
           <Route path="/cart" component={Cart} />
           <Route path="/checkout" component={Checkout} />
+          <Route path="/checkout/scheduling" component={CheckoutStep1} />
+          <Route path="/checkout/payment" component={CheckoutStep2} />
+          <Route path="/checkout/confirmation" component={CheckoutStep3} />
           <Route path="/orders" component={Orders} />
           <Route path="/orders/:id" component={OrderDetails} />
           <Route path="/order-success/:id" component={OrderSuccess} />

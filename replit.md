@@ -16,6 +16,18 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (January 2025)
 
+### Multi-Step Checkout Implementation ✓
+- **Date**: January 30, 2025
+- **Changes**: Implemented complete multi-step checkout process
+- **Features**:
+  - **Step 1 - Scheduling & Address**: Separate form for address and scheduling information
+  - **Step 2 - Payment Method**: Enhanced payment selection with card form integration
+  - **Step 3 - Confirmation**: Final review before order confirmation
+  - Progress indicator showing current step and completion status
+  - Data persistence between steps using localStorage
+  - Validation and error handling for each step
+  - Improved user experience with clear navigation between steps
+
 ### Cart UI Enhancement ✓
 - **Date**: January 30, 2025
 - **Changes**: Improved payment type selection in cart page
