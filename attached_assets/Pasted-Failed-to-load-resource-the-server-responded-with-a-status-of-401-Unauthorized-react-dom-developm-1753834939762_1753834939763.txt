@@ -1,0 +1,32 @@
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+react-dom.development.js:86  Warning: validateDOMNesting(...): <div> cannot appear as a descendant of <p>.
+    at div
+    at Skeleton (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/components/ui/skeleton.tsx:19:3)
+    at p
+    at div
+    at div
+    at div
+    at _c9 (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at AdminDashboard (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/pages/admin-dashboard.tsx:103:56)
+    at Route (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=26e11dbf:323:16)
+    at Switch (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=26e11dbf:379:17)
+    at main
+    at div
+    at Router
+    at Provider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=26e11dbf:38:15)
+    at TooltipProvider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=26e11dbf:66:5)
+    at AuthProvider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/hooks/use-auth.ts:12:32)
+    at LocationProvider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/contexts/LocationContext.tsx:20:36)
+    at ThemeProvider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/src/components/theme-provider.tsx:20:33)
+    at QueryClientProvider (https://6742e486-190d-4d9d-bd49-4fd20d30c4bc-00-2m1hludtqqo8f.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=26e11dbf:2805:3)
+    at App
+printWarning @ react-dom.development.js:86
+/api/admin/database/info:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+/api/admin/database/backup:1   Failed to load resource: the server responded with a status of 403 (Forbidden)

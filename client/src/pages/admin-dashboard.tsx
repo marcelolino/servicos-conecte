@@ -322,7 +322,7 @@ export default function AdminDashboard() {
   // Database info query - only fetch when database section is active
   const { data: databaseInfo, isLoading: databaseInfoLoading } = useQuery({
     queryKey: ['/api/admin/database/info'],
-    enabled: user?.userType === 'admin' && activeSection === 'settings'
+    enabled: user?.userType === 'admin' && activeTab === 'banco-dados'
   });
 
   const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
@@ -594,11 +594,12 @@ export default function AdminDashboard() {
   // Database backup mutation
   const createBackupMutation = useMutation({
     mutationFn: async (params: { backupName: string; backupType: string }) => {
+      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/admin/database/backup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(params)
       });
@@ -642,10 +643,11 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('backupFile', file);
       
+      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/admin/database/restore', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });

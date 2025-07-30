@@ -1,0 +1,74 @@
+12:15:45 AM [express] GET /api/categories 200 in 434ms :: [{"id":1,"name":"Limpeza","description":"Se…
+12:15:45 AM [express] GET /api/banners 200 in 463ms :: []
+12:15:46 AM [express] GET /api/providers/popular 200 in 1139ms :: [{"id":7,"userId":14,"status":"appr…
+12:15:50 AM [express] GET /api/banners 304 in 24ms :: []
+12:15:50 AM [express] GET /api/categories 304 in 24ms :: [{"id":1,"name":"Limpeza","description":"Ser…
+12:15:50 AM [express] GET /api/providers/popular 304 in 29ms :: [{"id":7,"userId":14,"status":"approv…
+12:16:39 AM [express] GET /api/auth/me 304 in 111ms :: {"id":25,"email":"ronaldo10@gmail.com","name":…
+12:16:40 AM [express] GET /api/cart 304 in 40ms :: {"items":[]}
+12:19:37 AM [express] GET /api/banners 304 in 2465ms :: []
+12:19:37 AM [express] GET /api/providers/popular 304 in 2373ms :: [{"id":7,"userId":14,"status":"appr…
+12:19:37 AM [express] GET /api/categories 304 in 2646ms :: [{"id":1,"name":"Limpeza","description":"S…
+12:19:56 AM [express] POST /api/auth/login 401 in 192ms :: {"message":"Invalid credentials"}
+12:20:15 AM [express] POST /api/auth/login 200 in 166ms :: {"user":{"id":1,"email":"admin@qservicos.c…
+12:20:15 AM [express] GET /api/auth/me 200 in 27ms :: {"id":1,"email":"admin@qservicos.com","name":"A…
+12:20:15 AM [express] GET /api/admin/users 200 in 112ms :: [{"id":25,"email":"ronaldo10@gmail.com","p…
+12:20:15 AM [express] GET /api/admin/providers 200 in 116ms :: [{"id":9,"userId":19,"status":"pending…
+12:20:15 AM [express] GET /api/stats/admin 200 in 127ms :: {"totalUsers":25,"totalProviders":9,"total…
+12:20:16 AM [express] GET /api/admin/services 200 in 124ms :: [{"id":15,"providerId":9,"categoryId":3…
+12:20:16 AM [express] GET /api/admin/bookings 200 in 153ms :: [{"id":15,"clientId":11,"providerId":7,…
+12:20:16 AM [express] GET /api/admin/settings 200 in 30ms :: []
+12:20:16 AM [express] GET /api/chat/unread-count 304 in 27ms :: {"count":0}
+12:20:16 AM [express] GET /api/chat/conversations 304 in 31ms :: []
+Error getting database info: ReferenceError: require is not defined
+    at <anonymous> (/home/runner/workspace/server/routes.ts:2200:35)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at requireAdmin (/home/runner/workspace/server/routes.ts:72:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:63:5)
+    at /home/runner/workspace/node_modules/jsonwebtoken/verify.js:261:12
+    at getSecret (/home/runner/workspace/node_modules/jsonwebtoken/verify.js:97:14)
+    at module.exports [as verify] (/home/runner/workspace/node_modules/jsonwebtoken/verify.js:101:10)
+    at authenticateToken (/home/runner/workspace/server/routes.ts:57:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/workspace/server/index.ts:55:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/home/runner/workspace/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at query (/home/runner/workspace/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/application.js:181:10)
+12:20:18 AM [express] GET /api/admin/database/info 500 in 56ms :: {"message":"Failed to get database …

@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import fs from "fs";
@@ -2197,8 +2198,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/admin/database/info', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { getDbConnection } = require('./storage');
-      const db = getDbConnection();
       
       // Get PostgreSQL version
       const versionResult = await db.execute("SELECT version()");
