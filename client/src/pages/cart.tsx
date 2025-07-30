@@ -302,39 +302,64 @@ export default function CartPage() {
                         {/* Seletor de tipo de cobrança */}
                         {item.providerService.chargingTypes && item.providerService.chargingTypes.length > 0 && (
                           <div className="mb-3">
-                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                              Escolha o tipo de cobrança:
+                            <label className="text-sm font-medium text-foreground mb-3 block">
+                              Como você quer pagar pelo serviço:
                             </label>
-                            <Select
-                              value={item.unitPrice}
-                              onValueChange={(price) => handlePriceChange(item.id, price)}
-                              disabled={updateCartItemMutation.isPending}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione o tipo de cobrança" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {item.providerService.chargingTypes
-                                  .filter(ct => ct.isActive)
-                                  .map((chargingType) => {
-                                    const Icon = chargingTypeIcons[chargingType.chargingType];
-                                    return (
-                                      <SelectItem 
-                                        key={chargingType.id} 
-                                        value={chargingType.price || "0"}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <Icon className="h-4 w-4" />
-                                          <span>{chargingTypeLabels[chargingType.chargingType]}</span>
-                                          <span className="ml-auto font-medium">
-                                            {chargingType.price ? `R$ ${chargingType.price}` : 'Sob consulta'}
-                                          </span>
+                            <div className="grid gap-2">
+                              {item.providerService.chargingTypes
+                                .filter(ct => ct.isActive)
+                                .map((chargingType) => {
+                                  const Icon = chargingTypeIcons[chargingType.chargingType];
+                                  const isSelected = item.unitPrice === (chargingType.price || "0");
+                                  return (
+                                    <div
+                                      key={chargingType.id}
+                                      className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                        isSelected
+                                          ? 'border-primary bg-primary/5 shadow-sm'
+                                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                      } ${updateCartItemMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      onClick={() => !updateCartItemMutation.isPending && handlePriceChange(item.id, chargingType.price || "0")}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className={`p-2 rounded-full ${
+                                            isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                          }`}>
+                                            <Icon className="h-4 w-4" />
+                                          </div>
+                                          <div>
+                                            <div className={`font-medium ${
+                                              isSelected ? 'text-primary' : 'text-foreground'
+                                            }`}>
+                                              {chargingTypeLabels[chargingType.chargingType]}
+                                            </div>
+                                            {chargingType.description && (
+                                              <div className="text-xs text-muted-foreground">
+                                                {chargingType.description}
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                      </SelectItem>
-                                    );
-                                  })}
-                              </SelectContent>
-                            </Select>
+                                        <div className={`font-bold text-lg ${
+                                          isSelected ? 'text-primary' : 'text-foreground'
+                                        }`}>
+                                          {chargingType.price ? `R$ ${parseFloat(chargingType.price).toFixed(2)}` : 'Sob consulta'}
+                                        </div>
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                          isSelected 
+                                            ? 'border-primary bg-primary' 
+                                            : 'border-muted-foreground'
+                                        }`}>
+                                          {isSelected && (
+                                            <div className="w-2 h-2 rounded-full bg-primary-foreground"></div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
                           </div>
                         )}
 

@@ -16,6 +16,16 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (January 2025)
 
+### Cart UI Enhancement ✓
+- **Date**: January 30, 2025
+- **Changes**: Improved payment type selection in cart page
+- **Features**:
+  - Replaced dropdown with visual card-based selection
+  - Enhanced text from "Escolha o tipo de cobrança" to "Como você quer pagar pelo serviço"
+  - Interactive cards showing pricing types with radio button-style selection
+  - Better visual feedback with icons, pricing, and selection states
+  - Improved accessibility and user experience
+
 ### Services API Enhancement ✓
 - **Date**: January 29, 2025
 - **Changes**: Updated comprehensive API documentation with new `/services` endpoints
