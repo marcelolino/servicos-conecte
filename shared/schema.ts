@@ -104,7 +104,7 @@ export const serviceChargingTypes = pgTable("service_charging_types", {
   id: serial("id").primaryKey(),
   providerServiceId: integer("provider_service_id").references(() => providerServices.id).notNull(),
   chargingType: chargingTypeEnum("charging_type").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }), // Removido notNull para permitir orçamentos personalizados
   description: text("description"), // Additional details like "Pacote de 5 visitas com desconto"
   minimumQuantity: integer("minimum_quantity").default(1), // For packages
   maximumQuantity: integer("maximum_quantity"), // For packages

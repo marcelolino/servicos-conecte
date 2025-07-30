@@ -64,7 +64,7 @@ interface ServiceChargingType {
 
 interface ChargingTypeForm {
   chargingType: 'per_visit' | 'hourly' | 'daily' | 'package' | 'custom_quote';
-  price: string;
+  price: string | null;
   description: string;
 }
 
@@ -227,10 +227,15 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
       return;
     }
 
+    const submitData = {
+      ...form,
+      price: form.chargingType === 'custom_quote' && !form.price ? null : form.price
+    };
+
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: form });
+      updateMutation.mutate({ id: editingId, data: submitData });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(submitData);
     }
   };
 
@@ -297,7 +302,6 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
                     placeholder={form.chargingType === 'custom_quote' ? "Deixe vazio para 'sob consulta'" : "0.00"}
                     value={form.price}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    disabled={form.chargingType === 'custom_quote'}
                   />
                 </div>
               </div>
