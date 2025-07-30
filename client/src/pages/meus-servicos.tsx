@@ -182,6 +182,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
     onSuccess: () => {
       toast({ title: "Tipo de cobrança adicionado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
+      queryClient.refetchQueries({ queryKey: ["/api/providers/services"] });
       resetForm();
     },
     onError: (error: any) => {
@@ -195,6 +196,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
     onSuccess: () => {
       toast({ title: "Tipo de cobrança atualizado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
+      queryClient.refetchQueries({ queryKey: ["/api/providers/services"] });
       resetForm();
     },
     onError: (error: any) => {
@@ -208,6 +210,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
     onSuccess: () => {
       toast({ title: "Tipo de cobrança removido com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
+      queryClient.refetchQueries({ queryKey: ["/api/providers/services"] });
     },
     onError: (error: any) => {
       toast({ title: "Erro ao remover tipo de cobrança", description: error.message, variant: "destructive" });

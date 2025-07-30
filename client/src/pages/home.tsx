@@ -214,6 +214,39 @@ export default function Home() {
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                       {provider.description || "Profissional experiente e qualificado"}
                     </p>
+                    
+                    {/* Preços configurados */}
+                    {provider.services && provider.services.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-gray-500 mb-1">Preços a partir de:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.services
+                            .slice(0, 2)
+                            .map((service: any) => {
+                              const minPrice = service.chargingTypes
+                                ?.filter((ct: any) => ct.price)
+                                ?.reduce((min: any, ct: any) => 
+                                  !min || parseFloat(ct.price) < parseFloat(min.price) ? ct : min, null);
+                              
+                              return minPrice ? (
+                                <Badge key={service.id} variant="secondary" className="text-xs">
+                                  {service.category.name}: R$ {minPrice.price}
+                                </Badge>
+                              ) : (
+                                <Badge key={service.id} variant="outline" className="text-xs">
+                                  {service.category.name}: Sob consulta
+                                </Badge>
+                              );
+                            })}
+                          {provider.services.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{provider.services.length - 2} serviços
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
                         <MapPin className="h-4 w-4" />

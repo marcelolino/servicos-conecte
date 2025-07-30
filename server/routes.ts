@@ -1316,8 +1316,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return bScore - aScore;
         })
         .slice(0, 10);
+
+      // Add services with charging types for each provider
+      const providersWithServices = await Promise.all(
+        popularProviders.map(async (provider) => {
+          const services = await storage.getProviderServices(provider.id);
+          return {
+            ...provider,
+            services
+          };
+        })
+      );
       
-      res.json(popularProviders);
+      res.json(providersWithServices);
     } catch (error) {
       res.status(500).json({ message: "Failed to get popular providers", error: error instanceof Error ? error.message : "Unknown error" });
     }
@@ -1820,13 +1831,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/cart/items/:id", authenticateToken, async (req, res) => {
     try {
       const itemId = parseInt(req.params.id);
-      const quantity = parseInt(req.body.quantity);
+      const { quantity, unitPrice } = req.body;
 
-      if (quantity <= 0) {
+      if (quantity !== undefined && quantity <= 0) {
         await storage.removeCartItem(itemId);
         res.json({ message: "Item removed from cart" });
       } else {
-        const item = await storage.updateCartItem(itemId, quantity);
+        const item = await storage.updateCartItem(itemId, quantity, unitPrice);
         res.json(item);
       }
     } catch (error) {

@@ -227,7 +227,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order>;
   addItemToCart(clientId: number, item: InsertOrderItem): Promise<OrderItem>;
-  updateCartItem(itemId: number, quantity: number): Promise<OrderItem>;
+  updateCartItem(itemId: number, quantity?: number, unitPrice?: string): Promise<OrderItem>;
   removeCartItem(itemId: number): Promise<void>;
   clearCart(clientId: number): Promise<void>;
   convertCartToOrder(clientId: number, orderData: Partial<InsertOrder>): Promise<Order>;
@@ -1473,7 +1473,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Orders and cart management
-  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider & { user: User } } })[] }) | undefined> {
+  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider & { user: User }; chargingTypes: ServiceChargingType[] } })[] }) | undefined> {
     const [order] = await db
       .select({
         id: orders.id,
@@ -1574,7 +1574,21 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(providers.userId, users.id))
       .where(eq(orderItems.orderId, order.id));
 
-    return { ...order, items };
+    // Add charging types for each service
+    const itemsWithChargingTypes = await Promise.all(
+      items.map(async (item) => {
+        const chargingTypes = await this.getServiceChargingTypes(item.providerService.id);
+        return {
+          ...item,
+          providerService: {
+            ...item.providerService,
+            chargingTypes,
+          },
+        };
+      })
+    );
+
+    return { ...order, items: itemsWithChargingTypes };
   }
 
   async getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined> {
@@ -1813,8 +1827,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCartItem(itemId: number, quantity: number): Promise<OrderItem> {
-    // First get the current item to calculate the new total price
+  async updateCartItem(itemId: number, quantity?: number, unitPrice?: string): Promise<OrderItem> {
+    // First get the current item
     const [currentItem] = await db
       .select()
       .from(orderItems)
@@ -1825,16 +1839,27 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Cart item not found");
     }
     
-    const unitPrice = parseFloat(currentItem.unitPrice);
-    const totalPrice = (unitPrice * quantity).toFixed(2);
+    // Use provided values or keep current ones
+    const newQuantity = quantity !== undefined ? quantity : currentItem.quantity;
+    const newUnitPrice = unitPrice !== undefined ? unitPrice : currentItem.unitPrice;
+    const totalPrice = (parseFloat(newUnitPrice) * newQuantity).toFixed(2);
+    
+    const updateData: any = {
+      totalPrice,
+      updatedAt: new Date()
+    };
+    
+    if (quantity !== undefined) {
+      updateData.quantity = newQuantity;
+    }
+    
+    if (unitPrice !== undefined) {
+      updateData.unitPrice = newUnitPrice;
+    }
     
     const [updatedItem] = await db
       .update(orderItems)
-      .set({
-        quantity,
-        totalPrice,
-        updatedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(orderItems.id, itemId))
       .returning();
     return updatedItem;

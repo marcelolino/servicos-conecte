@@ -6,9 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Plus, Minus, Trash2, ArrowLeft, ArrowRight, ShoppingCart } from "lucide-react";
+import { Loader2, Plus, Minus, Trash2, ArrowLeft, ArrowRight, ShoppingCart, Eye, Clock, Calendar, Package, FileText } from "lucide-react";
+
+const chargingTypeLabels = {
+  visit: 'Por Visita/Consultoria',
+  hour: 'Por Hora',
+  daily: 'Por Diária',
+  package: 'Pacote/Projeto',
+  quote: 'Orçamento Personalizado'
+};
+
+const chargingTypeIcons = {
+  visit: Eye,
+  hour: Clock, 
+  daily: Calendar,
+  package: Package,
+  quote: FileText
+};
 
 interface CartItem {
   id: number;
@@ -23,6 +40,13 @@ interface CartItem {
     name?: string;
     description?: string;
     images?: string;
+    chargingTypes?: Array<{
+      id: number;
+      chargingType: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+      price: string | null;
+      description: string | null;
+      isActive: boolean;
+    }>;
     category: {
       id: number;
       name: string;
@@ -87,8 +111,8 @@ export default function CartPage() {
 
   // Update cart item mutation
   const updateCartItemMutation = useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
-      apiRequest("PUT", `/api/cart/items/${itemId}`, { quantity }),
+    mutationFn: ({ itemId, quantity, unitPrice }: { itemId: number; quantity?: number; unitPrice?: string }) =>
+      apiRequest("PUT", `/api/cart/items/${itemId}`, { quantity, unitPrice }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
@@ -141,10 +165,12 @@ export default function CartPage() {
   });
 
   const handleQuantityChange = (itemId: number, currentQuantity: number, change: number) => {
-    const newQuantity = currentQuantity + change;
-    if (newQuantity > 0) {
-      updateCartItemMutation.mutate({ itemId, quantity: newQuantity });
-    }
+    const newQuantity = Math.max(1, currentQuantity + change);
+    updateCartItemMutation.mutate({ itemId, quantity: newQuantity });
+  };
+
+  const handlePriceChange = (itemId: number, unitPrice: string) => {
+    updateCartItemMutation.mutate({ itemId, unitPrice });
   };
 
   const handleRemoveItem = (itemId: number) => {
@@ -272,6 +298,45 @@ export default function CartPage() {
                             {item.providerService.category.name}
                           </Badge>
                         </div>
+
+                        {/* Seletor de tipo de cobrança */}
+                        {item.providerService.chargingTypes && item.providerService.chargingTypes.length > 0 && (
+                          <div className="mb-3">
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                              Escolha o tipo de cobrança:
+                            </label>
+                            <Select
+                              value={item.unitPrice}
+                              onValueChange={(price) => handlePriceChange(item.id, price)}
+                              disabled={updateCartItemMutation.isPending}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione o tipo de cobrança" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {item.providerService.chargingTypes
+                                  .filter(ct => ct.isActive)
+                                  .map((chargingType) => {
+                                    const Icon = chargingTypeIcons[chargingType.chargingType];
+                                    return (
+                                      <SelectItem 
+                                        key={chargingType.id} 
+                                        value={chargingType.price || "0"}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <Icon className="h-4 w-4" />
+                                          <span>{chargingTypeLabels[chargingType.chargingType]}</span>
+                                          <span className="ml-auto font-medium">
+                                            {chargingType.price ? `R$ ${chargingType.price}` : 'Sob consulta'}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
