@@ -319,6 +319,12 @@ export default function AdminDashboard() {
     enabled: user?.userType === 'admin' && activeSection === 'chat'
   });
 
+  // Database info query - only fetch when database section is active
+  const { data: databaseInfo, isLoading: databaseInfoLoading } = useQuery({
+    queryKey: ['/api/admin/database/info'],
+    enabled: user?.userType === 'admin' && activeSection === 'settings'
+  });
+
   const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
     queryKey: ['/api/chat/conversations'],
     enabled: user?.userType === 'admin' && activeSection === 'chat'
@@ -583,6 +589,116 @@ export default function AdminDashboard() {
   const handleMercadoPagoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     savePaymentConfigMutation.mutate(mercadoPagoForm);
+  };
+
+  // Database backup mutation
+  const createBackupMutation = useMutation({
+    mutationFn: async (params: { backupName: string; backupType: string }) => {
+      const response = await fetch('/api/admin/database/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(params)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Backup failed');
+      }
+      
+      // Download the backup file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'backup.sql';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: "Backup criado",
+        description: "O backup foi criado e baixado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao criar backup",
+        description: error.message || "Houve um erro ao criar o backup.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Database restore mutation
+  const restoreDatabaseMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('backupFile', file);
+      
+      const response = await fetch('/api/admin/database/restore', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Restore failed');
+      }
+      
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/database/info'] });
+      toast({
+        title: "Banco restaurado",
+        description: "O banco de dados foi restaurado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao restaurar banco",
+        description: error.message || "Houve um erro ao restaurar o banco de dados.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Database backup and restore handlers
+  const [backupForm, setBackupForm] = useState({
+    backupName: `backup_qservicos_${new Date().toISOString().split('T')[0].replace(/-/g, '')}`,
+    backupType: 'full'
+  });
+  const [restoreConfirmed, setRestoreConfirmed] = useState(false);
+
+  const handleCreateBackup = () => {
+    createBackupMutation.mutate(backupForm);
+  };
+
+  const handleRestoreDatabase = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && restoreConfirmed) {
+      restoreDatabaseMutation.mutate(file);
+      setRestoreConfirmed(false);
+      event.target.value = ''; // Reset file input
+    } else if (file && !restoreConfirmed) {
+      toast({
+        title: "Confirmação necessária",
+        description: "Você deve confirmar que entende que todos os dados atuais serão substituídos.",
+        variant: "destructive",
+      });
+      event.target.value = ''; // Reset file input
+    }
   };
 
   // Image handling functions
@@ -3011,12 +3127,13 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="company" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="company">Empresa</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="hours">Horários</TabsTrigger>
           <TabsTrigger value="features">Funcionalidades</TabsTrigger>
           <TabsTrigger value="payment">Pagamentos</TabsTrigger>
+          <TabsTrigger value="database">Banco de Dados</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company" className="space-y-6">
@@ -3392,6 +3509,184 @@ export default function AdminDashboard() {
                 <DollarSign className="h-4 w-4 mr-2" />
                 Salvar Configurações de Pagamento
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="database" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                Backup e Restauração do Banco de Dados
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Faça backup dos dados do PostgreSQL ou restaure de um backup anterior
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Backup Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Download className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Criar Backup</h3>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100">Informações do Backup</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        O backup incluirá todas as tabelas, dados, esquemas e configurações do banco PostgreSQL.
+                        O arquivo será salvo no formato SQL comprimido.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="backup-name">Nome do Backup</Label>
+                    <Input
+                      id="backup-name"
+                      placeholder="backup_qservicos_20250130"
+                      value={backupForm.backupName}
+                      onChange={(e) => setBackupForm(prev => ({ ...prev, backupName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="backup-type">Tipo de Backup</Label>
+                    <Select value={backupForm.backupType} onValueChange={(value) => setBackupForm(prev => ({ ...prev, backupType: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">Backup Completo</SelectItem>
+                        <SelectItem value="data-only">Apenas Dados</SelectItem>
+                        <SelectItem value="schema-only">Apenas Esquema</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handleCreateBackup}
+                  disabled={createBackupMutation.isPending}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {createBackupMutation.isPending ? "Criando Backup..." : "Criar e Baixar Backup"}
+                </Button>
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                {/* Restore Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Upload className="h-5 w-5 text-green-600" />
+                    <h3 className="text-lg font-semibold">Restaurar Backup</h3>
+                  </div>
+
+                  <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-yellow-900 dark:text-yellow-100">Atenção</h4>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                          A restauração irá <strong>sobrescrever todos os dados atuais</strong>. 
+                          Certifique-se de fazer um backup antes de restaurar.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="backup-file">Arquivo de Backup (.sql)</Label>
+                    <Input
+                      id="backup-file"
+                      type="file"
+                      accept=".sql,.sql.gz,.dump"
+                      className="mt-2"
+                      onChange={handleRestoreDatabase}
+                      disabled={restoreDatabaseMutation.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formatos aceitos: .sql, .sql.gz, .dump
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="confirm-restore"
+                      className="rounded"
+                      checked={restoreConfirmed}
+                      onChange={(e) => setRestoreConfirmed(e.target.checked)}
+                    />
+                    <Label htmlFor="confirm-restore" className="text-sm">
+                      Eu confirmo que entendo que todos os dados atuais serão substituídos
+                    </Label>
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {restoreDatabaseMutation.isPending 
+                        ? "Restaurando banco de dados..." 
+                        : "Selecione um arquivo de backup e confirme para restaurar"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                {/* Database Info */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Settings className="h-5 w-5 text-gray-600" />
+                    <h3 className="text-lg font-semibold">Informações do Banco</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Status da Conexão</h4>
+                      <div className="flex items-center gap-2">
+                        {databaseInfoLoading ? (
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                        ) : (
+                          <div className={`w-2 h-2 rounded-full ${databaseInfo?.connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        )}
+                        <span className={`text-sm ${databaseInfo?.connected ? 'text-green-600' : 'text-red-600'}`}>
+                          {databaseInfoLoading ? 'Verificando...' : (databaseInfo?.connected ? 'Conectado' : 'Desconectado')}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Versão PostgreSQL</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {databaseInfoLoading ? 'Carregando...' : (databaseInfo?.version || 'Desconhecida')}
+                      </span>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Tamanho do Banco</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {databaseInfoLoading ? 'Carregando...' : (databaseInfo?.size || 'Desconhecido')}
+                      </span>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Último Backup</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {databaseInfoLoading ? 'Carregando...' : (databaseInfo?.lastBackup || 'Nunca')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

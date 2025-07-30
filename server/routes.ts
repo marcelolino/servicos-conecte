@@ -1985,6 +1985,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database backup and restore routes
+  app.post('/api/admin/database/backup', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const fs = require('fs');
+      const path = require('path');
+      
+      const { backupName = `backup_qservicos_${new Date().toISOString().split('T')[0].replace(/-/g, '')}`, backupType = 'full' } = req.body;
+      
+      const backupDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+      const backupFileName = `${backupName}_${timestamp}.sql`;
+      const backupPath = path.join(backupDir, backupFileName);
+      
+      // Get database connection details from environment
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        return res.status(500).json({ message: "Database URL not configured" });
+      }
+      
+      // Parse database URL
+      const dbUrlParts = new URL(dbUrl);
+      const dbHost = dbUrlParts.hostname;
+      const dbPort = dbUrlParts.port || '5432';
+      const dbName = dbUrlParts.pathname.slice(1);
+      const dbUser = dbUrlParts.username;
+      const dbPassword = dbUrlParts.password;
+      
+      // Build pg_dump command arguments
+      let pgDumpArgs = [
+        '--host', dbHost,
+        '--port', dbPort,
+        '--username', dbUser,
+        '--dbname', dbName,
+        '--verbose',
+        '--clean',
+        '--no-owner',
+        '--no-privileges'
+      ];
+      
+      // Add backup type specific options
+      if (backupType === 'data-only') {
+        pgDumpArgs.push('--data-only');
+      } else if (backupType === 'schema-only') {
+        pgDumpArgs.push('--schema-only');
+      }
+      
+      pgDumpArgs.push('--file', backupPath);
+      
+      // Set environment variable for password
+      const env = { ...process.env, PGPASSWORD: dbPassword };
+      
+      const pgDump = spawn('pg_dump', pgDumpArgs, { env });
+      
+      let errorOutput = '';
+      
+      pgDump.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+        console.log('pg_dump stderr:', data.toString());
+      });
+      
+      pgDump.on('close', (code) => {
+        if (code === 0) {
+          console.log('Backup created successfully:', backupPath);
+          
+          // Set headers for file download
+          res.setHeader('Content-Disposition', `attachment; filename="${backupFileName}"`);
+          res.setHeader('Content-Type', 'application/sql');
+          
+          // Stream the file to response
+          const fileStream = fs.createReadStream(backupPath);
+          fileStream.pipe(res);
+          
+          // Clean up backup file after sending (optional)
+          fileStream.on('end', () => {
+            setTimeout(() => {
+              if (fs.existsSync(backupPath)) {
+                fs.unlinkSync(backupPath);
+              }
+            }, 5000); // Delete after 5 seconds
+          });
+          
+        } else {
+          console.error('pg_dump exited with code:', code);
+          res.status(500).json({ 
+            message: "Backup failed", 
+            error: errorOutput || `pg_dump exited with code ${code}` 
+          });
+        }
+      });
+      
+      pgDump.on('error', (error) => {
+        console.error('pg_dump error:', error);
+        res.status(500).json({ 
+          message: "Backup failed", 
+          error: error.message 
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ 
+        message: "Failed to create backup", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  app.post('/api/admin/database/restore', authenticateToken, requireAdmin, upload.single('backupFile'), async (req: Request, res: Response) => {
+    try {
+      const { spawn } = require('child_process');
+      const fs = require('fs');
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Backup file is required" });
+      }
+      
+      const backupFilePath = req.file.path;
+      
+      // Get database connection details from environment
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        return res.status(500).json({ message: "Database URL not configured" });
+      }
+      
+      // Parse database URL
+      const dbUrlParts = new URL(dbUrl);
+      const dbHost = dbUrlParts.hostname;
+      const dbPort = dbUrlParts.port || '5432';
+      const dbName = dbUrlParts.pathname.slice(1);
+      const dbUser = dbUrlParts.username;
+      const dbPassword = dbUrlParts.password;
+      
+      // Build psql command arguments
+      const psqlArgs = [
+        '--host', dbHost,
+        '--port', dbPort,
+        '--username', dbUser,
+        '--dbname', dbName,
+        '--file', backupFilePath,
+        '--verbose'
+      ];
+      
+      // Set environment variable for password
+      const env = { ...process.env, PGPASSWORD: dbPassword };
+      
+      const psql = spawn('psql', psqlArgs, { env });
+      
+      let output = '';
+      let errorOutput = '';
+      
+      psql.stdout.on('data', (data) => {
+        output += data.toString();
+        console.log('psql stdout:', data.toString());
+      });
+      
+      psql.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+        console.log('psql stderr:', data.toString());
+      });
+      
+      psql.on('close', (code) => {
+        // Clean up uploaded file
+        if (fs.existsSync(backupFilePath)) {
+          fs.unlinkSync(backupFilePath);
+        }
+        
+        if (code === 0) {
+          console.log('Database restored successfully');
+          res.json({ 
+            message: "Database restored successfully",
+            output: output
+          });
+        } else {
+          console.error('psql exited with code:', code);
+          res.status(500).json({ 
+            message: "Restore failed", 
+            error: errorOutput || `psql exited with code ${code}`,
+            output: output
+          });
+        }
+      });
+      
+      psql.on('error', (error) => {
+        console.error('psql error:', error);
+        
+        // Clean up uploaded file
+        if (fs.existsSync(backupFilePath)) {
+          fs.unlinkSync(backupFilePath);
+        }
+        
+        res.status(500).json({ 
+          message: "Restore failed", 
+          error: error.message 
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error restoring database:', error);
+      res.status(500).json({ 
+        message: "Failed to restore database", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  app.get('/api/admin/database/info', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { getDbConnection } = require('./storage');
+      const db = getDbConnection();
+      
+      // Get PostgreSQL version
+      const versionResult = await db.execute("SELECT version()");
+      const version = versionResult.rows[0]?.version || 'Unknown';
+      
+      // Get database size
+      const sizeResult = await db.execute(`
+        SELECT pg_size_pretty(pg_database_size(current_database())) as size
+      `);
+      const size = sizeResult.rows[0]?.size || 'Unknown';
+      
+      // Get connection status
+      const connectionResult = await db.execute("SELECT 1 as connected");
+      const connected = connectionResult.rows.length > 0;
+      
+      // Get table count
+      const tableCountResult = await db.execute(`
+        SELECT count(*) as table_count 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      `);
+      const tableCount = tableCountResult.rows[0]?.table_count || 0;
+      
+      res.json({
+        connected,
+        version: version.split(' ')[1] || 'Unknown', // Extract version number
+        size,
+        tableCount,
+        lastBackup: 'Nunca' // This could be enhanced to track actual backup history
+      });
+      
+    } catch (error) {
+      console.error('Error getting database info:', error);
+      res.status(500).json({ 
+        message: "Failed to get database info", 
+        error: error instanceof Error ? error.message : "Unknown error",
+        connected: false
+      });
+    }
+  });
+
   // Media management routes
   app.get("/api/media/files", authenticateToken, async (req, res) => {
     try {
