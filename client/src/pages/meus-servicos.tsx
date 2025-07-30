@@ -54,7 +54,7 @@ interface ProviderService {
 interface ServiceChargingType {
   id: number;
   providerServiceId: number;
-  chargingType: 'per_visit' | 'hourly' | 'daily' | 'package' | 'custom_quote';
+  chargingType: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
   price: string;
   description: string | null;
   isActive: boolean;
@@ -63,25 +63,25 @@ interface ServiceChargingType {
 }
 
 interface ChargingTypeForm {
-  chargingType: 'per_visit' | 'hourly' | 'daily' | 'package' | 'custom_quote';
+  chargingType: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
   price: string | null;
   description: string;
 }
 
 const chargingTypeLabels = {
-  per_visit: 'Por Visita/Consultoria',
-  hourly: 'Por Hora',
+  visit: 'Por Visita/Consultoria',
+  hour: 'Por Hora',
   daily: 'Por Diária',
   package: 'Pacote/Projeto',
-  custom_quote: 'Orçamento Personalizado'
+  quote: 'Orçamento Personalizado'
 };
 
 const chargingTypeIcons = {
-  per_visit: Eye,
-  hourly: Clock, 
+  visit: Eye,
+  hour: Clock, 
   daily: Calendar,
   package: Package,
-  custom_quote: FileText
+  quote: FileText
 };
 
 function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService; onEdit: (service: ProviderService) => void }) {
@@ -146,7 +146,7 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-medium">
-                        {chargingType.chargingType === 'custom_quote' ? 'Sob consulta' : `R$ ${chargingType.price}`}
+                        {chargingType.chargingType === 'quote' ? 'Sob consulta' : `R$ ${chargingType.price}`}
                       </span>
                       <Badge variant={chargingType.isActive ? "default" : "secondary"} className="ml-2 text-xs">
                         {chargingType.isActive ? "Ativo" : "Inativo"}
@@ -165,7 +165,7 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
 
 function ChargingTypeManager({ service, onClose }: { service: ProviderService; onClose: () => void }) {
   const [form, setForm] = useState<ChargingTypeForm>({
-    chargingType: 'per_visit',
+    chargingType: 'visit',
     price: '',
     description: ''
   });
@@ -215,21 +215,21 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
   });
 
   const resetForm = () => {
-    setForm({ chargingType: 'per_visit', price: '', description: '' });
+    setForm({ chargingType: 'visit', price: '', description: '' });
     setEditingId(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (form.chargingType !== 'custom_quote' && !form.price) {
+    if (form.chargingType !== 'quote' && !form.price) {
       toast({ title: "Preço é obrigatório", variant: "destructive" });
       return;
     }
 
     const submitData = {
       ...form,
-      price: form.chargingType === 'custom_quote' && !form.price ? null : form.price
+      price: form.chargingType === 'quote' && !form.price ? null : form.price
     };
 
     if (editingId) {
@@ -294,13 +294,13 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Preço {form.chargingType === 'custom_quote' ? '(Opcional)' : '*'}</Label>
+                  <Label>Preço {form.chargingType === 'quote' ? '(Opcional)' : '*'}</Label>
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={form.chargingType === 'custom_quote' ? "Deixe vazio para 'sob consulta'" : "0.00"}
-                    value={form.price}
+                    placeholder={form.chargingType === 'quote' ? "Deixe vazio para 'sob consulta'" : "0.00"}
+                    value={form.price || ''}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
                   />
                 </div>
@@ -358,7 +358,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
                             {chargingTypeLabels[chargingType.chargingType]}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {chargingType.chargingType === 'custom_quote' ? 'Sob consulta' : `R$ ${chargingType.price}`}
+                            {chargingType.chargingType === 'quote' ? 'Sob consulta' : `R$ ${chargingType.price}`}
                             {chargingType.description && ` • ${chargingType.description}`}
                           </div>
                         </div>
