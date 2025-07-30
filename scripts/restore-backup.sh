@@ -113,14 +113,13 @@ export PGPASSWORD="$DB_PASSWORD"
 
 # Executar restauração
 if psql \
-    --host="$DB_HOST" \
-    --port="$DB_PORT" \
-    --username="$DB_USER" \
-    --dbname="$DB_NAME" \
-    --file="$BACKUP_FILE" \
-    --single-transaction \
-    --set ON_ERROR_STOP=on \
-    --verbose; then
+    -h "$DB_HOST" \
+    -p "$DB_PORT" \
+    -U "$DB_USER" \
+    -d "$DB_NAME" \
+    -f "$BACKUP_FILE" \
+    -1 \
+    -v ON_ERROR_STOP=1; then
     
     echo ""
     echo -e "${GREEN}✅ Restauração concluída com sucesso!${NC}"

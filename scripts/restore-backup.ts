@@ -82,18 +82,14 @@ class DatabaseRestore {
     return new Promise((resolve, reject) => {
       // Argumentos para o psql
       const psqlArgs = [
-        '--host', this.dbHost,
-        '--port', this.dbPort,
-        '--username', this.dbUser,
-        '--dbname', this.dbName,
-        '--file', backupFilePath,
-        '--single-transaction', // Executa tudo em uma transação
-        '--set', 'ON_ERROR_STOP=on' // Para na primeira erro
+        '-h', this.dbHost,
+        '-p', this.dbPort,
+        '-U', this.dbUser,
+        '-d', this.dbName,
+        '-f', backupFilePath,
+        '-1', // --single-transaction (forma curta)
+        '-v', 'ON_ERROR_STOP=1' // Para na primeira erro
       ];
-
-      if (verbose) {
-        psqlArgs.push('--verbose');
-      }
 
       // Configurar ambiente
       const env = { 
@@ -209,7 +205,7 @@ Exemplos:
 }
 
 // Executar se chamado diretamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);
 }
 
