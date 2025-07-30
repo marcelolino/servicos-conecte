@@ -84,6 +84,14 @@ const menuItems: MenuSection[] = [
           { label: "Lista De Solicitações De Serviço", href: "/provider-services" },
         ]
       },
+      { 
+        icon: Wrench, 
+        label: "Meus Serviços", 
+        href: "/meus-servicos",
+        subItems: [
+          { label: "Gerenciar Preços", href: "/meus-servicos" },
+        ]
+      },
     ]
   },
   {
