@@ -151,6 +151,9 @@ export default function AdminDashboard() {
   const [chatSearchTerm, setChatSearchTerm] = useState("");
   const [chatUserTypeFilter, setChatUserTypeFilter] = useState<string>("all");
   
+  // Settings tabs state
+  const [activeTab, setActiveTab] = useState("company");
+  
   // Payment methods states
   const [stripeForm, setStripeForm] = useState({
     gatewayName: "stripe",
@@ -322,7 +325,7 @@ export default function AdminDashboard() {
   // Database info query - only fetch when database section is active
   const { data: databaseInfo, isLoading: databaseInfoLoading } = useQuery({
     queryKey: ['/api/admin/database/info'],
-    enabled: user?.userType === 'admin' && activeTab === 'banco-dados'
+    enabled: user?.userType === 'admin' && activeTab === 'database'
   });
 
   const { data: chatConversations = [], isLoading: chatConversationsLoading } = useQuery<any[]>({
@@ -3128,7 +3131,7 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">Gerencie as configurações e dados da sua empresa</p>
       </div>
 
-      <Tabs defaultValue="company" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="company">Empresa</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
