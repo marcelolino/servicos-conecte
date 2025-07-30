@@ -995,15 +995,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify current password
-      const bcrypt = require('bcrypt');
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      const bcrypt = await import('bcrypt');
+      const isCurrentPasswordValid = await bcrypt.default.compare(currentPassword, user.password);
       if (!isCurrentPasswordValid) {
         return res.status(400).json({ message: "Current password is incorrect" });
       }
       
       // Hash new password
       const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      const hashedPassword = await bcrypt.default.hash(newPassword, saltRounds);
       
       await storage.updateUser(userId, { password: hashedPassword });
       res.json({ message: "Password updated successfully" });
@@ -1989,20 +1989,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database backup and restore routes
   app.post('/api/admin/database/backup', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const fs = require('fs');
-      const path = require('path');
+      const { spawn } = await import('child_process');
+      const fs = await import('fs');
+      const path = await import('path');
       
       const { backupName = `backup_qservicos_${new Date().toISOString().split('T')[0].replace(/-/g, '')}`, backupType = 'full' } = req.body;
       
-      const backupDir = path.join(process.cwd(), 'backups');
-      if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
+      const backupDir = path.default.join(process.cwd(), 'backups');
+      if (!fs.default.existsSync(backupDir)) {
+        fs.default.mkdirSync(backupDir, { recursive: true });
       }
       
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
       const backupFileName = `${backupName}_${timestamp}.sql`;
-      const backupPath = path.join(backupDir, backupFileName);
+      const backupPath = path.default.join(backupDir, backupFileName);
       
       // Get database connection details from environment
       const dbUrl = process.env.DATABASE_URL;
@@ -2060,14 +2060,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.setHeader('Content-Type', 'application/sql');
           
           // Stream the file to response
-          const fileStream = fs.createReadStream(backupPath);
+          const fileStream = fs.default.createReadStream(backupPath);
           fileStream.pipe(res);
           
           // Clean up backup file after sending (optional)
           fileStream.on('end', () => {
             setTimeout(() => {
-              if (fs.existsSync(backupPath)) {
-                fs.unlinkSync(backupPath);
+              if (fs.default.existsSync(backupPath)) {
+                fs.default.unlinkSync(backupPath);
               }
             }, 5000); // Delete after 5 seconds
           });
@@ -2100,8 +2100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/database/restore', authenticateToken, requireAdmin, upload.single('backupFile'), async (req: Request, res: Response) => {
     try {
-      const { spawn } = require('child_process');
-      const fs = require('fs');
+      const { spawn } = await import('child_process');
+      const fs = await import('fs');
       
       if (!req.file) {
         return res.status(400).json({ message: "Backup file is required" });
@@ -2242,20 +2242,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Media management routes
   app.get("/api/media/files", authenticateToken, async (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
-      const uploadsDir = path.join(process.cwd(), 'uploads');
+      const uploadsDir = path.default.join(process.cwd(), 'uploads');
       const categories = ['banners', 'services', 'categories', 'providers', 'avatars', 'general', 'portfolio'];
       const mediaFiles: any[] = [];
       
       for (const category of categories) {
-        const categoryDir = path.join(uploadsDir, category);
-        if (fs.existsSync(categoryDir)) {
-          const files = fs.readdirSync(categoryDir);
+        const categoryDir = path.default.join(uploadsDir, category);
+        if (fs.default.existsSync(categoryDir)) {
+          const files = fs.default.readdirSync(categoryDir);
           for (const file of files) {
-            const filePath = path.join(categoryDir, file);
-            const stats = fs.statSync(filePath);
+            const filePath = path.default.join(categoryDir, file);
+            const stats = fs.default.statSync(filePath);
             
             if (stats.isFile() && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)) {
               mediaFiles.push({
@@ -2263,7 +2263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 url: `/uploads/${category}/${file}`,
                 name: file,
                 size: stats.size,
-                type: `image/${path.extname(file).slice(1).toLowerCase()}`,
+                type: `image/${path.default.extname(file).slice(1).toLowerCase()}`,
                 category: category === 'categories' ? 'category' : 
                          category === 'banners' ? 'banner' :
                          category === 'services' ? 'service' :
@@ -2291,8 +2291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete media file
   app.delete("/api/media/files/:category/:filename", authenticateToken, async (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
       const { category, filename } = req.params;
       
@@ -2317,10 +2317,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 'general' and 'portfolio' stay the same
       }
       
-      const filePath = path.join(process.cwd(), 'uploads', folderName, filename);
+      const filePath = path.default.join(process.cwd(), 'uploads', folderName, filename);
       
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      if (fs.default.existsSync(filePath)) {
+        fs.default.unlinkSync(filePath);
         res.json({ message: "File deleted successfully" });
       } else {
         res.status(404).json({ message: "File not found" });
