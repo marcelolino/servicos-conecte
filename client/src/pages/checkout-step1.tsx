@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,11 @@ const CheckoutStep1 = () => {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   
-  // Form states
-  const [address, setAddress] = useState(() => localStorage.getItem('checkout_address') || '');
-  const [cep, setCep] = useState(() => localStorage.getItem('checkout_cep') || '');
-  const [city, setCity] = useState(() => localStorage.getItem('checkout_city') || '');
-  const [state, setState] = useState(() => localStorage.getItem('checkout_state') || '');
+  // Form states - Auto-populate with user data
+  const [address, setAddress] = useState(() => localStorage.getItem('checkout_address') || user?.address || '');
+  const [cep, setCep] = useState(() => localStorage.getItem('checkout_cep') || user?.cep || '');
+  const [city, setCity] = useState(() => localStorage.getItem('checkout_city') || user?.city || '');
+  const [state, setState] = useState(() => localStorage.getItem('checkout_state') || user?.state || '');
   const [scheduledDate, setScheduledDate] = useState(() => localStorage.getItem('checkout_scheduled_date') || '');
   const [scheduledTime, setScheduledTime] = useState(() => localStorage.getItem('checkout_scheduled_time') || '');
   const [notes, setNotes] = useState(() => localStorage.getItem('checkout_notes') || '');
@@ -39,6 +39,16 @@ const CheckoutStep1 = () => {
 
   const cartItems = cartData?.items || [];
   const isEmpty = cartItems.length === 0;
+
+  // Update form fields when user data is loaded
+  useEffect(() => {
+    if (user && !localStorage.getItem('checkout_address')) {
+      setAddress(user.address || '');
+      setCep(user.cep || '');
+      setCity(user.city || '');
+      setState(user.state || '');
+    }
+  }, [user]);
 
   const calculateSubtotal = () => {
     return cartItems.reduce((sum: number, item: any) => sum + parseFloat(item.totalPrice), 0) || 0;

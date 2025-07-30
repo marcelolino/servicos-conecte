@@ -16,15 +16,17 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (January 2025)
 
-### Multi-Step Checkout Implementation ✓
+### Multi-Step Checkout Enhancement ✓
 - **Date**: January 30, 2025
-- **Changes**: Implemented complete multi-step checkout process
+- **Changes**: Enhanced multi-step checkout with auto-fill and PIX restoration
 - **Features**:
-  - **Step 1 - Scheduling & Address**: Separate form for address and scheduling information
-  - **Step 2 - Payment Method**: Enhanced payment selection with card form integration
+  - **Step 1 - Scheduling & Address**: Auto-populates with user registration data
+  - **Step 2 - Payment Method**: Full PIX functionality restored with QR code and timer
   - **Step 3 - Confirmation**: Final review before order confirmation
   - Progress indicator showing current step and completion status
   - Data persistence between steps using localStorage
+  - Dedicated PIX component with QR code generation and copy functionality
+  - Auto-fill address fields from user profile data
   - Validation and error handling for each step
   - Improved user experience with clear navigation between steps
 

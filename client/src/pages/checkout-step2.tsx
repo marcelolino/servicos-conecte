@@ -18,6 +18,7 @@ import {
   Smartphone,
   QrCode
 } from "lucide-react";
+import PixPaymentDisplay from "@/components/PixPaymentDisplay";
 
 interface PaymentGateway {
   id: number;
@@ -312,6 +313,18 @@ const CheckoutStep2 = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* PIX Payment */}
+            {selectedPaymentMethod === 'pix' && (
+              <PixPaymentDisplay 
+                amount={calculateTotal()}
+                onPaymentComplete={() => {
+                  localStorage.setItem('checkout_payment_method', 'pix');
+                  localStorage.setItem('checkout_pix_paid', 'true');
+                  setLocation('/checkout/confirmation');
+                }}
+              />
+            )}
 
             {/* Card Payment Form */}
             {isCardPayment() && (
