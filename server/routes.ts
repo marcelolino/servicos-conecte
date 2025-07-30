@@ -2025,7 +2025,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '--username', dbUser,
         '--dbname', dbName,
         '--verbose',
-        '--clean',
         '--no-owner',
         '--no-privileges'
       ];
@@ -2035,6 +2034,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pgDumpArgs.push('--data-only');
       } else if (backupType === 'schema-only') {
         pgDumpArgs.push('--schema-only');
+      } else {
+        // Only add --clean for full backups (not compatible with --data-only)
+        pgDumpArgs.push('--clean');
       }
       
       pgDumpArgs.push('--file', backupPath);
