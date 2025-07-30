@@ -175,9 +175,8 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
 
   const createMutation = useMutation({
     mutationFn: (data: ChargingTypeForm) => 
-      apiRequest("POST", `/api/charging-types`, {
+      apiRequest("POST", `/api/services/${service.id}/charging-types`, {
         ...data,
-        providerServiceId: service.id,
         isActive: true
       }),
     onSuccess: () => {
@@ -192,7 +191,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<ChargingTypeForm> }) => 
-      apiRequest("PUT", `/api/charging-types/${id}`, data),
+      apiRequest("PUT", `/api/services/${service.id}/charging-types/${id}`, data),
     onSuccess: () => {
       toast({ title: "Tipo de cobrança atualizado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
@@ -205,7 +204,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest("DELETE", `/api/charging-types/${id}`),
+      apiRequest("DELETE", `/api/services/${service.id}/charging-types/${id}`),
     onSuccess: () => {
       toast({ title: "Tipo de cobrança removido com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
