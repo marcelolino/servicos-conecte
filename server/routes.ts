@@ -10,6 +10,7 @@ import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, ins
 import { 
   upload, 
   uploadDocument,
+  uploadBackup,
   uploadBannerImage, 
   uploadServiceImage, 
   uploadCategoryImage, 
@@ -2100,7 +2101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/database/restore', authenticateToken, requireAdmin, upload.single('backupFile'), async (req: Request, res: Response) => {
+  app.post('/api/admin/database/restore', authenticateToken, requireAdmin, uploadBackup.single('backupFile'), async (req: Request, res: Response) => {
     try {
       const { spawn } = await import('child_process');
       const fs = await import('fs');

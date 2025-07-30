@@ -58,6 +58,39 @@ export const uploadDocument = multer({
   },
 });
 
+// Backup file upload configuration for SQL files
+const backupFileFilter = (req: any, file: any, cb: any) => {
+  // Accept SQL files for database backups
+  if (file.mimetype === 'application/sql' || 
+      file.mimetype === 'text/plain' || 
+      file.originalname.endsWith('.sql') ||
+      file.originalname.endsWith('.dump')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only SQL backup files are allowed'), false);
+  }
+};
+
+export const uploadBackup = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const backupDir = path.join(process.cwd(), 'backups', 'restore');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      cb(null, backupDir);
+    },
+    filename: (req, file, cb) => {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      cb(null, `restore_${timestamp}_${file.originalname}`);
+    }
+  }),
+  fileFilter: backupFileFilter,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit for backup files
+  },
+});
+
 // Simple provider image upload handler for registration (no processing)
 export const uploadSimpleProviderImage = async (req: Request, res: Response) => {
   try {
