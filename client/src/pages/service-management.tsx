@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ImageUpload from "@/components/image-upload";
+import { ServiceChargingTypes } from "@/components/service-charging-types";
 import { 
   Plus, 
   Search, 
@@ -77,6 +78,7 @@ export default function ServiceManagement() {
   const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
   const [serviceImages, setServiceImages] = useState<string[]>([]);
   const [editServiceImages, setEditServiceImages] = useState<string[]>([]);
+  const [selectedServiceForCharging, setSelectedServiceForCharging] = useState<ServiceWithCategory | null>(null);
 
   const form = useForm<ServiceForm>({
     resolver: zodResolver(serviceSchema),
@@ -508,6 +510,120 @@ export default function ServiceManagement() {
     </div>
   );
 
+  const renderChargingTypesManagement = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Tipos de Cobrança</h2>
+        <p className="text-muted-foreground">Configure diferentes formas de cobrança para seus serviços</p>
+      </div>
+
+      {selectedServiceForCharging ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedServiceForCharging(null)}
+            >
+              ← Voltar para Lista de Serviços
+            </Button>
+            <div>
+              <h3 className="text-lg font-semibold">{selectedServiceForCharging.description}</h3>
+              <p className="text-sm text-muted-foreground">
+                Categoria: {selectedServiceForCharging.category?.name}
+              </p>
+            </div>
+          </div>
+          
+          <ServiceChargingTypes 
+            serviceId={selectedServiceForCharging.id} 
+            serviceName={selectedServiceForCharging.description || "Serviço sem nome"} 
+          />
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            {servicesLoading ? (
+              <div className="p-6 space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <Skeleton className="h-16 w-16" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-[300px]" />
+                      <Skeleton className="h-4 w-[200px]" />
+                    </div>
+                    <Skeleton className="h-8 w-24" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Serviço</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Preço Mínimo</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {services?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                          Nenhum serviço cadastrado ainda.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Vá para a aba "Lista de Serviços" para criar seus primeiros serviços.
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    services?.map((service: ServiceWithCategory) => (
+                      <TableRow key={service.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{service.description}</p>
+                            <p className="text-sm text-muted-foreground">
+                              ID: {service.id}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{service.category?.name}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              R$ {Number(service.price || 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(service.isActive || false)}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            onClick={() => setSelectedServiceForCharging(service)}
+                            disabled={!service.isActive}
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Gerenciar Tipos
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
   // Show loading while checking authentication or logging out
   if (authLoading || isLoggingOut) {
     return (
@@ -535,9 +651,10 @@ export default function ServiceManagement() {
   return (
     <div className="min-h-screen bg-muted/30 p-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="list">Lista de Serviços</TabsTrigger>
           <TabsTrigger value="requests">Solicitações</TabsTrigger>
+          <TabsTrigger value="charging-types">Tipos de Cobrança</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="space-y-6">
@@ -546,6 +663,10 @@ export default function ServiceManagement() {
 
         <TabsContent value="requests" className="space-y-6">
           {renderServiceRequests()}
+        </TabsContent>
+
+        <TabsContent value="charging-types" className="space-y-6">
+          {renderChargingTypesManagement()}
         </TabsContent>
       </Tabs>
 

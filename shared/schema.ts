@@ -14,6 +14,7 @@ export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment"
 export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected", "completed"]);
 export const chatStatusEnum = pgEnum("chat_status", ["active", "closed", "archived"]);
 export const messageStatusEnum = pgEnum("message_status", ["sent", "delivered", "read"]);
+export const chargingTypeEnum = pgEnum("charging_type", ["visit", "hour", "daily", "package", "quote"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -93,6 +94,20 @@ export const providerServices = pgTable("provider_services", {
   requirements: text("requirements"),
   serviceZone: text("service_zone"),
   images: text("images"), // JSON array of service image URLs
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service charging types - Multiple pricing options per service
+export const serviceChargingTypes = pgTable("service_charging_types", {
+  id: serial("id").primaryKey(),
+  providerServiceId: integer("provider_service_id").references(() => providerServices.id).notNull(),
+  chargingType: chargingTypeEnum("charging_type").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"), // Additional details like "Pacote de 5 visitas com desconto"
+  minimumQuantity: integer("minimum_quantity").default(1), // For packages
+  maximumQuantity: integer("maximum_quantity"), // For packages
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -299,9 +314,11 @@ export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").references(() => orders.id).notNull(),
   providerServiceId: integer("provider_service_id").references(() => providerServices.id).notNull(),
+  serviceChargingTypeId: integer("service_charging_type_id").references(() => serviceChargingTypes.id),
   quantity: integer("quantity").default(1),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  chargingType: chargingTypeEnum("charging_type").default("visit"), // Default para não quebrar dados existentes
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -451,7 +468,7 @@ export const serviceCategoriesRelations = relations(serviceCategories, ({ many }
   serviceRequests: many(serviceRequests),
 }));
 
-export const providerServicesRelations = relations(providerServices, ({ one }) => ({
+export const providerServicesRelations = relations(providerServices, ({ one, many }) => ({
   provider: one(providers, {
     fields: [providerServices.providerId],
     references: [providers.id],
@@ -459,6 +476,14 @@ export const providerServicesRelations = relations(providerServices, ({ one }) =
   category: one(serviceCategories, {
     fields: [providerServices.categoryId],
     references: [serviceCategories.id],
+  }),
+  chargingTypes: many(serviceChargingTypes),
+}));
+
+export const serviceChargingTypesRelations = relations(serviceChargingTypes, ({ one }) => ({
+  providerService: one(providerServices, {
+    fields: [serviceChargingTypes.providerServiceId],
+    references: [providerServices.id],
   }),
 }));
 
@@ -569,6 +594,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.providerServiceId],
     references: [providerServices.id],
   }),
+  serviceChargingType: one(serviceChargingTypes, {
+    fields: [orderItems.serviceChargingTypeId],
+    references: [serviceChargingTypes.id],
+  }),
 }));
 
 export const systemSettingsRelations = relations(systemSettings, ({ many }) => ({
@@ -671,6 +700,12 @@ export const insertServiceCategorySchema = createInsertSchema(serviceCategories)
 });
 
 export const insertProviderServiceSchema = createInsertSchema(providerServices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertServiceChargingTypeSchema = createInsertSchema(serviceChargingTypes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -813,6 +848,8 @@ export type ServiceCategory = typeof serviceCategories.$inferSelect;
 export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type ProviderService = typeof providerServices.$inferSelect;
 export type InsertProviderService = z.infer<typeof insertProviderServiceSchema>;
+export type ServiceChargingType = typeof serviceChargingTypes.$inferSelect;
+export type InsertServiceChargingType = z.infer<typeof insertServiceChargingTypeSchema>;
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
 export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
 export type Review = typeof reviews.$inferSelect;

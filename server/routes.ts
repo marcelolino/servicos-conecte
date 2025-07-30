@@ -1,12 +1,13 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { chargingTypesStorage } from "./charging-types-storage";
 import { db } from "./db";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema } from "@shared/schema";
 import { 
   upload, 
   uploadDocument,
@@ -595,6 +596,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Service deleted successfully" });
     } catch (error) {
       res.status(400).json({ message: "Failed to delete service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Service charging types routes
+  // Get charging types for a service
+  app.get("/api/services/:serviceId/charging-types", authenticateToken, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.serviceId);
+      const chargingTypes = await chargingTypesStorage.getServiceChargingTypes(serviceId);
+      res.json(chargingTypes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get charging types", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Create charging type for a service
+  app.post("/api/services/:serviceId/charging-types", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.serviceId);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Verify service ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const chargingTypeData = insertServiceChargingTypeSchema.parse({
+        ...req.body,
+        providerServiceId: serviceId,
+      });
+      
+      const chargingType = await chargingTypesStorage.createServiceChargingType(chargingTypeData);
+      res.json(chargingType);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Update charging type
+  app.put("/api/services/:serviceId/charging-types/:chargingTypeId", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.serviceId);
+      const chargingTypeId = parseInt(req.params.chargingTypeId);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Verify service ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updatedChargingType = await chargingTypesStorage.updateServiceChargingType(chargingTypeId, req.body);
+      res.json(updatedChargingType);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Delete charging type
+  app.delete("/api/services/:serviceId/charging-types/:chargingTypeId", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.serviceId);
+      const chargingTypeId = parseInt(req.params.chargingTypeId);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Verify service ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await chargingTypesStorage.deleteServiceChargingType(chargingTypeId);
+      res.json({ message: "Charging type deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Bulk create charging types for a service
+  app.post("/api/services/:serviceId/charging-types/bulk", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.serviceId);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Verify service ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const chargingTypesData = req.body.chargingTypes.map((ct: any) => ({
+        ...ct,
+        providerServiceId: serviceId,
+      }));
+      
+      // Validate each charging type
+      const validatedChargingTypes = chargingTypesData.map((ct: any) => 
+        insertServiceChargingTypeSchema.parse(ct)
+      );
+      
+      const chargingTypes = await chargingTypesStorage.bulkCreateServiceChargingTypes(validatedChargingTypes);
+      res.json(chargingTypes);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create charging types", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

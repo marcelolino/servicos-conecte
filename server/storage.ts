@@ -3,6 +3,7 @@ import {
   providers,
   serviceCategories,
   providerServices,
+  serviceChargingTypes,
   serviceRequests,
   reviews,
   notifications,
@@ -25,6 +26,8 @@ import {
   type InsertServiceCategory,
   type ProviderService,
   type InsertProviderService,
+  type ServiceChargingType,
+  type InsertServiceChargingType,
   type ServiceRequest,
   type InsertServiceRequest,
   type Review,
@@ -105,10 +108,17 @@ export interface IStorage {
   updateServiceCategory(id: number, category: Partial<InsertServiceCategory>): Promise<ServiceCategory>;
   
   // Provider services
-  getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory })[]>;
+  getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]>;
   createProviderService(service: InsertProviderService): Promise<ProviderService>;
   updateProviderService(id: number, service: Partial<InsertProviderService>): Promise<ProviderService>;
   deleteProviderService(id: number): Promise<void>;
+  
+  // Service charging types
+  getServiceChargingTypes(providerServiceId: number): Promise<ServiceChargingType[]>;
+  createServiceChargingType(chargingType: InsertServiceChargingType): Promise<ServiceChargingType>;
+  updateServiceChargingType(id: number, chargingType: Partial<InsertServiceChargingType>): Promise<ServiceChargingType>;
+  deleteServiceChargingType(id: number): Promise<void>;
+  bulkCreateServiceChargingTypes(chargingTypes: InsertServiceChargingType[]): Promise<ServiceChargingType[]>;
   
   // Service requests
   getServiceRequest(id: number): Promise<(ServiceRequest & { client: User; provider?: Provider; category: ServiceCategory }) | undefined>;
@@ -432,21 +442,26 @@ export class DatabaseStorage implements IStorage {
     return updatedCategory;
   }
 
-  async getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory })[]> {
-    return await db
-      .select({
-        id: providerServices.id,
-        providerId: providerServices.providerId,
-        categoryId: providerServices.categoryId,
-        price: providerServices.price,
-        description: providerServices.description,
-        isActive: providerServices.isActive,
-        createdAt: providerServices.createdAt,
-        category: serviceCategories,
-      })
+  async getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]> {
+    const services = await db
+      .select()
       .from(providerServices)
       .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
       .where(eq(providerServices.providerId, providerId));
+
+    // Get charging types for each service
+    const servicesWithChargingTypes = await Promise.all(
+      services.map(async (service) => {
+        const chargingTypes = await this.getServiceChargingTypes(service.provider_services.id);
+        return {
+          ...service.provider_services,
+          category: service.service_categories,
+          chargingTypes,
+        };
+      })
+    );
+
+    return servicesWithChargingTypes;
   }
 
   async createProviderService(service: InsertProviderService): Promise<ProviderService> {
@@ -467,7 +482,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProviderService(id: number): Promise<void> {
+    // First delete associated charging types
+    await db.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
+    // Then delete the service
     await db.delete(providerServices).where(eq(providerServices.id, id));
+  }
+
+  // Service charging types methods
+  async getServiceChargingTypes(providerServiceId: number): Promise<ServiceChargingType[]> {
+    return await db
+      .select()
+      .from(serviceChargingTypes)
+      .where(and(
+        eq(serviceChargingTypes.providerServiceId, providerServiceId),
+        eq(serviceChargingTypes.isActive, true)
+      ))
+      .orderBy(asc(serviceChargingTypes.chargingType));
+  }
+
+  async createServiceChargingType(chargingType: InsertServiceChargingType): Promise<ServiceChargingType> {
+    const [newChargingType] = await db
+      .insert(serviceChargingTypes)
+      .values(chargingType)
+      .returning();
+    return newChargingType;
+  }
+
+  async updateServiceChargingType(id: number, chargingType: Partial<InsertServiceChargingType>): Promise<ServiceChargingType> {
+    const [updatedChargingType] = await db
+      .update(serviceChargingTypes)
+      .set({ ...chargingType, updatedAt: new Date() })
+      .where(eq(serviceChargingTypes.id, id))
+      .returning();
+    return updatedChargingType;
+  }
+
+  async deleteServiceChargingType(id: number): Promise<void> {
+    await db.delete(serviceChargingTypes).where(eq(serviceChargingTypes.id, id));
+  }
+
+  async bulkCreateServiceChargingTypes(chargingTypes: InsertServiceChargingType[]): Promise<ServiceChargingType[]> {
+    return await db
+      .insert(serviceChargingTypes)
+      .values(chargingTypes)
+      .returning();
   }
 
   async getAllProviderServices(): Promise<any[]> {
