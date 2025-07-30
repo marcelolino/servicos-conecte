@@ -50,9 +50,9 @@ import Checkout from "@/pages/checkout";
 import CheckoutStep1 from "@/pages/checkout-step1";
 import CheckoutStep2 from "@/pages/checkout-step2";
 import CheckoutStep3 from "@/pages/checkout-step3";
+import OrderSuccess from "@/pages/order-success";
 import Orders from "@/pages/orders";
 import OrderDetails from "@/pages/order-details";
-import OrderSuccess from "@/pages/order-success";
 import ClientBookingDetails from "@/pages/client-booking-details";
 import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
@@ -129,6 +129,7 @@ function Router() {
           <Route path="/checkout/scheduling" component={CheckoutStep1} />
           <Route path="/checkout/payment" component={CheckoutStep2} />
           <Route path="/checkout/confirmation" component={CheckoutStep3} />
+          <Route path="/order-success" component={OrderSuccess} />
           <Route path="/orders" component={Orders} />
           <Route path="/orders/:id" component={OrderDetails} />
           <Route path="/order-success/:id" component={OrderSuccess} />
