@@ -52,6 +52,7 @@ const CheckoutStep2 = () => {
   const [cardCvv, setCardCvv] = useState("");
   const [cardCpf, setCardCpf] = useState("");
   const [installments, setInstallments] = useState("1");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -128,17 +129,24 @@ const CheckoutStep2 = () => {
     localStorage.setItem('checkout_payment_method', selectedPaymentMethod);
     
     if (isCardPayment()) {
-      localStorage.setItem('checkout_card_data', JSON.stringify({
-        cardNumber,
-        cardName,
-        cardExpiry,
-        cardCvv,
-        cardCpf,
-        installments
-      }));
+      setIsProcessingPayment(true);
+      
+      // Simulate card processing
+      setTimeout(() => {
+        localStorage.setItem('checkout_card_data', JSON.stringify({
+          cardNumber,
+          cardName,
+          cardExpiry,
+          cardCvv,
+          cardCpf,
+          installments
+        }));
+        setIsProcessingPayment(false);
+        setLocation('/checkout/confirmation');
+      }, 2000);
+    } else {
+      setLocation('/checkout/confirmation');
     }
-
-    setLocation('/checkout/confirmation');
   };
 
   const isCardPayment = () => {
@@ -405,6 +413,19 @@ const CheckoutStep2 = () => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Processing indicator */}
+                  {isProcessingPayment && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="font-medium text-sm">Validando dados do cartão...</span>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Aguarde enquanto processamos suas informações de pagamento.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -444,10 +465,19 @@ const CheckoutStep2 = () => {
                   <Button
                     className="w-full"
                     onClick={handleNext}
-                    disabled={!isFormValid()}
+                    disabled={!isFormValid() || isProcessingPayment}
                   >
-                    Revisar Pedido
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    {isProcessingPayment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando Cartão...
+                      </>
+                    ) : (
+                      <>
+                        Revisar Pedido
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
                   </Button>
                   
                   <Button

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, Copy, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import QRCode from "qrcode";
 
 interface PixPaymentDisplayProps {
   amount: number;
@@ -40,36 +41,33 @@ const PixPaymentDisplay: React.FC<PixPaymentDisplayProps> = ({
   const generatePixPayment = async () => {
     setIsLoading(true);
     
-    // Simulate PIX code generation
-    // In a real implementation, this would call your payment gateway
-    setTimeout(() => {
-      const mockPixCode = `00020101021243650016COM.MERCADOLIBRE02013063638f1192a-5fd1-4180-a180-8bcae3556bc35204000053039865802BR5925QSERVICOS MARKETPLACE6009SAO PAULO62070503***6304${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    try {
+      // Generate a realistic PIX code
+      const pixCodeData = `00020101021243650016COM.MERCADOLIBRE02013063638f1192a-5fd1-4180-a180-8bcae3556bc35204000053039865802BR5925QSERVICOS MARKETPLACE6009SAO PAULO62070503***6304${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
-      setPixCode(mockPixCode);
-      setQrCodeUrl(`data:image/svg+xml;base64,${btoa(`
-        <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-          <rect width="200" height="200" fill="white"/>
-          <g fill="black">
-            ${generateQRPattern()}
-          </g>
-        </svg>
-      `)}`);
+      // Generate real QR code using the qrcode library
+      const qrCodeDataUrl = await QRCode.toDataURL(pixCodeData, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      setPixCode(pixCodeData);
+      setQrCodeUrl(qrCodeDataUrl);
       setIsLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      // Fallback to text-based display
+      const pixCodeData = `00020101021243650016COM.MERCADOLIBRE02013063638f1192a-5fd1-4180-a180-8bcae3556bc35204000053039865802BR5925QSERVICOS MARKETPLACE6009SAO PAULO62070503***6304${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      setPixCode(pixCodeData);
+      setIsLoading(false);
+    }
   };
 
-  const generateQRPattern = () => {
-    // Generate a simple QR-like pattern
-    let pattern = '';
-    for (let i = 0; i < 20; i++) {
-      for (let j = 0; j < 20; j++) {
-        if (Math.random() > 0.5) {
-          pattern += `<rect x="${j * 10}" y="${i * 10}" width="10" height="10"/>`;
-        }
-      }
-    }
-    return pattern;
-  };
+
 
   const copyPixCode = () => {
     navigator.clipboard.writeText(pixCode).then(() => {
@@ -138,18 +136,20 @@ const PixPaymentDisplay: React.FC<PixPaymentDisplayProps> = ({
         </div>
 
         {/* QR Code */}
-        <div className="text-center space-y-4">
-          <div className="bg-white p-4 rounded-lg border inline-block">
-            <img 
-              src={qrCodeUrl} 
-              alt="QR Code PIX" 
-              className="w-48 h-48 mx-auto"
-            />
+        {qrCodeUrl && (
+          <div className="text-center space-y-4">
+            <div className="bg-white p-4 rounded-lg border inline-block">
+              <img 
+                src={qrCodeUrl} 
+                alt="QR Code PIX" 
+                className="w-48 h-48 mx-auto"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Escaneie com o app do seu banco
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Escaneie com o app do seu banco
-          </p>
-        </div>
+        )}
 
         {/* PIX Code */}
         <div className="space-y-2">
