@@ -24,6 +24,7 @@ import {
   X
 } from "lucide-react";
 import { LocationCard } from "@/components/location/LocationCard";
+import { ProvidersMap } from "@/components/maps/ProvidersMap";
 import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
 
 interface BannerWithCategory extends PromotionalBanner {
@@ -35,6 +36,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [showNearbyProviders, setShowNearbyProviders] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [proximityRadius, setProximityRadius] = useState("5"); // km
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -219,14 +221,26 @@ export default function Home() {
                   Encontre prestadores na sua região: {userLocation.address}
                 </p>
               </div>
-              <Button
-                onClick={() => setShowNearbyProviders(!showNearbyProviders)}
-                variant={showNearbyProviders ? "default" : "outline"}
-                className="flex items-center gap-2"
-              >
-                <Map className="h-4 w-4" />
-                {showNearbyProviders ? "Ocultar Mapa" : "Ver no Mapa"}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowNearbyProviders(!showNearbyProviders)}
+                  variant={showNearbyProviders ? "default" : "outline"}
+                  className="flex items-center gap-2"
+                >
+                  <MapPin className="h-4 w-4" />
+                  {showNearbyProviders ? "Ocultar" : "Buscar Próximos"}
+                </Button>
+                {showNearbyProviders && (
+                  <Button
+                    onClick={() => setShowMap(!showMap)}
+                    variant={showMap ? "default" : "outline"}
+                    className="flex items-center gap-2"
+                  >
+                    <Map className="h-4 w-4" />
+                    {showMap ? "Ver Lista" : "Ver no Mapa"}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Filters for nearby providers */}
@@ -291,8 +305,20 @@ export default function Home() {
                     <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                       Encontrados {(nearbyProviders as any[]).length} profissionais em um raio de {proximityRadius}km
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {(nearbyProviders as any[]).map((provider: any) => (
+                    
+                    {/* Show map or list view */}
+                    {showMap ? (
+                      <ProvidersMap
+                        providers={nearbyProviders as any[]}
+                        userLocation={userLocation}
+                        height="500px"
+                        onProviderSelect={(provider) => {
+                          console.log("Selected provider:", provider);
+                        }}
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {(nearbyProviders as any[]).map((provider: any) => (
                         <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
                           <CardHeader>
                             <div className="flex items-center space-x-3">
@@ -352,8 +378,9 @@ export default function Home() {
                             </div>
                           </CardContent>
                         </Card>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-8">
