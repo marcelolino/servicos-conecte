@@ -230,10 +230,13 @@ export default function ImageUpload({
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(e.target.files);
+      // Reset the input value to allow selecting the same file again if needed
+      e.target.value = '';
     }
   }, [handleFiles]);
 
   const handleButtonClick = () => {
+    if (disabled || uploading) return;
     fileInputRef.current?.click();
   };
 

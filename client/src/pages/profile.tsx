@@ -149,58 +149,36 @@ export default function Profile() {
     },
   });
 
-  const handleAvatarUpload = async (imageUrl: string) => {
+  const handleAvatarUpload = (imageUrl: string) => {
     setAvatarUrl(imageUrl);
     profileForm.setValue("avatar", imageUrl);
     
-    // Automatically update the user profile with the new avatar
-    try {
-      await updateProfileMutation.mutateAsync({
+    // Note: ImageUpload component already shows success toast
+    // Auto-save the profile with new avatar
+    setTimeout(() => {
+      updateProfileMutation.mutate({
         ...profileForm.getValues(),
         avatar: imageUrl
       });
-      
-      // Invalidate auth cache to update user data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      
-      toast({
-        title: "Avatar atualizado!",
-        description: "Sua foto de perfil foi salva com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao salvar avatar",
-        description: "O upload foi bem-sucedido, mas houve erro ao salvar no perfil.",
-        variant: "destructive",
-      });
-    }
+    }, 500);
   };
 
-  const handleAvatarRemove = async () => {
+  const handleAvatarRemove = () => {
     setAvatarUrl("");
     profileForm.setValue("avatar", "");
     
-    // Automatically update the user profile to remove avatar
-    try {
-      await updateProfileMutation.mutateAsync({
+    // Auto-save the profile without avatar
+    setTimeout(() => {
+      updateProfileMutation.mutate({
         ...profileForm.getValues(),
         avatar: ""
       });
-      
-      // Invalidate auth cache to update user data
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      
-      toast({
-        title: "Avatar removido",
-        description: "Sua foto de perfil foi removida.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao remover avatar",
-        description: "Houve um erro ao remover a foto de perfil.",
-        variant: "destructive",
-      });
-    }
+    }, 100);
+    
+    toast({
+      title: "Avatar removido",
+      description: "Sua foto de perfil foi removida.",
+    });
   };
 
   const onProfileSubmit = (data: ProfileForm) => {
