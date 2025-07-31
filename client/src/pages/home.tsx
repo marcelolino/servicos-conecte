@@ -59,6 +59,8 @@ export default function Home() {
   const { data: nearbyProviders, isLoading: nearbyProvidersLoading } = useQuery({
     queryKey: ['/api/providers/nearby', userLocation?.lat, userLocation?.lng, proximityRadius, selectedCategory],
     enabled: showNearbyProviders && !!userLocation,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const params = new URLSearchParams({
         lat: userLocation!.lat.toString(),
@@ -67,9 +69,12 @@ export default function Home() {
         ...(selectedCategory !== "all" && { category: selectedCategory })
       });
       
+      console.log('Fetching nearby providers with params:', params.toString());
       const response = await fetch(`/api/providers/nearby?${params}`);
       if (!response.ok) throw new Error('Failed to fetch nearby providers');
-      return response.json();
+      const data = await response.json();
+      console.log('Received nearby providers data:', data.length, data);
+      return data;
     }
   });
 
