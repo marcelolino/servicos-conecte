@@ -300,10 +300,13 @@ export default function Home() {
                       <Skeleton key={i} className="h-64 w-full rounded-lg" />
                     ))}
                   </div>
-                ) : nearbyProviders && (nearbyProviders as any[]).length > 0 ? (
+                ) : nearbyProviders ? (
                   <>
                     <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                      Encontrados {(nearbyProviders as any[]).length} profissionais em um raio de {proximityRadius}km
+                      {(nearbyProviders as any[]).length > 0 
+                        ? `Encontrados ${(nearbyProviders as any[]).length} profissionais em um raio de ${proximityRadius}km`
+                        : `Buscando profissionais em um raio de ${proximityRadius}km`
+                      }
                     </div>
                     
                     {/* Show map or list view */}
@@ -316,7 +319,7 @@ export default function Home() {
                           console.log("Selected provider:", provider);
                         }}
                       />
-                    ) : (
+                    ) : (nearbyProviders as any[]).length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {(nearbyProviders as any[]).map((provider: any) => (
                         <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
@@ -380,21 +383,21 @@ export default function Home() {
                         </Card>
                         ))}
                       </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <MapPin className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                          Nenhum profissional encontrado
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Tente aumentar o raio de busca ou alterar a categoria
+                        </p>
+                      </div>
                     )}
                   </>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MapPin className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Nenhum profissional encontrado
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      Tente aumentar o raio de busca ou alterar a categoria
-                    </p>
-                  </div>
-                )}
+                ) : null}
               </>
             )}
           </div>
