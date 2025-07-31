@@ -112,6 +112,9 @@ export function ProvidersMap({
   height = "400px" 
 }: ProvidersMapProps) {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+  
+  // Debug: Log providers data
+  console.log('ProvidersMap received providers:', providers?.length, providers?.map(p => ({ id: p.id, name: p.user.name, lat: p.user.latitude, lng: p.user.longitude })));
 
   const handleProviderClick = (provider: Provider) => {
     setSelectedProvider(provider);
