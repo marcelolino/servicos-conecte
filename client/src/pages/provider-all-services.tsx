@@ -39,9 +39,9 @@ export default function ProviderAllServices() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch all service categories from admin
-  const { data: allCategories, isLoading: categoriesLoading } = useQuery<ServiceCategory[]>({
-    queryKey: ["/api/categories"],
+  // Fetch all admin-created services that providers can subscribe to
+  const { data: adminServices, isLoading: adminServicesLoading } = useQuery({
+    queryKey: ["/api/admin/services/available"],
   });
 
   // Fetch provider data
@@ -56,14 +56,22 @@ export default function ProviderAllServices() {
     enabled: !!provider,
   });
 
-  // Subscribe to service mutation
+  // Subscribe to admin service mutation
   const subscribeToServiceMutation = useMutation({
-    mutationFn: (categoryData: { categoryId: number; categoryName: string }) =>
+    mutationFn: (serviceData: { 
+      adminServiceId: number; 
+      name: string; 
+      description: string; 
+      categoryId: number; 
+      price: string;
+      serviceZone: string;
+    }) =>
       apiRequest("POST", "/api/provider-services", {
-        categoryId: categoryData.categoryId,
-        name: `Serviço de ${categoryData.categoryName}`,
-        price: "50.00",
-        description: `Serviço profissional de ${categoryData.categoryName}`,
+        categoryId: serviceData.categoryId,
+        name: serviceData.name,
+        description: serviceData.description,
+        price: serviceData.price,
+        serviceZone: serviceData.serviceZone,
         isActive: true,
       }),
     onSuccess: () => {
@@ -118,27 +126,40 @@ export default function ProviderAllServices() {
     },
   });
 
-  // Combine all categories with provider subscription status
-  const servicesData = allCategories?.map(category => {
-    const providerService = providerServices?.find(ps => ps.categoryId === category.id);
+  // Combine admin services with provider subscription status
+  const servicesData = (adminServices as any[])?.map((adminService: any) => {
+    const providerService = (providerServices as any[])?.find((ps: any) => 
+      ps.name === adminService.name && ps.categoryId === adminService.categoryId
+    );
     return {
-      id: category.id,
-      name: category.name,
-      category: category.name,
-      price: providerService?.price || "50.00",
+      id: adminService.id,
+      name: adminService.name,
+      description: adminService.description,
+      category: adminService.category?.name || "Sem Categoria",
+      categoryId: adminService.categoryId,
+      price: adminService.price,
+      serviceZone: adminService.serviceZone || "Não especificado",
+      provider: adminService.provider?.user?.name || "Admin",
       isSubscribed: !!providerService,
       isActive: providerService?.isActive ?? false,
       providerServiceId: providerService?.id,
     };
   }) || [];
 
-  const filteredServices = servicesData.filter(service => 
+  const filteredServices = servicesData.filter((service: any) => 
     service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     service.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubscribe = (categoryId: number, categoryName: string) => {
-    subscribeToServiceMutation.mutate({ categoryId, categoryName });
+  const handleSubscribe = (service: any) => {
+    subscribeToServiceMutation.mutate({
+      adminServiceId: service.id,
+      name: service.name,
+      description: service.description,
+      categoryId: service.categoryId,
+      price: service.price,
+      serviceZone: service.serviceZone,
+    });
   };
 
   const handleUnsubscribe = (serviceId: number) => {
@@ -175,7 +196,7 @@ export default function ProviderAllServices() {
     );
   }
 
-  if (categoriesLoading || providerLoading || servicesLoading) {
+  if (adminServicesLoading || providerLoading || servicesLoading) {
     return (
       <ProviderLayout>
         <div className="flex items-center justify-center min-h-96">
@@ -195,7 +216,7 @@ export default function ProviderAllServices() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Gerenciar Serviços</h1>
-            <p className="text-muted-foreground">Inscreva-se ou desinscreva-se dos serviços disponíveis</p>
+            <p className="text-muted-foreground">Inscreva-se nos serviços disponíveis do painel administrativo</p>
           </div>
         </div>
 
@@ -274,7 +295,7 @@ export default function ProviderAllServices() {
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleSubscribe(service.id, service.name)}
+                              onClick={() => handleSubscribe(service)}
                               disabled={subscribeToServiceMutation.isPending}
                             >
                               {subscribeToServiceMutation.isPending ? (

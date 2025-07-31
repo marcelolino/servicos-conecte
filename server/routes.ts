@@ -1000,6 +1000,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Provider route to access admin services for subscription
+  app.get("/api/admin/services/available", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const services = await storage.getAllServicesForAdmin();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get available services", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.post("/api/admin/services", authenticateToken, requireAdmin, async (req, res) => {
     try {
       // Convert and validate the data manually
