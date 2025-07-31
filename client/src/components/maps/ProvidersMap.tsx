@@ -69,26 +69,39 @@ const createProviderIcon = (name: string) => {
   return divIcon({
     html: `
       <div style="
-        width: 32px;
-        height: 32px;
-        background-color: #10B981;
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        width: 36px;
+        height: 36px;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 14px;
-        font-family: system-ui, -apple-system, sans-serif;
       ">
-        ${name.charAt(0).toUpperCase()}
+        <svg width="36" height="36" viewBox="0 0 36 36" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+          <circle cx="18" cy="18" r="16" fill="#10B981" stroke="white" stroke-width="3"/>
+          <path d="M18 8c-5.5 0-10 4.5-10 10 0 3 1.4 5.8 3.6 7.6l6.4 6.1 6.4-6.1c2.2-1.8 3.6-4.6 3.6-7.6 0-5.5-4.5-10-10-10z" fill="white"/>
+          <circle cx="18" cy="17" r="4" fill="#10B981"/>
+          <rect x="12" y="24" width="12" height="2" rx="1" fill="white"/>
+        </svg>
+        <div style="
+          position: absolute;
+          bottom: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(16, 185, 129, 0.9);
+          color: white;
+          font-size: 8px;
+          font-weight: bold;
+          padding: 1px 3px;
+          border-radius: 2px;
+          font-family: system-ui, -apple-system, sans-serif;
+        ">
+          ${name.charAt(0).toUpperCase()}
+        </div>
       </div>
     `,
     className: 'custom-div-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
   });
 };
 
