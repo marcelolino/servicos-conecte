@@ -15,6 +15,7 @@ import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2, MapPin } f
 import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { extractAddressComponents } from '@/lib/addressUtils';
 
 // Schemas para cada passo
 const step1Schema = z.object({
@@ -87,44 +88,12 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
 
   // Lidar com seleção de localização
   const handleLocationSet = (location: { lat: number; lng: number; address: string }) => {
-    // Extrair cidade e estado do endereço
-    const extractCityState = (address: string) => {
-      const parts = address.split(',').map(part => part.trim());
-      
-      // Procurar por padrão "Cidade - Estado"
-      for (const part of parts) {
-        if (part.includes(' - ')) {
-          const segments = part.split(' - ');
-          if (segments.length === 2 && segments[1].match(/^[A-Z]{2}$/)) {
-            return {
-              city: segments[0].trim(),
-              state: segments[1].trim()
-            };
-          }
-        }
-      }
-      
-      // Fallback: tentar extrair cidade e estado de forma simples
-      if (parts.length >= 2) {
-        const state = parts.find(part => part.match(/^[A-Z]{2}$/));
-        if (state) {
-          const stateIndex = parts.indexOf(state);
-          const city = stateIndex > 0 ? parts[stateIndex - 1] : parts[0];
-          return {
-            city: city.replace(/^\d+\s*-?\s*/, ''), // Remove números do início
-            state
-          };
-        }
-      }
-      
-      // Último fallback
-      return {
-        city: parts[0] || 'Cidade não identificada',
-        state: 'N/A'
-      };
+    const addressComponents = extractAddressComponents(location.address);
+    const cityState = {
+      city: addressComponents.city,
+      state: addressComponents.state
     };
-
-    const cityState = extractCityState(location.address);
+    
     setSelectedCity(cityState);
     setIsLocationModalOpen(false);
     

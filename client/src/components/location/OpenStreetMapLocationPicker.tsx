@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { extractAddressComponents } from '@/lib/addressUtils';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -249,14 +250,11 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
     setIsSavingToProfile(true);
     try {
-      await apiRequest('/api/users/profile/location', {
-        method: 'PUT',
-        body: JSON.stringify({
-          latitude: selectedLocation.lat,
-          longitude: selectedLocation.lng,
-          address: selectedLocation.address,
-          ...extractAddressComponents(selectedLocation.address)
-        })
+      await apiRequest('/api/users/profile/location', 'PUT', {
+        latitude: selectedLocation.lat,
+        longitude: selectedLocation.lng,
+        address: selectedLocation.address,
+        ...extractAddressComponents(selectedLocation.address)
       });
 
       toast({
@@ -301,71 +299,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
     onClose();
   };
 
-  // Funções auxiliares para extrair dados do endereço
-  const extractAddressComponents = (address: string) => {
-    const parts = address.split(',').map(part => part.trim());
-    
-    let city = '';
-    let state = '';
-    let cep = '';
-    
-    // Extrair CEP (formato: XXXXX-XXX ou XXXXXXXX)
-    for (const part of parts) {
-      const cepMatch = part.match(/\b\d{5}-?\d{3}\b/);
-      if (cepMatch) {
-        cep = cepMatch[0].replace('-', '');
-        break;
-      }
-    }
-    
-    // Estados brasileiros para identificação
-    const brazilianStates = {
-      'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
-      'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
-      'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS',
-      'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
-      'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
-      'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
-      'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
-    };
-    
-    // Extrair estado
-    for (const part of parts) {
-      // Procurar pelo nome completo do estado
-      for (const [stateName, stateCode] of Object.entries(brazilianStates)) {
-        if (part.toLowerCase().includes(stateName.toLowerCase())) {
-          state = stateCode;
-          break;
-        }
-      }
-      // Se não encontrou, procurar pela sigla
-      if (!state) {
-        for (const stateCode of Object.values(brazilianStates)) {
-          if (part.toUpperCase().includes(stateCode)) {
-            state = stateCode;
-            break;
-          }
-        }
-      }
-      if (state) break;
-    }
-    
-    // Extrair cidade (segunda parte do endereço, geralmente após o bairro)
-    if (parts.length >= 2) {
-      // A cidade geralmente é a segunda parte (após o bairro)
-      city = parts[1];
-      
-      // Remove qualquer referência a região geográfica
-      if (city.toLowerCase().includes('região')) {
-        city = parts[0]; // Usa o bairro como fallback
-      }
-      
-      // Limpa a cidade de informações extras
-      city = city.replace(/,.*$/, '').trim();
-    }
-    
-    return { city, state, cep };
-  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
