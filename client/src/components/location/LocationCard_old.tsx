@@ -264,9 +264,9 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
           onLocationSet={handleLocationSet}
         />
         
-        <OpenStreetMapLocationPicker
-          isOpen={isLocationModalOpen}
-          onClose={() => setIsLocationModalOpen(false)}
+        <IFoodStyleLocationPicker
+          isOpen={isIFoodModalOpen}
+          onClose={() => setIsIFoodModalOpen(false)}
           onLocationSelect={handleLocationSet}
         />
       </div>
@@ -307,9 +307,9 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
           onLocationSet={handleLocationSet}
         />
         
-        <OpenStreetMapLocationPicker
-          isOpen={isLocationModalOpen}
-          onClose={() => setIsLocationModalOpen(false)}
+        <IFoodStyleLocationPicker
+          isOpen={isIFoodModalOpen}
+          onClose={() => setIsIFoodModalOpen(false)}
           onLocationSelect={handleLocationSet}
         />
       </>

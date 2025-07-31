@@ -239,6 +239,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user location profile endpoint
+  app.put("/api/users/profile/location", authenticateToken, async (req, res) => {
+    try {
+      const { latitude, longitude, address, city, state } = req.body;
+      
+      if (!latitude || !longitude || !address) {
+        return res.status(400).json({ message: "Latitude, longitude e endereço são obrigatórios" });
+      }
+
+      const updateData = {
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+        address,
+        ...(city && { city }),
+        ...(state && { state })
+      };
+
+      const updatedUser = await storage.updateUser(req.user!.id, updateData);
+      res.json({ 
+        message: "Localização salva com sucesso",
+        user: { ...updatedUser, password: undefined }
+      });
+    } catch (error) {
+      console.error("Erro ao salvar localização:", error);
+      res.status(500).json({ message: "Falha ao salvar localização", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   /**
    * @swagger
    * /api/categories:
