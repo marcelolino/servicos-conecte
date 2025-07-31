@@ -54,56 +54,32 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   const [savedLocation, setSavedLocation] = useState<any>(null);
   const { toast } = useToast();
 
-  // Carregar endereço salvo na memória ao carregar o componente
+  // Carregar endereço detectado na memória ao carregar o componente
   useEffect(() => {
-    const userLocation = localStorage.getItem('userLocation');
-    if (userLocation) {
+    const detectedLocation = localStorage.getItem('detectedLocation');
+    if (detectedLocation) {
       try {
-        const location = JSON.parse(userLocation);
+        const location = JSON.parse(detectedLocation);
         setSavedLocation(location);
-        
-        // Extrair informações do endereço
-        const addressParts = location.address.split(',').map((part: string) => part.trim());
-        let city = '';
-        let state = '';
-        let mainAddress = location.address;
-        
-        // Procurar por cidade e estado no formato "Cidade - Estado"
-        for (const part of addressParts) {
-          if (part.includes(' - ')) {
-            const segments = part.split(' - ');
-            if (segments.length === 2 && segments[1].match(/^[A-Z]{2}$/)) {
-              city = segments[0].trim();
-              state = segments[1].trim();
-              break;
-            }
-          }
-        }
-        
-        // Se não encontrou no formato acima, tentar extrair estado
-        if (!state) {
-          const stateMatch = addressParts.find((part: string) => part.match(/^[A-Z]{2}$/));
-          if (stateMatch) {
-            state = stateMatch;
-            const stateIndex = addressParts.indexOf(stateMatch);
-            if (stateIndex > 0) {
-              city = addressParts[stateIndex - 1];
-            }
-          }
-        }
-        
-        setRegistrationData((prev: any) => ({
-          ...prev,
-          address: mainAddress,
-          city: city || 'Cidade não identificada',
-          state: state || 'N/A'
-        }));
-        
       } catch (error) {
-        console.error('Erro ao carregar localização:', error);
+        console.error('Erro ao carregar localização detectada:', error);
       }
     }
   }, []);
+
+  // Preencher automaticamente os campos quando a localização está disponível
+  useEffect(() => {
+    if (savedLocation && currentStep === 2) {
+      // Atualizar o registrationData com os dados da localização detectada
+      setRegistrationData((prev: any) => ({
+        ...prev,
+        address: savedLocation.address || prev.address || '',
+        city: savedLocation.city || prev.city || '',
+        state: savedLocation.state || prev.state || '',
+        cep: savedLocation.cep || prev.cep || ''
+      }));
+    }
+  }, [savedLocation, currentStep]);
 
   const Step1Form = () => {
     const form = useForm<Step1Data>({

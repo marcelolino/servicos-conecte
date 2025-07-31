@@ -255,8 +255,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
           latitude: selectedLocation.lat,
           longitude: selectedLocation.lng,
           address: selectedLocation.address,
-          city: extractCityFromAddress(selectedLocation.address),
-          state: extractStateFromAddress(selectedLocation.address)
+          ...extractAddressComponents(selectedLocation.address)
         })
       });
 
@@ -280,39 +279,92 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   const confirmLocation = async () => {
     if (!selectedLocation) return;
 
+    // Extrair componentes do endereço
+    const addressComponents = extractAddressComponents(selectedLocation.address);
+    
+    // Criar objeto com localização e componentes extraídos
+    const locationData = {
+      ...selectedLocation,
+      ...addressComponents
+    };
+
+    // Salvar dados na memória localStorage para uso no cadastro
+    localStorage.setItem('detectedLocation', JSON.stringify(locationData));
+
     // Salvar no perfil se usuário estiver logado
     if (user) {
       await saveLocationToProfile();
     }
 
     // Retornar localização para o componente pai
-    onLocationSelect(selectedLocation);
+    onLocationSelect(locationData);
     onClose();
   };
 
-  // Funções auxiliares para extrair cidade e estado
-  const extractCityFromAddress = (address: string): string => {
-    const parts = address.split(',');
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].trim();
-      if (part && !part.match(/^\d/) && !part.includes('CEP') && !part.includes('Brasil')) {
-        return part;
+  // Funções auxiliares para extrair dados do endereço
+  const extractAddressComponents = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    
+    let city = '';
+    let state = '';
+    let cep = '';
+    
+    // Extrair CEP (formato: XXXXX-XXX ou XXXXXXXX)
+    for (const part of parts) {
+      const cepMatch = part.match(/\b\d{5}-?\d{3}\b/);
+      if (cepMatch) {
+        cep = cepMatch[0].replace('-', '');
+        break;
       }
     }
-    return '';
-  };
-
-  const extractStateFromAddress = (address: string): string => {
-    const states = ['Goiás', 'GO', 'São Paulo', 'SP', 'Rio de Janeiro', 'RJ']; // Pode expandir
-    const parts = address.split(',');
+    
+    // Estados brasileiros para identificação
+    const brazilianStates = {
+      'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM',
+      'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES',
+      'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS',
+      'Minas Gerais': 'MG', 'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR',
+      'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN',
+      'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
+      'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO'
+    };
+    
+    // Extrair estado
     for (const part of parts) {
-      for (const state of states) {
-        if (part.trim().includes(state)) {
-          return state.length <= 2 ? state : state.substring(0, 2);
+      // Procurar pelo nome completo do estado
+      for (const [stateName, stateCode] of Object.entries(brazilianStates)) {
+        if (part.toLowerCase().includes(stateName.toLowerCase())) {
+          state = stateCode;
+          break;
         }
       }
+      // Se não encontrou, procurar pela sigla
+      if (!state) {
+        for (const stateCode of Object.values(brazilianStates)) {
+          if (part.toUpperCase().includes(stateCode)) {
+            state = stateCode;
+            break;
+          }
+        }
+      }
+      if (state) break;
     }
-    return '';
+    
+    // Extrair cidade (segunda parte do endereço, geralmente após o bairro)
+    if (parts.length >= 2) {
+      // A cidade geralmente é a segunda parte (após o bairro)
+      city = parts[1];
+      
+      // Remove qualquer referência a região geográfica
+      if (city.toLowerCase().includes('região')) {
+        city = parts[0]; // Usa o bairro como fallback
+      }
+      
+      // Limpa a cidade de informações extras
+      city = city.replace(/,.*$/, '').trim();
+    }
+    
+    return { city, state, cep };
   };
 
   return (
