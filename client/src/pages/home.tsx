@@ -37,7 +37,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [showNearbyProviders, setShowNearbyProviders] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [proximityRadius, setProximityRadius] = useState("5"); // km
+  const [proximityRadius, setProximityRadius] = useState("10"); // km
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { data: banners, isLoading: bannersLoading } = useQuery({
@@ -69,12 +69,9 @@ export default function Home() {
         ...(selectedCategory !== "all" && { category: selectedCategory })
       });
       
-      console.log('Fetching nearby providers with params:', params.toString());
       const response = await fetch(`/api/providers/nearby?${params}`);
       if (!response.ok) throw new Error('Failed to fetch nearby providers');
-      const data = await response.json();
-      console.log('Received nearby providers data:', data.length, data);
-      return data;
+      return response.json();
     }
   });
 
