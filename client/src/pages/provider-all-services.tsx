@@ -147,8 +147,8 @@ export default function ProviderAllServices() {
   }) || [];
 
   const filteredServices = servicesData.filter((service: any) => 
-    service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.category.toLowerCase().includes(searchTerm.toLowerCase())
+    service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    service.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubscribe = (service: any) => {
