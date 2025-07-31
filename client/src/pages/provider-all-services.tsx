@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ProviderLayout from "@/components/layout/provider-layout";
-import { Search, Loader2, UserPlus, UserMinus } from "lucide-react";
+import { Search, Loader2, UserPlus, UserMinus, Filter, X } from "lucide-react";
 
 interface ServiceCategory {
   id: number;
@@ -38,6 +39,7 @@ export default function ProviderAllServices() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Fetch all admin-created services that providers can subscribe to
   const { data: adminServices, isLoading: adminServicesLoading } = useQuery({
@@ -54,6 +56,11 @@ export default function ProviderAllServices() {
   const { data: providerServices, isLoading: servicesLoading } = useQuery<ProviderService[]>({
     queryKey: ["/api/providers/services"],
     enabled: !!provider,
+  });
+
+  // Fetch service categories
+  const { data: categories, isLoading: categoriesLoading } = useQuery<ServiceCategory[]>({
+    queryKey: ["/api/categories"],
   });
 
   // Subscribe to admin service mutation
@@ -146,10 +153,15 @@ export default function ProviderAllServices() {
     };
   }) || [];
 
-  const filteredServices = servicesData.filter((service: any) => 
-    service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredServices = servicesData.filter((service: any) => {
+    const matchesSearch = service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || 
+      service.categoryId === parseInt(selectedCategory);
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const handleSubscribe = (service: any) => {
     subscribeToServiceMutation.mutate({
@@ -171,6 +183,11 @@ export default function ProviderAllServices() {
       serviceId, 
       isActive: !currentStatus 
     });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
   };
 
   // Show loading while checking authentication or logging out
@@ -196,7 +213,7 @@ export default function ProviderAllServices() {
     );
   }
 
-  if (adminServicesLoading || providerLoading || servicesLoading) {
+  if (adminServicesLoading || providerLoading || servicesLoading || categoriesLoading) {
     return (
       <ProviderLayout>
         <div className="flex items-center justify-center min-h-96">
@@ -220,7 +237,7 @@ export default function ProviderAllServices() {
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -231,6 +248,45 @@ export default function ProviderAllServices() {
               className="pl-10"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(searchTerm || selectedCategory !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="flex items-center gap-1"
+              >
+                <X className="h-3 w-3" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Mostrando {filteredServices.length} de {servicesData.length} serviços
+            {selectedCategory !== "all" && categories && (
+              <span className="ml-1">
+                na categoria "{categories.find(c => c.id.toString() === selectedCategory)?.name}"
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Services Table */}
