@@ -154,6 +154,9 @@ export default function ImageUpload({
           endpoint = '/api/upload/public/avatars';
         } else if (category === 'profile') {
           endpoint = '/api/upload/advanced/avatar';
+        } else if (!authToken && category === 'provider') {
+          // Use public endpoint for provider uploads during registration
+          endpoint = '/api/upload/public/providers';
         } else if (category === 'provider') {
           endpoint = '/api/upload/advanced/provider';
         } else {

@@ -277,7 +277,7 @@ export default function Profile() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={avatarUrl || user.avatar} alt={user.name} />
+                    <AvatarImage src={avatarUrl || user.avatar || undefined} alt={user.name} />
                     <AvatarFallback className="text-lg">
                       {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -334,7 +334,7 @@ export default function Profile() {
                     <div className="space-y-4">
                       <Label>Foto de Perfil</Label>
                       <ImageUpload
-                        category="provider"
+                        category="profile"
                         onUpload={handleAvatarUpload}
                         onRemove={handleAvatarRemove}
                         currentImages={avatarUrl ? [avatarUrl] : []}
