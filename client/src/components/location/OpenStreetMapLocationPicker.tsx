@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, MapPin, Navigation, Home, Building, Check } from 'lucide-react';
+import { X, Search, MapPin, Navigation, Home, Building, Check, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface LocationPickerProps {
   isOpen: boolean;
@@ -36,19 +39,48 @@ interface AddressDetails {
   type: 'casa' | 'trabalho';
 }
 
+// Configurar ícone personalizado para o marcador
+const customIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="18" fill="#dc2626" stroke="#ffffff" stroke-width="3"/>
+      <circle cx="20" cy="20" r="8" fill="#ffffff"/>
+    </svg>
+  `),
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20]
+});
+
+// Componente para capturar cliques no mapa
+function MapClickHandler({ onLocationChange }: { onLocationChange: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onLocationChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+// Componente para centralizar o mapa
+function MapCenterUpdater({ center }: { center: [number, number] }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, 16);
+  }, [center, map]);
+  
+  return null;
+}
+
 export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect }: LocationPickerProps) {
-  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'confirm'>('detect');
+  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('detect');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [addressDetails, setAddressDetails] = useState<AddressDetails>({
-    number: '',
-    complement: '',
-    reference: '',
-    type: 'casa'
-  });
+  const [mapPosition, setMapPosition] = useState<[number, number]>([-16.6869, -49.2648]); // Goiânia como padrão
   const [isSavingToProfile, setIsSavingToProfile] = useState(false);
 
   const { user } = useAuth();
@@ -61,12 +93,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
       setSearchQuery('');
       setSuggestions([]);
       setSelectedLocation(null);
-      setAddressDetails({
-        number: '',
-        complement: '',
-        reference: '',
-        type: 'casa'
-      });
+      setMapPosition([-16.6869, -49.2648]);
     }
   }, [isOpen]);
 
@@ -152,6 +179,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
           };
           
           setSelectedLocation(location);
+          setMapPosition([latitude, longitude]);
           setCurrentStep('confirm');
         } catch (error) {
           console.error('Erro ao obter endereço:', error);
@@ -203,7 +231,16 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
     };
     
     setSelectedLocation(location);
-    setCurrentStep('confirm');
+    setMapPosition([location.lat, location.lng]);
+    setCurrentStep('map');
+  };
+
+  // Função para atualizar localização no mapa
+  const handleMapLocationChange = async (lat: number, lng: number) => {
+    const address = await reverseGeocode(lat, lng);
+    const location = { lat, lng, address };
+    setSelectedLocation(location);
+    setMapPosition([lat, lng]);
   };
 
   // Função para salvar localização no perfil do usuário
@@ -286,6 +323,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
             <DialogTitle className="text-lg font-semibold">
               {currentStep === 'detect' && 'ENDEREÇO'}
               {currentStep === 'search' && 'Buscar Endereço'}
+              {currentStep === 'map' && 'Ajustar Localização'}
               {currentStep === 'confirm' && 'Confirmar Localização'}
             </DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -393,6 +431,75 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
             </div>
           )}
 
+          {currentStep === 'map' && selectedLocation && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">Você está aqui?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Arraste o marcador para ajustar sua localização exata
+                </p>
+              </div>
+
+              <div className="h-64 rounded-lg overflow-hidden border border-gray-200">
+                <MapContainer
+                  center={mapPosition}
+                  zoom={16}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={true}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapCenterUpdater center={mapPosition} />
+                  <MapClickHandler onLocationChange={handleMapLocationChange} />
+                  <Marker
+                    position={mapPosition}
+                    icon={customIcon}
+                    draggable={true}
+                    eventHandlers={{
+                      dragend: async (e) => {
+                        const marker = e.target;
+                        const position = marker.getLatLng();
+                        await handleMapLocationChange(position.lat, position.lng);
+                      },
+                    }}
+                  />
+                </MapContainer>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                  <Move className="h-4 w-4" />
+                  <span>Clique no mapa ou arraste o marcador para ajustar a localização</span>
+                </div>
+              </div>
+
+              {selectedLocation && (
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Endereço selecionado:</div>
+                  <div className="text-sm text-gray-900 dark:text-gray-100">{selectedLocation.address}</div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setCurrentStep('search')}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Voltar
+                </Button>
+                <Button
+                  onClick={() => setCurrentStep('confirm')}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Confirmar localização
+                </Button>
+              </div>
+            </div>
+          )}
+
           {currentStep === 'confirm' && selectedLocation && (
             <div className="space-y-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
@@ -423,11 +530,11 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setCurrentStep('search')}
+                  onClick={() => setCurrentStep('map')}
                   variant="outline"
                   className="flex-1"
                 >
-                  Alterar
+                  Ajustar no mapa
                 </Button>
                 <Button
                   onClick={confirmLocation}
