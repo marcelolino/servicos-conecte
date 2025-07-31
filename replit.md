@@ -16,6 +16,29 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (January 2025)
 
+### Proximity Filter for Providers ✓
+- **Date**: January 31, 2025
+- **Changes**: Implemented location-based provider search on homepage
+- **Features**:
+  - **Nearby Providers Section**: Shows when user shares location
+  - **Proximity Filters**: Distance radius (1-50km) and category selection
+  - **Real-time Distance Calculation**: Haversine formula for accurate distances
+  - **Smart Filtering**: Combines location, distance, and service categories
+  - **Interactive Interface**: Toggle between list and map view
+  - **Provider Details**: Shows distance, services, ratings, and contact options
+  - **Responsive Design**: Works on all device sizes
+  - **Backend API**: `/api/providers/nearby` endpoint with comprehensive filtering
+
+### Provider Services Category Filter ✓
+- **Date**: January 31, 2025
+- **Changes**: Added category filtering in provider services management
+- **Features**:
+  - **Category Dropdown**: Filter services by specific categories
+  - **Combined Filtering**: Works with text search for refined results
+  - **Results Counter**: Shows filtered vs total services count
+  - **Clear Filters**: One-click reset functionality
+  - **User-friendly Interface**: Intuitive filter controls with visual feedback
+
 ### Multi-Step Checkout Enhancement ✓
 - **Date**: January 30, 2025
 - **Changes**: Enhanced multi-step checkout with auto-fill and PIX restoration

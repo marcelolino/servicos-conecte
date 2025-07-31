@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { 
@@ -17,7 +18,10 @@ import {
   ArrowRight,
   ShieldCheck,
   Heart,
-  Zap
+  Zap,
+  Map,
+  Filter,
+  X
 } from "lucide-react";
 import { LocationCard } from "@/components/location/LocationCard";
 import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
@@ -30,6 +34,9 @@ export default function Home() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [showNearbyProviders, setShowNearbyProviders] = useState(false);
+  const [proximityRadius, setProximityRadius] = useState("5"); // km
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { data: banners, isLoading: bannersLoading } = useQuery({
     queryKey: ['/api/banners'],
@@ -44,6 +51,24 @@ export default function Home() {
   const { data: popularProviders, isLoading: providersLoading } = useQuery({
     queryKey: ['/api/providers/popular'],
     enabled: true,
+  });
+
+  // Query for nearby providers based on user location
+  const { data: nearbyProviders, isLoading: nearbyProvidersLoading } = useQuery({
+    queryKey: ['/api/providers/nearby', userLocation?.lat, userLocation?.lng, proximityRadius, selectedCategory],
+    enabled: showNearbyProviders && !!userLocation,
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        lat: userLocation!.lat.toString(),
+        lng: userLocation!.lng.toString(),
+        radius: proximityRadius,
+        ...(selectedCategory !== "all" && { category: selectedCategory })
+      });
+      
+      const response = await fetch(`/api/providers/nearby?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch nearby providers');
+      return response.json();
+    }
   });
 
   const filteredCategories = (categories as ServiceCategory[])?.filter((category: ServiceCategory) =>
@@ -181,6 +206,172 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Nearby Providers Section */}
+        {userLocation && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Profissionais Próximos
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Encontre prestadores na sua região: {userLocation.address}
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowNearbyProviders(!showNearbyProviders)}
+                variant={showNearbyProviders ? "default" : "outline"}
+                className="flex items-center gap-2"
+              >
+                <Map className="h-4 w-4" />
+                {showNearbyProviders ? "Ocultar Mapa" : "Ver no Mapa"}
+              </Button>
+            </div>
+
+            {/* Filters for nearby providers */}
+            {showNearbyProviders && (
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={proximityRadius} onValueChange={setProximityRadius}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 km</SelectItem>
+                      <SelectItem value="5">5 km</SelectItem>
+                      <SelectItem value="10">10 km</SelectItem>
+                      <SelectItem value="25">25 km</SelectItem>
+                      <SelectItem value="50">50 km</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {(categories as ServiceCategory[])?.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(proximityRadius !== "5" || selectedCategory !== "all") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setProximityRadius("5");
+                      setSelectedCategory("all");
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Nearby providers results */}
+            {showNearbyProviders && (
+              <>
+                {nearbyProvidersLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <Skeleton key={i} className="h-64 w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : nearbyProviders && (nearbyProviders as any[]).length > 0 ? (
+                  <>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                      Encontrados {(nearbyProviders as any[]).length} profissionais em um raio de {proximityRadius}km
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {(nearbyProviders as any[]).map((provider: any) => (
+                        <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                          <CardHeader>
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold text-lg">
+                                  {provider.user.name.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                                  {provider.user.name}
+                                </CardTitle>
+                                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span>{provider.rating || "5.0"}</span>
+                                  <span>({provider.totalReviews || 0} avaliações)</span>
+                                </div>
+                                <div className="flex items-center space-x-1 text-xs text-blue-600 mt-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{provider.distance} km</span>
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                              {provider.description || "Profissional experiente e qualificado"}
+                            </p>
+                            
+                            {/* Services */}
+                            {provider.services && provider.services.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-medium text-gray-500 mb-1">Serviços:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {provider.services.slice(0, 2).map((service: any) => (
+                                    <Badge key={service.id} variant="secondary" className="text-xs">
+                                      {service.category.name}
+                                    </Badge>
+                                  ))}
+                                  {provider.services.length > 2 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{provider.services.length - 2} mais
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                                <MapPin className="h-4 w-4" />
+                                <span>{provider.user.city || "Região"}</span>
+                              </div>
+                              <Button size="sm" variant="outline">
+                                Ver Perfil
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MapPin className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Nenhum profissional encontrado
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Tente aumentar o raio de busca ou alterar a categoria
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Popular Providers */}
         {!providersLoading && popularProviders && (popularProviders as any[]).length > 0 && (

@@ -1344,6 +1344,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get nearby providers based on location
+  app.get("/api/providers/nearby", async (req, res) => {
+    try {
+      const { lat, lng, radius = '10', category } = req.query;
+      
+      if (!lat || !lng) {
+        return res.status(400).json({ message: "Latitude and longitude are required" });
+      }
+      
+      const userLat = parseFloat(lat as string);
+      const userLng = parseFloat(lng as string);
+      const radiusKm = parseFloat(radius as string);
+      
+      // Get all approved providers
+      const providers = await storage.getAllProviders();
+      const approvedProviders = providers.filter(provider => provider.status === "approved");
+      
+      // Calculate distance and filter by radius
+      const nearbyProviders = approvedProviders
+        .map(provider => {
+          // Simple distance calculation (Haversine formula approximation)
+          const providerLat = parseFloat(provider.user.latitude || '0');
+          const providerLng = parseFloat(provider.user.longitude || '0');
+          
+          if (providerLat === 0 || providerLng === 0) {
+            return null; // Skip providers without location
+          }
+          
+          const dLat = (userLat - providerLat) * Math.PI / 180;
+          const dLng = (userLng - providerLng) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                   Math.cos(providerLat * Math.PI / 180) * Math.cos(userLat * Math.PI / 180) *
+                   Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = 6371 * c; // Earth radius in km
+          
+          return {
+            ...provider,
+            distance: Math.round(distance * 100) / 100 // Round to 2 decimal places
+          };
+        })
+        .filter(provider => provider && provider.distance <= radiusKm)
+        .sort((a, b) => a!.distance - b!.distance);
+      
+      // Filter by category if provided
+      let filteredProviders = nearbyProviders;
+      if (category && category !== 'all') {
+        const categoryId = parseInt(category as string);
+        const providerServices = await storage.getAllProviderServices();
+        const providerIdsWithCategory = providerServices
+          .filter(service => service.categoryId === categoryId)
+          .map(service => service.providerId);
+        
+        filteredProviders = nearbyProviders.filter(provider => 
+          providerIdsWithCategory.includes(provider!.id)
+        );
+      }
+
+      // Add services for each provider
+      const providersWithServices = await Promise.all(
+        filteredProviders.slice(0, 20).map(async (provider) => {
+          const services = await storage.getProviderServices(provider!.id);
+          return {
+            ...provider,
+            services
+          };
+        })
+      );
+      
+      res.json(providersWithServices);
+    } catch (error) {
+      console.error("Error in /api/providers/nearby:", error);
+      res.status(500).json({ 
+        message: "Failed to get nearby providers", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // ===========================================
   // SERVICES ENDPOINTS FOR MOBILE APP
   // ===========================================
