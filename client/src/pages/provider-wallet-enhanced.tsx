@@ -120,7 +120,7 @@ export default function ProviderWalletEnhanced() {
 
       if (data.paymentMethod === "bank" && data.bankAccountId) {
         // For bank transfers, get bank account details
-        const selectedBank = (bankAccounts as any[])?.find(acc => acc.id === data.bankAccountId);
+        const selectedBank = (bankAccounts as any[])?.find((acc: any) => acc.id === data.bankAccountId);
         if (selectedBank) {
           requestPayload.bankName = selectedBank.bankName;
           requestPayload.accountNumber = selectedBank.accountNumber;
@@ -129,7 +129,7 @@ export default function ProviderWalletEnhanced() {
         }
       } else if (data.paymentMethod === "pix" && data.pixKeyId) {
         // For PIX transfers, get PIX key details
-        const selectedPix = (pixKeys as any[])?.find(key => key.id === data.pixKeyId);
+        const selectedPix = (pixKeys as any[])?.find((key: any) => key.id === data.pixKeyId);
         if (selectedPix) {
           requestPayload.pixKey = selectedPix.pixKey;
           requestPayload.pixKeyId = data.pixKeyId;
@@ -137,7 +137,7 @@ export default function ProviderWalletEnhanced() {
       }
 
       const response = await apiRequest("POST", "/api/provider/withdrawal-requests", requestPayload);
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/withdrawal-requests"] });
@@ -203,9 +203,9 @@ export default function ProviderWalletEnhanced() {
     }
   };
 
-  const availableBalance = earnings?.availableBalance || 0;
-  const totalEarnings = earnings?.earnings?.reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount), 0) || 0;
-  const totalWithdrawn = earnings?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount), 0) || 0;
+  const availableBalance = (earnings as any)?.availableBalance || 0;
+  const totalEarnings = (earnings as any)?.earnings?.reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount), 0) || 0;
+  const totalWithdrawn = (earnings as any)?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount), 0) || 0;
 
   return (
     <ProviderLayout>
@@ -355,12 +355,12 @@ export default function ProviderWalletEnhanced() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {bankAccounts.length === 0 ? (
+                                  {(bankAccounts as any[]).length === 0 ? (
                                     <div className="p-2 text-sm text-muted-foreground">
                                       Nenhuma conta cadastrada. <Link href="/provider-payment-methods">Adicionar conta</Link>
                                     </div>
                                   ) : (
-                                    bankAccounts.map((account: any) => (
+                                    (bankAccounts as any[]).map((account: any) => (
                                       <SelectItem key={account.id} value={account.id.toString()}>
                                         {account.bankName} - {account.agency} / {account.accountNumber}
                                       </SelectItem>
@@ -388,12 +388,12 @@ export default function ProviderWalletEnhanced() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {pixKeys.length === 0 ? (
+                                  {(pixKeys as any[]).length === 0 ? (
                                     <div className="p-2 text-sm text-muted-foreground">
                                       Nenhuma chave PIX cadastrada. <Link href="/provider-payment-methods">Adicionar chave</Link>
                                     </div>
                                   ) : (
-                                    pixKeys.map((key: any) => (
+                                    (pixKeys as any[]).map((key: any) => (
                                       <SelectItem key={key.id} value={key.id.toString()}>
                                         {key.pixType.toUpperCase()}: {key.pixKey}
                                       </SelectItem>
@@ -481,7 +481,7 @@ export default function ProviderWalletEnhanced() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     <p className="mt-2 text-muted-foreground">Carregando...</p>
                   </div>
-                ) : withdrawalRequests.length === 0 ? (
+                ) : (withdrawalRequests as any[]).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Download className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhuma solicitação de saque</p>
@@ -499,7 +499,7 @@ export default function ProviderWalletEnhanced() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {withdrawalRequests.map((request: any) => (
+                      {(withdrawalRequests as any[]).map((request: any) => (
                         <TableRow key={request.id}>
                           <TableCell>
                             {new Date(request.createdAt).toLocaleDateString("pt-BR")}
@@ -536,7 +536,7 @@ export default function ProviderWalletEnhanced() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     <p className="mt-2 text-muted-foreground">Carregando...</p>
                   </div>
-                ) : !earnings?.earnings || earnings.earnings.length === 0 ? (
+                ) : !(earnings as any)?.earnings || (earnings as any).earnings.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum ganho registrado</p>
@@ -555,7 +555,7 @@ export default function ProviderWalletEnhanced() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {earnings.earnings.map((earning: any) => (
+                      {(earnings as any).earnings.map((earning: any) => (
                         <TableRow key={earning.id}>
                           <TableCell>
                             {new Date(earning.createdAt).toLocaleDateString("pt-BR")}
