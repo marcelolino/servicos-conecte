@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
+import { useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { Icon, divIcon } from "leaflet";
 import { MapPin, Star, Phone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import "leaflet/dist/leaflet.css";
 
 interface Provider {
   id: number;
@@ -34,153 +36,183 @@ interface ProvidersMapProps {
   height?: string;
 }
 
+// Create custom icons for markers
+const createUserIcon = () => {
+  return divIcon({
+    html: `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background-color: #3B82F6;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          width: 8px;
+          height: 8px;
+          background-color: white;
+          border-radius: 50%;
+        "></div>
+      </div>
+    `,
+    className: 'custom-div-icon',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
+const createProviderIcon = (name: string) => {
+  return divIcon({
+    html: `
+      <div style="
+        width: 32px;
+        height: 32px;
+        background-color: #10B981;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+        font-family: system-ui, -apple-system, sans-serif;
+      ">
+        ${name.charAt(0).toUpperCase()}
+      </div>
+    `,
+    className: 'custom-div-icon',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+};
+
 export function ProvidersMap({ 
   providers, 
   userLocation, 
   onProviderSelect,
   height = "400px" 
 }: ProvidersMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const initializeMap = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const loader = new Loader({
-          apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-          version: "weekly",
-          libraries: ["places"]
-        });
-
-        const { Map } = await loader.importLibrary("maps");
-        const { Marker } = await loader.importLibrary("marker");
-
-        if (!mapRef.current) return;
-
-        // Initialize map centered on user location
-        const map = new Map(mapRef.current, {
-          center: { lat: userLocation.lat, lng: userLocation.lng },
-          zoom: 13,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-
-        mapInstanceRef.current = map;
-
-        // Clear existing markers
-        markersRef.current.forEach(marker => marker.setMap(null));
-        markersRef.current = [];
-
-        // Add user location marker
-        const userMarker = new Marker({
-          position: { lat: userLocation.lat, lng: userLocation.lng },
-          map: map,
-          title: "Sua localização",
-          icon: {
-            url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" stroke-width="4"/>
-                <circle cx="20" cy="20" r="6" fill="white"/>
-              </svg>
-            `),
-            scaledSize: new google.maps.Size(40, 40),
-            anchor: new google.maps.Point(20, 20)
-          }
-        });
-
-        // Add provider markers
-        providers.forEach((provider, index) => {
-          const lat = parseFloat(provider.user.latitude || '0');
-          const lng = parseFloat(provider.user.longitude || '0');
-
-          if (lat === 0 || lng === 0) return;
-
-          const marker = new Marker({
-            position: { lat, lng },
-            map: map,
-            title: provider.user.name,
-            icon: {
-              url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="16" cy="16" r="14" fill="#10B981" stroke="white" stroke-width="4"/>
-                  <text x="16" y="21" text-anchor="middle" fill="white" font-size="12" font-weight="bold">
-                    ${provider.user.name.charAt(0)}
-                  </text>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(32, 32),
-              anchor: new google.maps.Point(16, 16)
-            }
-          });
-
-          marker.addListener("click", () => {
-            setSelectedProvider(provider);
-            if (onProviderSelect) {
-              onProviderSelect(provider);
-            }
-          });
-
-          markersRef.current.push(marker);
-        });
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error loading map:", error);
-        setError("Erro ao carregar o mapa. Verifique sua conexão e tente novamente.");
-        setIsLoading(false);
-      }
-    };
-
-    if (mapRef.current) {
-      initializeMap();
+  const handleProviderClick = (provider: Provider) => {
+    setSelectedProvider(provider);
+    if (onProviderSelect) {
+      onProviderSelect(provider);
     }
-
-    return () => {
-      // Cleanup markers
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    };
-  }, [providers, userLocation, onProviderSelect]);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center" style={{ height }}>
-        <div className="text-center">
-          <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  };
 
   return (
     <div className="relative">
-      {isLoading && (
-        <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center z-10">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Carregando mapa...</p>
-          </div>
-        </div>
-      )}
-      
-      <div
-        ref={mapRef}
-        style={{ height }}
-        className="w-full rounded-lg border border-gray-200 dark:border-gray-700"
-      />
+      <div style={{ height }} className="w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+        <MapContainer
+          center={[userLocation.lat, userLocation.lng]}
+          zoom={13}
+          style={{ height: "100%", width: "100%" }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {/* User location marker */}
+          <Marker
+            position={[userLocation.lat, userLocation.lng]}
+            icon={createUserIcon()}
+          >
+            <Popup>
+              <div className="text-center">
+                <div className="font-semibold">Sua Localização</div>
+                <div className="text-sm text-gray-600">{userLocation.address}</div>
+              </div>
+            </Popup>
+          </Marker>
 
-      {/* Selected provider info card */}
+          {/* Provider markers */}
+          {providers.map((provider) => {
+            const lat = parseFloat(provider.user.latitude || '0');
+            const lng = parseFloat(provider.user.longitude || '0');
+
+            if (lat === 0 || lng === 0) return null;
+
+            return (
+              <Marker
+                key={provider.id}
+                position={[lat, lng]}
+                icon={createProviderIcon(provider.user.name)}
+                eventHandlers={{
+                  click: () => handleProviderClick(provider),
+                }}
+              >
+                <Popup>
+                  <div className="min-w-[200px]">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">
+                          {provider.user.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-semibold">{provider.user.name}</div>
+                        <div className="flex items-center space-x-1 text-sm text-gray-500">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span>{provider.rating || "5.0"}</span>
+                          <span>({provider.totalReviews || 0})</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1 text-sm text-blue-600 mb-2">
+                      <MapPin className="h-3 w-3" />
+                      <span>{provider.distance} km de distância</span>
+                    </div>
+                    
+                    {provider.services && provider.services.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-gray-500 mb-1">Serviços:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {provider.services.slice(0, 2).map((service) => (
+                            <Badge key={service.id} variant="secondary" className="text-xs">
+                              {service.category.name}
+                            </Badge>
+                          ))}
+                          {provider.services.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{provider.services.length - 2} mais
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 mt-2">
+                      {provider.user.phone && (
+                        <Button size="sm" variant="outline" className="text-xs">
+                          <Phone className="h-3 w-3 mr-1" />
+                          Ligar
+                        </Button>
+                      )}
+                      <Button size="sm" className="text-xs">
+                        Ver Perfil
+                      </Button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </div>
+
+      {/* Selected provider info card (bottom overlay) */}
       {selectedProvider && (
-        <Card className="absolute bottom-4 left-4 right-4 max-w-sm mx-auto shadow-lg z-20">
+        <Card className="absolute bottom-4 left-4 right-4 max-w-sm mx-auto shadow-lg z-[1000]">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">

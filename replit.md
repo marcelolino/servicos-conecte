@@ -18,16 +18,20 @@ A comprehensive service marketplace platform that connects service providers and
 
 ### Proximity Filter for Providers ✓
 - **Date**: January 31, 2025
-- **Changes**: Implemented location-based provider search on homepage
+- **Changes**: Implemented location-based provider search with OpenStreetMap integration
 - **Features**:
   - **Nearby Providers Section**: Shows when user shares location
+  - **Interactive Map**: OpenStreetMap with Leaflet and React-Leaflet
+  - **Custom Markers**: User location (blue) and providers (green with initials)
   - **Proximity Filters**: Distance radius (1-50km) and category selection
   - **Real-time Distance Calculation**: Haversine formula for accurate distances
   - **Smart Filtering**: Combines location, distance, and service categories
   - **Interactive Interface**: Toggle between list and map view
   - **Provider Details**: Shows distance, services, ratings, and contact options
+  - **Map Interactions**: Click markers for info, popups with provider details
   - **Responsive Design**: Works on all device sizes
   - **Backend API**: `/api/providers/nearby` endpoint with comprehensive filtering
+  - **Open Source**: Uses OpenStreetMap (free alternative to Google Maps)
 
 ### Provider Services Category Filter ✓
 - **Date**: January 31, 2025
