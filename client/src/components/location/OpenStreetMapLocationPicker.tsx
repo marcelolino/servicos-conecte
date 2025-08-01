@@ -257,6 +257,10 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
         ...extractAddressComponents(selectedLocation.address)
       });
 
+      // Invalidar cache do usuário para recarregar dados atualizados
+      const { queryClient } = await import('@/lib/queryClient');
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
       toast({
         title: "Localização salva!",
         description: "Sua localização foi salva no seu perfil com sucesso.",

@@ -90,10 +90,10 @@ export default function Profile() {
     },
   });
 
-  // Update form values when user data is loaded
+  // Update form values when user data is loaded or changed
   useEffect(() => {
     if (user) {
-      profileForm.reset({
+      const newFormData = {
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
@@ -103,8 +103,18 @@ export default function Profile() {
         cep: user.cep || "",
         cpf: user.cpf || "",
         avatar: user.avatar || "",
-      });
-      setAvatarUrl(user.avatar || "");
+      };
+      
+      // Only reset if data actually changed to avoid infinite loops
+      const currentValues = profileForm.getValues();
+      const hasChanged = Object.keys(newFormData).some(key => 
+        newFormData[key as keyof typeof newFormData] !== currentValues[key as keyof typeof currentValues]
+      );
+      
+      if (hasChanged) {
+        profileForm.reset(newFormData);
+        setAvatarUrl(user.avatar || "");
+      }
     }
   }, [user, profileForm]);
 
