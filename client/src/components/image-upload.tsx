@@ -271,12 +271,12 @@ export default function ImageUpload({
           dragActive 
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' 
             : 'border-gray-300 hover:border-gray-400'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        } ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={handleButtonClick}
+        onClick={disabled || uploading ? undefined : handleButtonClick}
       >
         <CardContent className="p-8 text-center">
           <input
@@ -320,7 +320,10 @@ export default function ImageUpload({
                   variant="outline" 
                   size="sm"
                   disabled={disabled}
-                  onClick={handleButtonClick}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleButtonClick();
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Selecionar Arquivo{multiple ? 's' : ''}
