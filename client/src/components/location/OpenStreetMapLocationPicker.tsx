@@ -140,12 +140,18 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR`
       );
       
       if (response.ok) {
         const result = await response.json();
-        return result.display_name || `${lat}, ${lng}`;
+        console.log('DEBUG - Reverse geocode result:', result);
+        
+        // Usar display_name que tem formato completo com CEP
+        const fullAddress = result.display_name || `${lat}, ${lng}`;
+        console.log('DEBUG - Full address from reverse geocode:', fullAddress);
+        
+        return fullAddress;
       }
     } catch (error) {
       console.error('Erro no reverse geocoding:', error);
