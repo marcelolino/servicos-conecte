@@ -250,11 +250,15 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
     setIsSavingToProfile(true);
     try {
+      const addressComponents = extractAddressComponents(selectedLocation.address);
+      console.log('DEBUG - Address:', selectedLocation.address);
+      console.log('DEBUG - Address components:', addressComponents);
+      
       await apiRequest('PUT', '/api/users/profile/location', {
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
         address: selectedLocation.address,
-        ...extractAddressComponents(selectedLocation.address)
+        ...addressComponents
       });
 
       // Invalidar cache do usuário para recarregar dados atualizados

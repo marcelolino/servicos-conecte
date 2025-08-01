@@ -242,7 +242,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user location profile endpoint
   app.put("/api/users/profile/location", authenticateToken, async (req, res) => {
     try {
-      const { latitude, longitude, address, city, state } = req.body;
+      const { latitude, longitude, address, city, state, cep } = req.body;
+      
+      console.log('DEBUG - Location update request:', { latitude, longitude, address, city, state, cep });
       
       if (!latitude || !longitude || !address) {
         return res.status(400).json({ message: "Latitude, longitude e endereço são obrigatórios" });
@@ -253,7 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         longitude: longitude.toString(),
         address,
         ...(city && { city }),
-        ...(state && { state })
+        ...(state && { state }),
+        ...(cep && { cep })
       };
 
       const updatedUser = await storage.updateUser(req.user!.id, updateData);
