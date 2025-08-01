@@ -16,16 +16,17 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (January 2025)
 
-### Profile Photo Upload Fix ✓
+### Profile Photo Upload & Location Fix ✓
 - **Date**: February 1, 2025
-- **Changes**: Fixed double dialog issue in image upload component
+- **Changes**: Fixed double dialog and location save issues
 - **Details**:
-  - **Root Cause**: Both Card and Button elements had onClick handlers causing double triggers
+  - **Double Dialog Fix**: Both Card and Button elements had onClick handlers causing double triggers
   - **Solution**: Added stopPropagation to Button click and conditional onClick for Card
   - **Guards**: Disabled Card clicks during upload and when component is disabled
   - **Upload Category**: Fixed from "provider" to "profile" for regular user uploads
-  - **Backend Works**: Upload endpoint responds with 200 OK successfully
-  - **UI Fixed**: No more double dialogs, proper state management
+  - **Location API Fix**: Corrected `apiRequest` parameter order in OpenStreetMapLocationPicker
+  - **Backend Working**: Both upload and location endpoints respond correctly (200 OK)
+  - **Full Functionality**: Photo upload + location save working properly
 
 ## Recent Changes (January 2025)
 

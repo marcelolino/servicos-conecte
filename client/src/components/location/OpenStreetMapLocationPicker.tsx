@@ -250,7 +250,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
     setIsSavingToProfile(true);
     try {
-      await apiRequest('/api/users/profile/location', 'PUT', {
+      await apiRequest('PUT', '/api/users/profile/location', {
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
         address: selectedLocation.address,
