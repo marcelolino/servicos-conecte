@@ -29,6 +29,7 @@ A comprehensive service marketplace platform that connects service providers and
   - **Profile Refresh**: Enhanced useEffect to detect data changes and update form fields
   - **Backend Working**: Both upload and location endpoints respond correctly (200 OK)
   - **Data Persistence**: Location data saves to database and appears in profile form
+  - **CEP Format Fix**: Fixed CEP extraction to maintain proper XXXXX-XXX format with hyphen
 
 ## Recent Changes (January 2025)
 

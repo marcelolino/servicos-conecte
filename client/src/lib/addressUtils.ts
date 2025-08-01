@@ -32,7 +32,9 @@ export function extractAddressComponents(address: string): AddressComponents {
   for (const part of parts) {
     const cepMatch = part.match(/\b\d{5}-?\d{3}\b/);
     if (cepMatch) {
-      cep = cepMatch[0].replace('-', '');
+      // Manter o formato com hífen se já existir, senão adicionar
+      const rawCep = cepMatch[0];
+      cep = rawCep.includes('-') ? rawCep : rawCep.replace(/(\d{5})(\d{3})/, '$1-$2');
       break;
     }
   }
