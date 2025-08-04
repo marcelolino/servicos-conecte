@@ -456,7 +456,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                 >
                   <div className="flex items-center gap-2">
                     <Search className="h-4 w-4" />
-                    Ajustar a localização
+                    Ajustar no Mapa
                   </div>
                 </Button>
               </div>
