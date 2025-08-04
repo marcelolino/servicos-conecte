@@ -70,35 +70,61 @@ export function extractAddressComponents(address: string): AddressComponents {
   
   // Extract city - usually the main city name before regions/geographic areas
   if (parts.length >= 2) {
-    // Look for the main city name (avoid geographic regions)
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].trim();
-      
-      // Skip if it's a region description
-      if (part.toLowerCase().includes('região')) continue;
-      if (part.toLowerCase().includes('centro-oeste')) continue;
-      if (part.toLowerCase().includes('nordeste')) continue;
-      if (part.toLowerCase().includes('sudeste')) continue;
-      if (part.toLowerCase().includes('sul')) continue;
-      if (part.toLowerCase().includes('norte')) continue;
-      if (part.toLowerCase().includes('geográfica')) continue;
-      if (part.toLowerCase().includes('brasil')) continue;
-      
-      // Skip CEP and state
-      if (part.match(/\b\d{5}-?\d{3}\b/)) continue;
-      if (Object.values(brazilianStates).includes(part.toUpperCase())) continue;
-      if (Object.keys(brazilianStates).some(name => part.toLowerCase() === name.toLowerCase())) continue;
-      
-      // If it looks like a city name (not a street or neighborhood), use it
-      if (!part.match(/^(rua|avenida|av\.|r\.|travessa|praça|largo|estrada)/i) && 
-          !part.match(/^\d+/) && 
-          part.length > 2 &&
-          !part.toLowerCase().includes('setor') &&
-          !part.toLowerCase().includes('vila') &&
-          !part.toLowerCase().includes('jardim') &&
-          !part.toLowerCase().includes('bairro')) {
-        city = part;
-        break;
+    // First, look for known major cities explicitly
+    const knownCities = ['goiânia', 'são paulo', 'rio de janeiro', 'belo horizonte', 'salvador', 
+                        'brasília', 'fortaleza', 'manaus', 'curitiba', 'recife', 'belém', 
+                        'guarulhos', 'campinas', 'duque de caxias', 'nova iguaçu'];
+    
+    for (const part of parts) {
+      const cleanPart = part.trim().toLowerCase();
+      if (knownCities.some(cityName => cleanPart.includes(cityName))) {
+        const foundCity = knownCities.find(cityName => cleanPart.includes(cityName));
+        if (foundCity) {
+          // Capitalize first letter
+          city = foundCity.charAt(0).toUpperCase() + foundCity.slice(1);
+          break;
+        }
+      }
+    }
+    
+    // If no known city found, look for the main city name (avoid geographic regions)
+    if (!city) {
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i].trim();
+        
+        // Skip if it's a region description
+        if (part.toLowerCase().includes('região')) continue;
+        if (part.toLowerCase().includes('centro-oeste')) continue;
+        if (part.toLowerCase().includes('nordeste')) continue;
+        if (part.toLowerCase().includes('sudeste')) continue;
+        if (part.toLowerCase().includes('sul')) continue;
+        if (part.toLowerCase().includes('norte')) continue;
+        if (part.toLowerCase().includes('geográfica')) continue;
+        if (part.toLowerCase().includes('brasil')) continue;
+        if (part.toLowerCase().includes('imediata')) continue;
+        if (part.toLowerCase().includes('intermediária')) continue;
+        
+        // Skip CEP and state
+        if (part.match(/\b\d{5}-?\d{3}\b/)) continue;
+        if (Object.values(brazilianStates).includes(part.toUpperCase())) continue;
+        if (Object.keys(brazilianStates).some(name => part.toLowerCase() === name.toLowerCase())) continue;
+        
+        // Skip obvious business/building names and addresses
+        if (part.toLowerCase().includes('cripto shield')) continue;
+        if (part.toLowerCase().includes('shield')) continue;
+        
+        // If it looks like a city name (not a street or neighborhood), use it
+        if (!part.match(/^(rua|avenida|av\.|r\.|travessa|praça|largo|estrada)/i) && 
+            !part.match(/^\d+/) && 
+            part.length > 2 &&
+            !part.toLowerCase().includes('setor') &&
+            !part.toLowerCase().includes('vila') &&
+            !part.toLowerCase().includes('jardim') &&
+            !part.toLowerCase().includes('bairro') &&
+            !part.toLowerCase().includes('universitário')) {
+          city = part;
+          break;
+        }
       }
     }
     
@@ -110,6 +136,7 @@ export function extractAddressComponents(address: string): AddressComponents {
           // Skip obvious non-city parts
           if (!part.toLowerCase().includes('região') && 
               !part.toLowerCase().includes('setor') &&
+              !part.toLowerCase().includes('cripto') &&
               !part.match(/^\d/) &&
               part.length > 3) {
             city = part;

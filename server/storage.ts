@@ -94,8 +94,8 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   
   // Provider management
-  getProvider(id: number): Promise<Provider | undefined>;
-  getProviderByUserId(userId: number): Promise<Provider | undefined>;
+  getProvider(id: number): Promise<(Provider & { user: User }) | undefined>;
+  getProviderByUserId(userId: number): Promise<(Provider & { user: User }) | undefined>;
   createProvider(provider: InsertProvider): Promise<Provider>;
   updateProvider(id: number, provider: Partial<InsertProvider>): Promise<Provider>;
   getProvidersByCategory(categoryId: number, latitude?: number, longitude?: number, radius?: number): Promise<(Provider & { user: User })[]>;
@@ -313,13 +313,75 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
-  async getProvider(id: number): Promise<Provider | undefined> {
-    const [provider] = await db.select().from(providers).where(eq(providers.id, id));
+  async getProvider(id: number): Promise<(Provider & { user: User }) | undefined> {
+    const [provider] = await db
+      .select({
+        id: providers.id,
+        userId: providers.userId,
+        status: providers.status,
+        city: providers.city,
+        state: providers.state,
+        serviceRadius: providers.serviceRadius,
+        basePrice: providers.basePrice,
+        description: providers.description,
+        experience: providers.experience,
+        cpfCnpj: providers.cpfCnpj,
+        registrationStep: providers.registrationStep,
+        registrationData: providers.registrationData,
+        bankName: providers.bankName,
+        bankAgency: providers.bankAgency,
+        bankAccount: providers.bankAccount,
+        documents: providers.documents,
+        identityDocument: providers.identityDocument,
+        portfolioImages: providers.portfolioImages,
+        rating: providers.rating,
+        totalReviews: providers.totalReviews,
+        totalServices: providers.totalServices,
+        isTrialActive: providers.isTrialActive,
+        trialEndsAt: providers.trialEndsAt,
+        createdAt: providers.createdAt,
+        updatedAt: providers.updatedAt,
+        user: users,
+      })
+      .from(providers)
+      .innerJoin(users, eq(providers.userId, users.id))
+      .where(eq(providers.id, id));
     return provider || undefined;
   }
 
-  async getProviderByUserId(userId: number): Promise<Provider | undefined> {
-    const [provider] = await db.select().from(providers).where(eq(providers.userId, userId));
+  async getProviderByUserId(userId: number): Promise<(Provider & { user: User }) | undefined> {
+    const [provider] = await db
+      .select({
+        id: providers.id,
+        userId: providers.userId,
+        status: providers.status,
+        city: providers.city,
+        state: providers.state,
+        serviceRadius: providers.serviceRadius,
+        basePrice: providers.basePrice,
+        description: providers.description,
+        experience: providers.experience,
+        cpfCnpj: providers.cpfCnpj,
+        registrationStep: providers.registrationStep,
+        registrationData: providers.registrationData,
+        bankName: providers.bankName,
+        bankAgency: providers.bankAgency,
+        bankAccount: providers.bankAccount,
+        documents: providers.documents,
+        identityDocument: providers.identityDocument,
+        portfolioImages: providers.portfolioImages,
+        rating: providers.rating,
+        totalReviews: providers.totalReviews,
+        totalServices: providers.totalServices,
+        isTrialActive: providers.isTrialActive,
+        trialEndsAt: providers.trialEndsAt,
+        createdAt: providers.createdAt,
+        updatedAt: providers.updatedAt,
+        user: users,
+      })
+      .from(providers)
+      .innerJoin(users, eq(providers.userId, users.id))
+      .where(eq(providers.userId, userId));
     return provider || undefined;
   }
 

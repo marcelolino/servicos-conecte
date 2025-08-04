@@ -288,10 +288,12 @@ export default function ProviderProfile() {
                 <p className="text-muted-foreground">{provider.description}</p>
               </div>
 
-              <div className="mb-6">
-                <h3 className="font-semibold mb-2">Experiência Profissional</h3>
-                <p className="text-muted-foreground">{provider.experience}</p>
-              </div>
+              {provider.experience && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Experiência Profissional</h3>
+                  <p className="text-muted-foreground">{provider.experience}</p>
+                </div>
+              )}
 
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Preço Base</h3>
