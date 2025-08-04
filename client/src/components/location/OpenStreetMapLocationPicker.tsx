@@ -321,7 +321,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
         <DialogHeader className="p-4 pb-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
-              {currentStep === 'detect' && 'ENDEREÇO'}
+              {currentStep === 'detect' && 'Buscar Endereço'}
               {currentStep === 'search' && 'Buscar Endereço'}
               {currentStep === 'map' && 'Ajustar Localização'}
               {currentStep === 'confirm' && 'Confirmar Localização'}
