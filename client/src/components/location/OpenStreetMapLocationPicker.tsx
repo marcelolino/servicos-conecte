@@ -426,12 +426,17 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                     Voltar
                   </Button>
                   <Button
-                    onClick={() => setCurrentStep('detect')}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10"
+                    onClick={detectCurrentLocation}
+                    disabled={isDetecting}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10 disabled:bg-blue-400"
                   >
                     <div className="flex items-center gap-2">
-                      <Navigation className="h-3 w-3" />
-                      Detectar localização
+                      {isDetecting ? (
+                        <div className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Navigation className="h-3 w-3" />
+                      )}
+                      {isDetecting ? 'Detectando...' : 'Detectar localização'}
                     </div>
                   </Button>
                 </div>
