@@ -75,7 +75,7 @@ function MapCenterUpdater({ center }: { center: [number, number] }) {
 }
 
 export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect }: LocationPickerProps) {
-  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('search');
+  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('detect');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -321,10 +321,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
         <DialogHeader className="p-4 pb-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
-              {currentStep === 'detect' && 'Buscar Endereço'}
-              {currentStep === 'search' && 'Buscar Endereço'}
-              {currentStep === 'map' && 'Ajustar Localização'}
-              {currentStep === 'confirm' && 'Confirmar Localização'}
+              Buscar Endereço
             </DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
