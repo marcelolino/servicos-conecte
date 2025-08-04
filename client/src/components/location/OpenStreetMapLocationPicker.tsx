@@ -421,21 +421,45 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <Button
+                    onClick={onClose}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    onClick={() => setCurrentStep('detect')}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      Detectar localização
+                    </div>
+                  </Button>
+                </div>
                 <Button
-                  onClick={onClose}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Voltar
-                </Button>
-                <Button
-                  onClick={() => setCurrentStep('detect')}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    // Simular confirmação sem localização específica
+                    confirmLocation();
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white h-12"
                 >
                   <div className="flex items-center gap-2">
                     <Navigation className="h-4 w-4" />
-                    Detectar localização
+                    Confirmar localização
+                  </div>
+                </Button>
+                <Button
+                  onClick={() => setCurrentStep('map')}
+                  variant="outline"
+                  className="w-full h-12"
+                >
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Ajustar a localização
                   </div>
                 </Button>
               </div>
