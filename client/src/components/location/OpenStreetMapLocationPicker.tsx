@@ -450,7 +450,18 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                   </div>
                 </Button>
                 <Button
-                  onClick={() => setCurrentStep('map')}
+                  onClick={() => {
+                    // Definir localização padrão para mostrar o mapa
+                    if (!selectedLocation) {
+                      setSelectedLocation({
+                        lat: -16.6869,
+                        lng: -49.2648,
+                        address: 'Goiânia - GO, Brasil'
+                      });
+                      setMapPosition([-16.6869, -49.2648]);
+                    }
+                    setCurrentStep('map');
+                  }}
                   variant="outline"
                   className="w-full h-12"
                 >
