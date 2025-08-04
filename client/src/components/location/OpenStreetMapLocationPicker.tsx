@@ -75,7 +75,7 @@ function MapCenterUpdater({ center }: { center: [number, number] }) {
 }
 
 export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect }: LocationPickerProps) {
-  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('detect');
+  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +90,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   // Limpar estado quando fechar modal
   useEffect(() => {
     if (!isOpen) {
-      setCurrentStep('detect');
+      setCurrentStep('search');
       setSearchQuery('');
       setSuggestions([]);
       setSelectedLocation(null);
