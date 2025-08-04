@@ -393,46 +393,44 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
               )}
 
               {suggestions.length > 0 && (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
                   {suggestions.map((result) => (
-                    <Card
+                    <div
                       key={result.place_id}
-                      className="cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="cursor-pointer hover:bg-gray-50 transition-colors p-3 border-b border-gray-100 last:border-b-0"
                       onClick={() => selectLocation(result)}
                     >
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-3">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">
-                              {result.display_name.split(',')[0]}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {result.display_name}
-                            </div>
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 mb-1">
+                            {result.display_name.split(',')[0]}
+                          </div>
+                          <div className="text-xs text-gray-500 line-clamp-2">
+                            {result.display_name}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div className="flex gap-3">
+              <div className="space-y-2 mt-4">
+                <div className="flex gap-2">
                   <Button
                     onClick={onClose}
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 h-10"
                   >
                     Voltar
                   </Button>
                   <Button
                     onClick={() => setCurrentStep('detect')}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10"
                   >
                     <div className="flex items-center gap-2">
-                      <Navigation className="h-4 w-4" />
+                      <Navigation className="h-3 w-3" />
                       Detectar localização
                     </div>
                   </Button>
@@ -442,7 +440,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                     // Simular confirmação sem localização específica
                     confirmLocation();
                   }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white h-12"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white h-11"
                 >
                   <div className="flex items-center gap-2">
                     <Navigation className="h-4 w-4" />
@@ -463,7 +461,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                     setCurrentStep('map');
                   }}
                   variant="outline"
-                  className="w-full h-12"
+                  className="w-full h-11"
                 >
                   <div className="flex items-center gap-2">
                     <Search className="h-4 w-4" />
