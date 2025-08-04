@@ -319,14 +319,9 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md p-0 gap-0">
         <DialogHeader className="p-4 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">
-              Buscar Endereço
-            </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg font-semibold">
+            Buscar Endereço
+          </DialogTitle>
         </DialogHeader>
 
         <div className="p-4">
