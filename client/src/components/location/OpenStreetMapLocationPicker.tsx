@@ -534,7 +534,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                   variant="outline"
                   className="flex-1"
                 >
-                  Ajustar no mapa
+                  Ajustar no Mapa
                 </Button>
                 <Button
                   onClick={confirmLocation}
