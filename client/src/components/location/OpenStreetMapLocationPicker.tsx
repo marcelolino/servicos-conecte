@@ -75,7 +75,7 @@ function MapCenterUpdater({ center }: { center: [number, number] }) {
 }
 
 export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect }: LocationPickerProps) {
-  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('detect');
+  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -421,13 +421,24 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                 </div>
               )}
 
-              <Button
-                onClick={() => setCurrentStep('detect')}
-                variant="outline"
-                className="w-full"
-              >
-                Voltar
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={onClose}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Voltar
+                </Button>
+                <Button
+                  onClick={() => setCurrentStep('detect')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Detectar localização
+                  </div>
+                </Button>
+              </div>
             </div>
           )}
 
