@@ -297,141 +297,121 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
   // Step 2: Provider Information
   const Step2Form = () => {
-    const form = useForm<Step2Data>({
-      resolver: zodResolver(step2Schema),
-      defaultValues: {
-        name: registrationData.name || '',
-        categoryId: registrationData.categoryId || 0,
-        workingHours: registrationData.workingHours || '',
-      },
-      mode: 'onChange', // Enable real-time validation without clearing fields
-      shouldUnregister: false, // Keep field values even with errors
+    const [formData, setFormData] = useState({
+      name: registrationData.name || '',
+      categoryId: registrationData.categoryId || 0,
+      workingHours: registrationData.workingHours || '',
     });
 
-    // Save form data on blur events instead of watching
-    const handleFieldBlur = (fieldName: string, value: any) => {
-      const updatedData = { ...registrationData, [fieldName]: value };
-      saveDraft(updatedData);
-    };
+    const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
-    const onSubmit = (data: Step2Data) => {
-      saveDraft(data);
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      // Simple validation
+      if (!formData.name || formData.name.trim().length === 0) {
+        setFormErrors({ name: 'Nome do prestador é obrigatório' });
+        return;
+      }
+      
+      if (!formData.categoryId || formData.categoryId === 0) {
+        setFormErrors({ categoryId: 'Categoria de serviço é obrigatória' });
+        return;
+      }
+      
+      setFormErrors({});
+      saveDraft(formData);
       setCurrentStep(3);
     };
 
     return (
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="text-center mb-6">
-            <h2 className="text-lg font-semibold mb-2">Informações do Prestador</h2>
-            <p className="text-gray-600">Nome do prestador e categoria de serviço</p>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="text-center mb-6">
+          <h2 className="text-lg font-semibold mb-2">Informações do Prestador</h2>
+          <p className="text-gray-600">Nome do prestador e categoria de serviço</p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Nome do Prestador (ou nome fantasia) *</label>
+          <Input 
+            placeholder="Ex: João Silva - Eletricista" 
+            value={formData.name}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, name: e.target.value }));
+              setRegistrationData(prev => ({ ...prev, name: e.target.value }));
+            }}
+          />
+          {formErrors.name && (
+            <p className="text-red-500 text-sm">{formErrors.name}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Categoria de Serviço *</label>
+          <Select 
+            value={formData.categoryId?.toString()} 
+            onValueChange={(value) => {
+              const numValue = parseInt(value);
+              setFormData(prev => ({ ...prev, categoryId: numValue }));
+              setRegistrationData(prev => ({ ...prev, categoryId: numValue }));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Ex: encanador, eletricista, diarista" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id.toString()}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {formErrors.categoryId && (
+            <p className="text-red-500 text-sm">{formErrors.categoryId}</p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium">Área de Atendimento</span>
           </div>
-
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Prestador (ou nome fantasia)</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Ex: João Silva - Eletricista" 
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={(e) => {
-                      field.onBlur();
-                      handleFieldBlur('name', e.target.value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="categoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoria de Serviço</FormLabel>
-                <Select 
-                  value={field.value?.toString()} 
-                  onValueChange={(value) => {
-                    const numValue = parseInt(value);
-                    field.onChange(numValue);
-                    handleFieldBlur('categoryId', numValue);
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Ex: encanador, eletricista, diarista" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Área de Atendimento</span>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">
-                Cidade atual: {selectedCity?.city || 'Não selecionada'} - {selectedCity?.state || ''}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLocationModalOpen(true)}
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                Selecionar Endereço via Mapa
-              </Button>
-            </div>
-          </div>
-
-          <FormField
-            control={form.control}
-            name="workingHours"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Horário de Funcionamento</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={(e) => {
-                      field.onBlur();
-                      handleFieldBlur('workingHours', e.target.value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
-              Voltar
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-2">
+              Cidade atual: {selectedCity?.city || 'Não selecionada'} - {selectedCity?.state || ''}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLocationModalOpen(true)}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Selecionar Endereço via Mapa
             </Button>
-            <Button type="submit">Próximo Passo</Button>
           </div>
-        </form>
-      </Form>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Horário de Funcionamento</label>
+          <Input 
+            placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
+            value={formData.workingHours}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, workingHours: e.target.value }));
+              setRegistrationData(prev => ({ ...prev, workingHours: e.target.value }));
+            }}
+          />
+        </div>
+
+        <div className="flex justify-between">
+          <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
+            Voltar
+          </Button>
+          <Button type="submit">Próximo Passo</Button>
+        </div>
+      </form>
     );
   };
 

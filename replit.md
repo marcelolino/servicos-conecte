@@ -14,7 +14,20 @@ A comprehensive service marketplace platform that connects service providers and
 - ✅ Complete services API endpoints for native app consumption
 - ✅ API documentation updated with React Native and Flutter examples
 
-## Recent Changes (January 2025)
+## Recent Changes (February 2025)
+
+### Provider Registration Form State Management Fix ✓
+- **Date**: February 1, 2025
+- **Changes**: Fixed critical React Hook Form state management issues in registration wizard
+- **Details**:
+  - **Issue**: Steps 2 and 4 required double-clicking "Próximo Passo" button to advance
+  - **Root Cause**: Complex React Hook Form validation was causing form submission failures
+  - **Solution**: Replaced React Hook Form with simple React state management for affected steps
+  - **Step 2 Fix**: Simplified provider information form (name, category, working hours)
+  - **Step 4 Fix**: Simplified document upload form (document photo, CNPJ, address proof)
+  - **State Persistence**: Data now saves to both local state and persistent registration data
+  - **Validation**: Implemented simple custom validation with clear error messages
+  - **Result**: Single-click form submission now works correctly for all steps
 
 ### Profile Photo Upload & Location Fix ✓
 - **Date**: February 1, 2025
