@@ -630,7 +630,16 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             <Button type="button" variant="outline" onClick={() => setCurrentStep(3)}>
               Voltar
             </Button>
-            <Button type="submit">Próximo Passo</Button>
+            <Button 
+              type="submit" 
+              onClick={() => {
+                console.log('Submit button clicked');
+                console.log('Current form values:', form.getValues());
+                console.log('Form validation errors:', form.formState.errors);
+              }}
+            >
+              Próximo Passo
+            </Button>
           </div>
         </form>
       </Form>
