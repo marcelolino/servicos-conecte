@@ -308,19 +308,11 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
       shouldUnregister: false, // Keep field values even with errors
     });
 
-    // Debounced save to prevent interference with typing
-    const formValues = form.watch();
-    
-    useEffect(() => {
-      const timeoutId = setTimeout(() => {
-        if (formValues.name || formValues.categoryId || formValues.workingHours) {
-          const draftData = { ...registrationData, ...formValues };
-          saveDraft(draftData);
-        }
-      }, 500); // Wait 500ms after user stops typing
-      
-      return () => clearTimeout(timeoutId);
-    }, [formValues]);
+    // Save form data on blur events instead of watching
+    const handleFieldBlur = (fieldName: string, value: any) => {
+      const updatedData = { ...registrationData, [fieldName]: value };
+      saveDraft(updatedData);
+    };
 
     const onSubmit = (data: Step2Data) => {
       saveDraft(data);
@@ -344,10 +336,11 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
                 <FormControl>
                   <Input 
                     placeholder="Ex: João Silva - Eletricista" 
-                    {...field}
-                    onChange={(e) => {
-                      console.log('Input value changing:', e.target.value);
-                      field.onChange(e.target.value);
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={(e) => {
+                      field.onBlur();
+                      handleFieldBlur('name', e.target.value);
                     }}
                   />
                 </FormControl>
@@ -362,7 +355,14 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria de Serviço</FormLabel>
-                <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                <Select 
+                  value={field.value?.toString()} 
+                  onValueChange={(value) => {
+                    const numValue = parseInt(value);
+                    field.onChange(numValue);
+                    handleFieldBlur('categoryId', numValue);
+                  }}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Ex: encanador, eletricista, diarista" />
@@ -411,7 +411,12 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
                 <FormControl>
                   <Input 
                     placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
-                    {...field} 
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={(e) => {
+                      field.onBlur();
+                      handleFieldBlur('workingHours', e.target.value);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
