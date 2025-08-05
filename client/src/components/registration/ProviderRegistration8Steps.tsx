@@ -532,8 +532,14 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
     const onSubmit = (data: Step4Data) => {
       console.log('Step 4 data:', data);
+      console.log('Form validation state:', form.formState.errors);
+      console.log('Document photo value:', data.documentPhoto);
       if (!data.documentPhoto) {
         console.error('Document photo is required but missing');
+        form.setError('documentPhoto', { 
+          type: 'manual', 
+          message: 'Foto do documento é obrigatória' 
+        });
         return;
       }
       saveDraft(data);
@@ -542,9 +548,10 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
     const handleDocumentUpload = (url: string) => {
       console.log('Document uploaded:', url);
-      form.setValue('documentPhoto', url);
+      form.setValue('documentPhoto', url, { shouldValidate: true, shouldDirty: true });
       form.clearErrors('documentPhoto'); // Clear any existing validation errors
       form.trigger('documentPhoto'); // Trigger validation
+      console.log('Form value after upload:', form.getValues('documentPhoto'));
     };
 
     const handleAddressProofUpload = (url: string) => {
