@@ -498,16 +498,25 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
     });
 
     const onSubmit = (data: Step4Data) => {
+      console.log('Step 4 data:', data);
+      if (!data.documentPhoto) {
+        console.error('Document photo is required but missing');
+        return;
+      }
       saveDraft(data);
       setCurrentStep(5);
     };
 
     const handleDocumentUpload = (url: string) => {
+      console.log('Document uploaded:', url);
       form.setValue('documentPhoto', url);
+      form.clearErrors('documentPhoto'); // Clear any existing validation errors
+      form.trigger('documentPhoto'); // Trigger validation
     };
 
     const handleAddressProofUpload = (url: string) => {
       form.setValue('addressProof', url);
+      form.clearErrors('addressProof'); // Clear any existing validation errors
     };
 
     return (
@@ -696,6 +705,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
     const handleAvatarUpload = (url: string) => {
       form.setValue('avatar', url);
+      form.clearErrors('avatar'); // Clear any existing validation errors
     };
 
     const handlePortfolioUpload = (url: string) => {
