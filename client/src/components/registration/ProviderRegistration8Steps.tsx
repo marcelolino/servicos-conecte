@@ -307,20 +307,38 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      console.log('Step 2 submit - Form data:', formData);
+      console.log('Step 2 submit - Registration data:', registrationData);
+      
+      // Use most current data from both sources
+      const currentName = formData.name || registrationData.name || '';
+      const currentCategoryId = formData.categoryId || registrationData.categoryId || 0;
+      const currentWorkingHours = formData.workingHours || registrationData.workingHours || '';
+      
+      const submitData = {
+        name: currentName,
+        categoryId: currentCategoryId,
+        workingHours: currentWorkingHours
+      };
+      
+      console.log('Step 2 submit - Submit data:', submitData);
       
       // Simple validation
-      if (!formData.name || formData.name.trim().length === 0) {
+      if (!currentName || currentName.trim().length === 0) {
         setFormErrors({ name: 'Nome do prestador é obrigatório' });
+        console.log('Validation failed: missing name');
         return;
       }
       
-      if (!formData.categoryId || formData.categoryId === 0) {
+      if (!currentCategoryId || currentCategoryId === 0) {
         setFormErrors({ categoryId: 'Categoria de serviço é obrigatória' });
+        console.log('Validation failed: missing category');
         return;
       }
       
+      console.log('Step 2 validation passed, proceeding to step 3');
       setFormErrors({});
-      saveDraft(formData);
+      saveDraft(submitData);
       setCurrentStep(3);
     };
 
