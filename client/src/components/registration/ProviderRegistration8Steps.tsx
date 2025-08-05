@@ -632,10 +632,18 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             </Button>
             <Button 
               type="submit" 
-              onClick={() => {
+              onClick={async () => {
                 console.log('Submit button clicked');
                 console.log('Current form values:', form.getValues());
                 console.log('Form validation errors:', form.formState.errors);
+                
+                // Try manual validation
+                const isValid = await form.trigger();
+                console.log('Manual validation result:', isValid);
+                
+                if (!isValid) {
+                  console.log('Validation failed, errors:', form.formState.errors);
+                }
               }}
             >
               Próximo Passo
