@@ -16,14 +16,20 @@ import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { extractAddressComponents } from '@/lib/addressUtils';
+import { validateCpfCnpj, formatCpfCnpj, getCpfCnpjErrorMessage } from '@/utils/cpf-validator';
+import { validatePhone, formatPhone, getPhoneErrorMessage } from '@/utils/phone-validator';
 
 // Schemas para cada passo
 const step1Schema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
-  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 caracteres'),
-  cpfCnpj: z.string().min(11, 'CPF/CNPJ deve ter pelo menos 11 caracteres'),
+  phone: z.string().min(1, 'Telefone é obrigatório').refine(validatePhone, 'Número de telefone inválido'),
+  cpfCnpj: z.string().min(1, 'CPF/CNPJ é obrigatório').refine(validateCpfCnpj, 'CPF/CNPJ inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 const step2Schema = z.object({
@@ -34,16 +40,20 @@ const step2Schema = z.object({
 });
 
 const step3Schema = z.object({
+  avatar: z.string().optional(),
+  documentPhoto: z.string().optional(),
+});
+
+const step4Schema = z.object({
   bankName: z.string().min(2, 'Informe o nome do banco'),
   bankAgency: z.string().min(3, 'Informe a agência'),
   bankAccount: z.string().min(4, 'Informe a conta'),
-  avatar: z.string().optional(),
-  documentPhoto: z.string().optional(),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
 type Step3Data = z.infer<typeof step3Schema>;
+type Step4Data = z.infer<typeof step4Schema>;
 
 interface ProviderRegistrationWizardProps {
   onComplete: (data: any) => void;
@@ -73,8 +83,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
       icon: Briefcase,
     },
     {
-      title: 'Dados Bancários e Foto',
-      description: 'Informações para pagamento e perfil',
+      title: 'Fotos e Documentos',
+      description: 'Foto de perfil e documento com foto',
+      icon: Camera,
+    },
+    {
+      title: 'Dados Bancários',
+      description: 'Informações para pagamento',
       icon: Building2,
     },
   ];
@@ -103,6 +118,16 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     });
   };
 
+  // Check phone uniqueness
+  const { data: phoneCheck, isLoading: checkingPhone } = useQuery({
+    queryKey: ['/api/auth/check-phone', registrationData.phone],
+    enabled: !!registrationData.phone && validatePhone(registrationData.phone),
+    queryFn: async () => {
+      const response = await fetch(`/api/auth/check-phone?phone=${encodeURIComponent(registrationData.phone)}`);
+      return response.json();
+    },
+  });
+
   const Step1Form = () => {
     const form = useForm<Step1Data>({
       resolver: zodResolver(step1Schema),
@@ -112,12 +137,32 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
         phone: registrationData.phone || '',
         cpfCnpj: registrationData.cpfCnpj || '',
         password: registrationData.password || '',
+        confirmPassword: registrationData.confirmPassword || '',
       },
     });
 
-    const onSubmit = (data: Step1Data) => {
-      saveDraft(data);
-      setCurrentStep(2);
+    const onSubmit = async (data: Step1Data) => {
+      // Check phone uniqueness before proceeding
+      try {
+        const response = await fetch(`/api/auth/check-phone?phone=${encodeURIComponent(data.phone)}`);
+        const phoneCheckResult = await response.json();
+        
+        if (phoneCheckResult.exists) {
+          form.setError('phone', { 
+            message: 'Este número de telefone já está cadastrado' 
+          });
+          return;
+        }
+        
+        saveDraft(data);
+        setCurrentStep(2);
+      } catch (error) {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao verificar o telefone. Tente novamente.',
+          variant: 'destructive'
+        });
+      }
     };
 
     return (
@@ -167,7 +212,15 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
                   <FormControl>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input placeholder="(11) 99999-9999" className="pl-10" {...field} />
+                      <Input 
+                        placeholder="(11) 99999-9999" 
+                        className="pl-10" 
+                        {...field}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          field.onChange(formatted);
+                        }}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -184,7 +237,15 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
                   <FormControl>
                     <div className="relative">
                       <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input placeholder="000.000.000-00" className="pl-10" {...field} />
+                      <Input 
+                        placeholder="000.000.000-00 ou 00.000.000/0000-00" 
+                        className="pl-10" 
+                        {...field}
+                        onChange={(e) => {
+                          const formatted = formatCpfCnpj(e.target.value);
+                          field.onChange(formatted);
+                        }}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -193,19 +254,35 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Senha</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="Sua senha" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Sua senha" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Senha</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Confirme sua senha" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <div className="flex justify-between">
             <div />
@@ -327,15 +404,83 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     const form = useForm<Step3Data>({
       resolver: zodResolver(step3Schema),
       defaultValues: {
-        bankName: registrationData.bankName || '',
-        bankAgency: registrationData.bankAgency || '',
-        bankAccount: registrationData.bankAccount || '',
         avatar: registrationData.avatar || '',
         documentPhoto: registrationData.documentPhoto || '',
       },
     });
 
     const onSubmit = (data: Step3Data) => {
+      saveDraft(data);
+      setCurrentStep(4);
+    };
+
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="avatar"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Foto de Perfil ou Logo</FormLabel>
+                <FormControl>
+                  <RegistrationImageUpload
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    folder="providers"
+                    acceptedFormats={['.jpg', '.jpeg', '.png']}
+                    maxSizeMB={5}
+                    placeholder="Envie sua foto de perfil ou logo"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="documentPhoto"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Documento com Foto (RG/CNH)</FormLabel>
+                <FormControl>
+                  <RegistrationImageUpload
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    folder="documents"
+                    acceptedFormats={['.jpg', '.jpeg', '.png']}
+                    maxSizeMB={5}
+                    placeholder="Envie seu documento com foto (RG/CNH)"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-between">
+            <Button type="button" variant="outline" onClick={() => setCurrentStep(2)}>
+              Voltar
+            </Button>
+            <Button type="submit">Próximo Passo</Button>
+          </div>
+        </form>
+      </Form>
+    );
+  };
+
+  const Step4Form = () => {
+    const form = useForm<Step4Data>({
+      resolver: zodResolver(step4Schema),
+      defaultValues: {
+        bankName: registrationData.bankName || '',
+        bankAgency: registrationData.bankAgency || '',
+        bankAccount: registrationData.bankAccount || '',
+      },
+    });
+
+    const onSubmit = (data: Step4Data) => {
       const completeData = { 
         ...registrationData, 
         ...data,
@@ -393,50 +538,8 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="avatar"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Foto de Perfil ou Logo</FormLabel>
-                <FormControl>
-                  <RegistrationImageUpload
-                    value={field.value || ''}
-                    onChange={field.onChange}
-                    folder="providers"
-                    acceptedFormats={['.jpg', '.jpeg', '.png']}
-                    maxSizeMB={5}
-                    placeholder="Envie sua foto de perfil ou logo"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="documentPhoto"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Documento com Foto (RG/CNH)</FormLabel>
-                <FormControl>
-                  <RegistrationImageUpload
-                    value={field.value || ''}
-                    onChange={field.onChange}
-                    folder="documents"
-                    acceptedFormats={['.jpg', '.jpeg', '.png']}
-                    maxSizeMB={5}
-                    placeholder="Envie seu documento com foto (RG/CNH)"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setCurrentStep(2)}>
+            <Button type="button" variant="outline" onClick={() => setCurrentStep(3)}>
               Voltar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
@@ -491,9 +594,9 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
           </span>
         </div>
         
-        <Progress value={(currentStep / 3) * 100} className="mb-4" />
+        <Progress value={(currentStep / 4) * 100} className="mb-4" />
         
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {steps.map((step, index) => {
             const stepNumber = index + 1;
             const isActive = stepNumber === currentStep;
@@ -537,6 +640,7 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
           {currentStep === 1 && <Step1Form />}
           {currentStep === 2 && <Step2Form />}
           {currentStep === 3 && <Step3Form />}
+          {currentStep === 4 && <Step4Form />}
         </CardContent>
       </Card>
     </div>

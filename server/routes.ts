@@ -130,6 +130,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if phone exists
+  app.get("/api/auth/check-phone", async (req: Request, res: Response) => {
+    try {
+      const { phone } = req.query;
+      if (!phone) {
+        return res.status(400).json({ message: "Phone is required" });
+      }
+      
+      const existingUser = await storage.getUserByPhone(phone as string);
+      res.json({ exists: !!existingUser });
+    } catch (error) {
+      console.error("Phone check error:", error);
+      res.status(500).json({ message: "Error checking phone" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
