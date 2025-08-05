@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -297,13 +297,39 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
   // Step 2: Provider Information
   const Step2Form = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(() => ({
       name: registrationData.name || '',
       categoryId: registrationData.categoryId || 0,
       workingHours: registrationData.workingHours || '',
-    });
+    }));
 
     const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+
+    // Memoize handlers to prevent re-renders
+    const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData(prev => ({ ...prev, name: value }));
+    }, []);
+
+    const handleNameBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+      setRegistrationData(prev => ({ ...prev, name: e.target.value }));
+    }, [setRegistrationData]);
+
+    const handleCategoryChange = useCallback((value: string) => {
+      const numValue = parseInt(value);
+      setFormData(prev => ({ ...prev, categoryId: numValue }));
+      setRegistrationData(prev => ({ ...prev, categoryId: numValue }));
+      setFormErrors(prev => ({ ...prev, categoryId: '' }));
+    }, [setRegistrationData]);
+
+    const handleWorkingHoursChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setFormData(prev => ({ ...prev, workingHours: value }));
+    }, []);
+
+    const handleWorkingHoursBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+      setRegistrationData(prev => ({ ...prev, workingHours: e.target.value }));
+    }, [setRegistrationData]);
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -354,14 +380,8 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
           <Input 
             placeholder="Ex: João Silva - Eletricista" 
             value={formData.name}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData(prev => ({ ...prev, name: value }));
-            }}
-            onBlur={(e) => {
-              // Save to registration data only on blur to avoid re-renders
-              setRegistrationData(prev => ({ ...prev, name: e.target.value }));
-            }}
+            onChange={handleNameChange}
+            onBlur={handleNameBlur}
           />
           {formErrors.name && (
             <p className="text-red-500 text-sm">{formErrors.name}</p>
@@ -372,12 +392,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
           <label className="text-sm font-medium">Categoria de Serviço *</label>
           <Select 
             value={formData.categoryId?.toString() || ""} 
-            onValueChange={(value) => {
-              const numValue = parseInt(value);
-              setFormData(prev => ({ ...prev, categoryId: numValue }));
-              setRegistrationData(prev => ({ ...prev, categoryId: numValue }));
-              setFormErrors(prev => ({ ...prev, categoryId: '' })); // Clear error on selection
-            }}
+            onValueChange={handleCategoryChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Ex: encanador, eletricista, diarista" />
@@ -421,13 +436,8 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
           <Input 
             placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
             value={formData.workingHours}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData(prev => ({ ...prev, workingHours: value }));
-            }}
-            onBlur={(e) => {
-              setRegistrationData(prev => ({ ...prev, workingHours: e.target.value }));
-            }}
+            onChange={handleWorkingHoursChange}
+            onBlur={handleWorkingHoursBlur}
           />
         </div>
 
