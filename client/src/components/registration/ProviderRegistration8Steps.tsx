@@ -532,17 +532,26 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       console.log('Form data state:', formData);
+      console.log('Registration data state:', registrationData);
+      
+      // Use registration data as fallback if form data is empty
+      const documentPhoto = formData.documentPhoto || registrationData.documentPhoto || '';
+      const cnpj = formData.cnpj || registrationData.cnpj || '';
+      const addressProof = formData.addressProof || registrationData.addressProof || '';
+      
+      const submitData = { documentPhoto, cnpj, addressProof };
+      console.log('Combined submit data:', submitData);
       
       // Simple validation
-      if (!formData.documentPhoto || formData.documentPhoto.trim().length === 0) {
+      if (!documentPhoto || documentPhoto.trim().length === 0) {
         setFormErrors({ documentPhoto: 'Foto do documento é obrigatória' });
         console.error('Document photo is required but missing');
         return;
       }
       
       setFormErrors({});
-      console.log('Submitting form data:', formData);
-      saveDraft(formData);
+      console.log('Submitting combined data:', submitData);
+      saveDraft(submitData);
       setCurrentStep(5);
     };
 
@@ -551,12 +560,16 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
       const newFormData = { ...formData, documentPhoto: url };
       setFormData(newFormData);
       setFormErrors(prev => ({ ...prev, documentPhoto: '' })); // Clear error
+      
+      // Also save to registration data immediately to persist across re-renders
+      setRegistrationData(prev => ({ ...prev, documentPhoto: url }));
       console.log('Form data state after upload:', newFormData);
     };
 
     const handleAddressProofUpload = (url: string) => {
       const newFormData = { ...formData, addressProof: url };
       setFormData(newFormData);
+      setRegistrationData(prev => ({ ...prev, addressProof: url }));
     };
 
     return (
@@ -587,6 +600,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             onChange={(e) => {
               const formatted = formatCpfCnpj(e.target.value);
               setFormData(prev => ({ ...prev, cnpj: formatted }));
+              setRegistrationData(prev => ({ ...prev, cnpj: formatted }));
             }}
           />
         </div>
