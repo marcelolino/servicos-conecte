@@ -534,7 +534,13 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
       console.log('Step 4 data:', data);
       console.log('Form validation state:', form.formState.errors);
       console.log('Document photo value:', data.documentPhoto);
-      if (!data.documentPhoto) {
+      
+      // Get the current form values directly
+      const currentValues = form.getValues();
+      console.log('Current form values at submit:', currentValues);
+      
+      // Check if document photo exists in current values
+      if (!currentValues.documentPhoto || currentValues.documentPhoto.trim().length === 0) {
         console.error('Document photo is required but missing');
         form.setError('documentPhoto', { 
           type: 'manual', 
@@ -542,16 +548,34 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
         });
         return;
       }
-      saveDraft(data);
+      
+      // Use current values instead of validated data to bypass validation issues
+      const submitData = {
+        documentPhoto: currentValues.documentPhoto,
+        cnpj: currentValues.cnpj || '',
+        addressProof: currentValues.addressProof || ''
+      };
+      
+      console.log('Submitting data:', submitData);
+      saveDraft(submitData);
       setCurrentStep(5);
     };
 
-    const handleDocumentUpload = (url: string) => {
+    const handleDocumentUpload = async (url: string) => {
       console.log('Document uploaded:', url);
-      form.setValue('documentPhoto', url, { shouldValidate: true, shouldDirty: true });
-      form.clearErrors('documentPhoto'); // Clear any existing validation errors
-      form.trigger('documentPhoto'); // Trigger validation
-      console.log('Form value after upload:', form.getValues('documentPhoto'));
+      
+      // Set the value and force validation
+      form.setValue('documentPhoto', url, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+      
+      // Clear any existing validation errors
+      form.clearErrors('documentPhoto');
+      
+      // Wait a bit and then trigger validation
+      setTimeout(async () => {
+        await form.trigger('documentPhoto');
+        console.log('Form value after upload:', form.getValues('documentPhoto'));
+        console.log('Validation errors after upload:', form.formState.errors);
+      }, 100);
     };
 
     const handleAddressProofUpload = (url: string) => {
