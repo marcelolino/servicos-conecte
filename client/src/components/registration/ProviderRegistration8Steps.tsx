@@ -304,18 +304,22 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
         categoryId: registrationData.categoryId || 0,
         workingHours: registrationData.workingHours || '',
       },
+      mode: 'onChange', // Enable real-time validation without clearing fields
+      shouldUnregister: false, // Keep field values even with errors
     });
 
-    // Watch form values to preserve them during re-renders
+    // Debounced save to prevent interference with typing
     const formValues = form.watch();
     
-    // Save form data whenever it changes to prevent loss during location updates
     useEffect(() => {
-      if (formValues.name || formValues.categoryId || formValues.workingHours) {
-        const draftData = { ...registrationData, ...formValues };
-        setRegistrationData(draftData);
-        localStorage.setItem('providerRegistrationDraft', JSON.stringify(draftData));
-      }
+      const timeoutId = setTimeout(() => {
+        if (formValues.name || formValues.categoryId || formValues.workingHours) {
+          const draftData = { ...registrationData, ...formValues };
+          saveDraft(draftData);
+        }
+      }, 500); // Wait 500ms after user stops typing
+      
+      return () => clearTimeout(timeoutId);
     }, [formValues]);
 
     const onSubmit = (data: Step2Data) => {
@@ -338,7 +342,14 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
               <FormItem>
                 <FormLabel>Nome do Prestador (ou nome fantasia)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ex: João Silva - Eletricista" {...field} />
+                  <Input 
+                    placeholder="Ex: João Silva - Eletricista" 
+                    {...field}
+                    onChange={(e) => {
+                      console.log('Input value changing:', e.target.value);
+                      field.onChange(e.target.value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
