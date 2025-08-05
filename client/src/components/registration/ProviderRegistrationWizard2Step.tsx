@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import ImageUpload from '@/components/image-upload';
-import { LocationRequestModal } from '@/components/location/LocationRequestModal';
+import { OpenStreetMapLocationPicker } from '@/components/location/OpenStreetMapLocationPicker';
 import { User, Phone, Mail, MapPin, Upload, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
@@ -399,10 +399,10 @@ export function ProviderRegistrationWizard2Step({ onComplete }: ProviderRegistra
           </CardContent>
         </Card>
 
-        <LocationRequestModal
+        <OpenStreetMapLocationPicker
           isOpen={isLocationModalOpen}
           onClose={() => setIsLocationModalOpen(false)}
-          onLocationSet={handleLocationSet}
+          onLocationSelect={handleLocationSet}
         />
       </>
     );
