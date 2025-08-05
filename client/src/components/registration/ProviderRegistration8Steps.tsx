@@ -521,26 +521,25 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
   // Step 4: Documentation
   const Step4Form = () => {
+    const [formData, setFormData] = useState<Step4Data>({
+      documentPhoto: registrationData.documentPhoto || '',
+      cnpj: registrationData.cnpj || '',
+      addressProof: registrationData.addressProof || '',
+    });
+
     const form = useForm<Step4Data>({
       resolver: zodResolver(step4Schema),
-      defaultValues: {
-        documentPhoto: registrationData.documentPhoto || '',
-        cnpj: registrationData.cnpj || '',
-        addressProof: registrationData.addressProof || '',
-      },
+      defaultValues: formData,
+      values: formData, // This ensures form stays in sync with state
     });
 
     const onSubmit = (data: Step4Data) => {
       console.log('Step 4 data:', data);
+      console.log('Form data state:', formData);
       console.log('Form validation state:', form.formState.errors);
-      console.log('Document photo value:', data.documentPhoto);
       
-      // Get the current form values directly
-      const currentValues = form.getValues();
-      console.log('Current form values at submit:', currentValues);
-      
-      // Check if document photo exists in current values
-      if (!currentValues.documentPhoto || currentValues.documentPhoto.trim().length === 0) {
+      // Use formData state as the primary source
+      if (!formData.documentPhoto || formData.documentPhoto.trim().length === 0) {
         console.error('Document photo is required but missing');
         form.setError('documentPhoto', { 
           type: 'manual', 
@@ -549,38 +548,31 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
         return;
       }
       
-      // Use current values instead of validated data to bypass validation issues
-      const submitData = {
-        documentPhoto: currentValues.documentPhoto,
-        cnpj: currentValues.cnpj || '',
-        addressProof: currentValues.addressProof || ''
-      };
-      
-      console.log('Submitting data:', submitData);
-      saveDraft(submitData);
+      console.log('Submitting form data:', formData);
+      saveDraft(formData);
       setCurrentStep(5);
     };
 
     const handleDocumentUpload = async (url: string) => {
       console.log('Document uploaded:', url);
       
-      // Set the value and force validation
+      // Update both state and form
+      const newFormData = { ...formData, documentPhoto: url };
+      setFormData(newFormData);
       form.setValue('documentPhoto', url, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
       
       // Clear any existing validation errors
       form.clearErrors('documentPhoto');
       
-      // Wait a bit and then trigger validation
-      setTimeout(async () => {
-        await form.trigger('documentPhoto');
-        console.log('Form value after upload:', form.getValues('documentPhoto'));
-        console.log('Validation errors after upload:', form.formState.errors);
-      }, 100);
+      console.log('Form value after upload:', url);
+      console.log('Form data state after upload:', newFormData);
     };
 
     const handleAddressProofUpload = (url: string) => {
+      const newFormData = { ...formData, addressProof: url };
+      setFormData(newFormData);
       form.setValue('addressProof', url);
-      form.clearErrors('addressProof'); // Clear any existing validation errors
+      form.clearErrors('addressProof');
     };
 
     return (
@@ -623,6 +615,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
                     onChange={(e) => {
                       const formatted = formatCpfCnpj(e.target.value);
                       field.onChange(formatted);
+                      setFormData(prev => ({ ...prev, cnpj: formatted }));
                     }}
                   />
                 </FormControl>
