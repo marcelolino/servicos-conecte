@@ -337,7 +337,11 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             placeholder="Ex: João Silva - Eletricista" 
             value={formData.name}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, name: e.target.value }));
+              const value = e.target.value;
+              setFormData(prev => ({ ...prev, name: value }));
+            }}
+            onBlur={(e) => {
+              // Save to registration data only on blur to avoid re-renders
               setRegistrationData(prev => ({ ...prev, name: e.target.value }));
             }}
           />
@@ -349,11 +353,12 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
         <div className="space-y-2">
           <label className="text-sm font-medium">Categoria de Serviço *</label>
           <Select 
-            value={formData.categoryId?.toString()} 
+            value={formData.categoryId?.toString() || ""} 
             onValueChange={(value) => {
               const numValue = parseInt(value);
               setFormData(prev => ({ ...prev, categoryId: numValue }));
               setRegistrationData(prev => ({ ...prev, categoryId: numValue }));
+              setFormErrors(prev => ({ ...prev, categoryId: '' })); // Clear error on selection
             }}
           >
             <SelectTrigger>
@@ -399,7 +404,10 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
             value={formData.workingHours}
             onChange={(e) => {
-              setFormData(prev => ({ ...prev, workingHours: e.target.value }));
+              const value = e.target.value;
+              setFormData(prev => ({ ...prev, workingHours: value }));
+            }}
+            onBlur={(e) => {
               setRegistrationData(prev => ({ ...prev, workingHours: e.target.value }));
             }}
           />
