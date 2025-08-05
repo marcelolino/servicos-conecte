@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { RegistrationImageUpload } from '@/components/registration/RegistrationImageUpload';
+import { StepImageUpload } from '@/components/registration/StepImageUpload';
 import { OpenStreetMapLocationPicker } from '@/components/location/OpenStreetMapLocationPicker';
 import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2, MapPin, FileText, Upload, Shield, Banknote, Clock, Check } from 'lucide-react';
 import { useLocation } from '@/contexts/LocationContext';
@@ -518,7 +518,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
               <FormItem>
                 <FormLabel>Foto do Documento de Identidade (RG ou CNH) *</FormLabel>
                 <FormControl>
-                  <RegistrationImageUpload
+                  <StepImageUpload
                     onUpload={handleDocumentUpload}
                     category="documents"
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8"
@@ -558,7 +558,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
               <FormItem>
                 <FormLabel>Comprovante de Endereço (opcional)</FormLabel>
                 <FormControl>
-                  <RegistrationImageUpload
+                  <StepImageUpload
                     onUpload={handleAddressProofUpload}
                     category="documents"
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8"
@@ -714,7 +714,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
               <FormItem>
                 <FormLabel>Foto de Perfil, Logo ou Foto da Fachada/Equipamento</FormLabel>
                 <FormControl>
-                  <RegistrationImageUpload
+                  <StepImageUpload
                     onUpload={handleAvatarUpload}
                     category="avatars"
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8"
@@ -747,7 +747,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
 
           <div className="space-y-4">
             <FormLabel>Galeria de Imagens de Trabalhos Realizados (opcional)</FormLabel>
-            <RegistrationImageUpload
+            <StepImageUpload
               onUpload={handlePortfolioUpload}
               category="portfolio"
               className="border-2 border-dashed border-gray-300 rounded-lg p-8"
