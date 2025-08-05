@@ -1,4 +1,4 @@
-import { ProviderRegistrationWizard } from '@/components/registration/ProviderRegistrationWizard';
+import { ProviderRegistration8Steps } from '@/components/registration/ProviderRegistration8Steps';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +25,7 @@ export default function ProviderRegister() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
-          name: data.name,
+          name: data.fullName || data.name, // Use fullName from step 3 or fallback to name from step 2
           phone: data.phone,
           userType: 'provider',
           city: data.city,
@@ -49,18 +49,25 @@ export default function ProviderRegister() {
         },
         body: JSON.stringify({
           userId: user.user.id,
-          cpfCnpj: data.cpfCnpj,
+          cpfCnpj: data.cpf || data.cpfCnpj, // Use CPF from step 3
           city: data.city,
           state: data.state,
-          basePrice: data.basePrice,
+          basePrice: '0', // No base price in new flow
           description: data.description,
-          experience: data.experience,
-          bankName: data.bankName,
-          bankAgency: data.bankAgency,
-          bankAccount: data.bankAccount,
+          experience: data.workingHours || '', // Use working hours as experience
+          bankName: '', // Banking info removed from registration
+          bankAgency: '',
+          bankAccount: '',
           avatar: data.avatar,
           documentPhoto: data.documentPhoto,
-          registrationStep: 3, // Completado
+          registrationStep: 8, // 8 steps completed
+          status: 'pending', // Waiting for admin approval
+          fullName: data.fullName,
+          birthDate: data.birthDate,
+          cnpj: data.cnpj,
+          addressProof: data.addressProof,
+          acceptedTerms: data.acceptedTerms,
+          portfolioImages: data.portfolioImages ? JSON.stringify(data.portfolioImages) : null,
         }),
       });
 
@@ -81,7 +88,7 @@ export default function ProviderRegister() {
           providerId: provider.id,
           categoryId: data.categoryId,
           description: data.description,
-          price: data.basePrice,
+          price: '0', // No base price in new flow
         }),
       });
 
@@ -103,7 +110,7 @@ export default function ProviderRegister() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <ProviderRegistrationWizard onComplete={handleRegistrationComplete} />
+      <ProviderRegistration8Steps onComplete={handleRegistrationComplete} />
     </div>
   );
 }

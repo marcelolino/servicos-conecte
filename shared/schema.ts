@@ -72,6 +72,13 @@ export const providers = pgTable("providers", {
   documents: text("documents"), // JSON array of document URLs
   identityDocument: text("identity_document"), // URL for identity document (RG/CNH)
   portfolioImages: text("portfolio_images"), // JSON array of portfolio image URLs
+  // New 8-step registration fields
+  fullName: varchar("full_name", { length: 255 }), // Full legal name
+  birthDate: varchar("birth_date", { length: 10 }), // Date of birth
+  cnpj: varchar("cnpj", { length: 20 }), // Company CNPJ (optional)
+  addressProof: text("address_proof"), // Address proof document URL
+  acceptedTerms: boolean("accepted_terms").default(false), // Partnership terms
+  workingHours: text("working_hours"), // Working hours schedule
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalReviews: integer("total_reviews").default(0),
   totalServices: integer("total_services").default(0),

@@ -8,10 +8,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RegistrationImageUpload } from '@/components/registration/RegistrationImageUpload';
 import { OpenStreetMapLocationPicker } from '@/components/location/OpenStreetMapLocationPicker';
-import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2, MapPin } from 'lucide-react';
+import { User, Phone, Mail, CreditCard, Briefcase, Camera, Building2, MapPin, FileText, Upload, Shield, Banknote, Clock } from 'lucide-react';
 import { useLocation } from '@/contexts/LocationContext';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -20,11 +21,10 @@ import { validateCpfCnpj, formatCpfCnpj, getCpfCnpjErrorMessage } from '@/utils/
 import { validatePhone, formatPhone, getPhoneErrorMessage } from '@/utils/phone-validator';
 
 // Schemas para cada passo
+// Step 1: Criar Conta
 const step1Schema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   phone: z.string().min(1, 'Telefone é obrigatório').refine(validatePhone, 'Número de telefone inválido'),
-  cpfCnpj: z.string().min(1, 'CPF/CNPJ é obrigatório').refine(validateCpfCnpj, 'CPF/CNPJ inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -32,28 +32,57 @@ const step1Schema = z.object({
   path: ["confirmPassword"],
 });
 
+// Step 2: Informações do Prestador
 const step2Schema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   categoryId: z.number().min(1, 'Selecione uma categoria'),
-  description: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
-  experience: z.string().min(10, 'Experiência deve ter pelo menos 10 caracteres'),
-  basePrice: z.string().min(1, 'Informe um preço base'),
+  workingHours: z.string().min(5, 'Informe o horário de funcionamento'),
 });
 
+// Step 3: Dados do Responsável Legal
 const step3Schema = z.object({
-  avatar: z.string().optional(),
-  documentPhoto: z.string().optional(),
+  fullName: z.string().min(2, 'Nome completo é obrigatório'),
+  cpf: z.string().min(1, 'CPF é obrigatório').refine(validateCpfCnpj, 'CPF inválido'),
+  birthDate: z.string().min(1, 'Data de nascimento é obrigatória'),
 });
 
+// Step 4: Documentação
 const step4Schema = z.object({
-  bankName: z.string().min(2, 'Informe o nome do banco'),
-  bankAgency: z.string().min(3, 'Informe a agência'),
-  bankAccount: z.string().min(4, 'Informe a conta'),
+  documentPhoto: z.string().min(1, 'Foto do documento é obrigatória'),
+  cnpj: z.string().optional(),
+  addressProof: z.string().optional(),
+});
+
+// Step 5: Plano de Parceria
+const step5Schema = z.object({
+  acceptedTerms: z.boolean().refine(val => val === true, 'Você deve aceitar os termos'),
+});
+
+// Step 6: Personalização do Perfil
+const step6Schema = z.object({
+  avatar: z.string().optional(),
+  description: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
+  portfolioImages: z.array(z.string()).optional(),
+});
+
+// Step 7: Aprovação (apenas informativo)
+const step7Schema = z.object({
+  acknowledged: z.boolean().refine(val => val === true, 'Confirme que entendeu o processo'),
+});
+
+// Step 8: Configuração de Pagamentos (apenas informativo)
+const step8Schema = z.object({
+  acknowledged: z.boolean().refine(val => val === true, 'Confirme que configurará os pagamentos'),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
 type Step3Data = z.infer<typeof step3Schema>;
 type Step4Data = z.infer<typeof step4Schema>;
+type Step5Data = z.infer<typeof step5Schema>;
+type Step6Data = z.infer<typeof step6Schema>;
+type Step7Data = z.infer<typeof step7Schema>;
+type Step8Data = z.infer<typeof step8Schema>;
 
 interface ProviderRegistrationWizardProps {
   onComplete: (data: any) => void;
@@ -72,26 +101,46 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
   });
 
   const steps = [
-    {
-      title: 'Dados Pessoais',
-      description: 'Nome, email, telefone e documentos',
-      icon: User,
+    { 
+      title: "Criar Conta", 
+      description: "E-mail e senha", 
+      icon: User 
     },
-    {
-      title: 'Categoria e Serviços',
-      description: 'Especialidade e experiência profissional',
-      icon: Briefcase,
+    { 
+      title: "Informações do Prestador", 
+      description: "Nome e categoria", 
+      icon: Briefcase 
     },
-    {
-      title: 'Fotos e Documentos',
-      description: 'Foto de perfil e documento com foto',
-      icon: Camera,
+    { 
+      title: "Dados do Responsável", 
+      description: "CPF e nascimento", 
+      icon: FileText 
     },
-    {
-      title: 'Dados Bancários',
-      description: 'Informações para pagamento',
-      icon: Building2,
+    { 
+      title: "Documentação", 
+      description: "RG/CNH e CNPJ", 
+      icon: Upload 
     },
+    { 
+      title: "Plano de Parceria", 
+      description: "Comissão 7% + 3,2%", 
+      icon: CreditCard 
+    },
+    { 
+      title: "Personalização", 
+      description: "Perfil e galeria", 
+      icon: Camera 
+    },
+    { 
+      title: "Aprovação", 
+      description: "Revisão admin", 
+      icon: Shield 
+    },
+    { 
+      title: "Pagamentos", 
+      description: "Contas e PIX", 
+      icon: Banknote 
+    }
   ];
 
   // Salvar rascunho automaticamente
@@ -128,14 +177,13 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     },
   });
 
+  // Step 1: Criar Conta
   const Step1Form = () => {
     const form = useForm<Step1Data>({
       resolver: zodResolver(step1Schema),
       defaultValues: {
-        name: registrationData.name || '',
         email: registrationData.email || '',
         phone: registrationData.phone || '',
-        cpfCnpj: registrationData.cpfCnpj || '',
         password: registrationData.password || '',
         confirmPassword: registrationData.confirmPassword || '',
       },
@@ -168,23 +216,11 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     return (
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input placeholder="Seu nome completo" className="pl-10" {...field} />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <h2 className="text-lg font-semibold mb-2">Criar sua conta de prestador</h2>
+              <p className="text-gray-600">Informe seu e-mail e telefone para começar</p>
+            </div>
 
             <FormField
               control={form.control}
@@ -228,60 +264,35 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="cpfCnpj"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CPF/CNPJ</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input 
-                        placeholder="000.000.000-00 ou 00.000.000/0000-00" 
-                        className="pl-10" 
-                        {...field}
-                        onChange={(e) => {
-                          const formatted = formatCpfCnpj(e.target.value);
-                          field.onChange(formatted);
-                        }}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Crie uma senha" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Sua senha" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar Senha</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Confirme sua senha" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Confirme sua senha" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <div className="flex justify-between">
@@ -293,14 +304,14 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
     );
   };
 
+  // Step 2: Informações do Prestador
   const Step2Form = () => {
     const form = useForm<Step2Data>({
       resolver: zodResolver(step2Schema),
       defaultValues: {
+        name: registrationData.name || '',
         categoryId: registrationData.categoryId || 0,
-        description: registrationData.description || '',
-        experience: registrationData.experience || '',
-        basePrice: registrationData.basePrice || '',
+        workingHours: registrationData.workingHours || '',
       },
     });
 
@@ -594,9 +605,9 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
           </span>
         </div>
         
-        <Progress value={(currentStep / 4) * 100} className="mb-4" />
+        <Progress value={(currentStep / 8) * 100} className="mb-4" />
         
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
           {steps.map((step, index) => {
             const stepNumber = index + 1;
             const isActive = stepNumber === currentStep;
@@ -641,6 +652,10 @@ export function ProviderRegistrationWizard({ onComplete }: ProviderRegistrationW
           {currentStep === 2 && <Step2Form />}
           {currentStep === 3 && <Step3Form />}
           {currentStep === 4 && <Step4Form />}
+          {currentStep === 5 && <Step5Form />}
+          {currentStep === 6 && <Step6Form />}
+          {currentStep === 7 && <Step7Form />}
+          {currentStep === 8 && <Step8Form />}
         </CardContent>
       </Card>
     </div>
