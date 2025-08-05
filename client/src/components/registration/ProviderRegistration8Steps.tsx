@@ -86,6 +86,13 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
   const { selectedCity, setSelectedCity } = useLocation();
+  
+  // Initialize with default location if none selected
+  useEffect(() => {
+    if (!selectedCity || !selectedCity.city) {
+      setSelectedCity({ city: 'São Paulo', state: 'SP' });
+    }
+  }, [selectedCity, setSelectedCity]);
   const { toast } = useToast();
 
   // Load categories
@@ -147,8 +154,8 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
   const handleLocationSet = (location: { lat: number; lng: number; address: string }) => {
     const addressComponents = extractAddressComponents(location.address);
     const cityState = {
-      city: addressComponents.city,
-      state: addressComponents.state
+      city: addressComponents.city || 'Cidade não identificada',
+      state: addressComponents.state || 'Estado não identificado'
     };
     
     setSelectedCity(cityState);
@@ -353,7 +360,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">
-                Cidade atual: {selectedCity.city} - {selectedCity.state}
+                Cidade atual: {selectedCity?.city || 'Não selecionada'} - {selectedCity?.state || ''}
               </p>
               <Button
                 type="button"
@@ -990,7 +997,7 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold">Cadastro de Prestador</h1>
             <span className="text-sm text-gray-500">
-              Cidade: {selectedCity.city} - {selectedCity.state}
+              Cidade: {selectedCity?.city || 'Não selecionada'} - {selectedCity?.state || ''}
             </span>
           </div>
           
