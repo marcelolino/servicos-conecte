@@ -527,147 +527,89 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
       addressProof: registrationData.addressProof || '',
     });
 
-    const form = useForm<Step4Data>({
-      resolver: zodResolver(step4Schema),
-      defaultValues: formData,
-      values: formData, // This ensures form stays in sync with state
-    });
+    const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
-    const onSubmit = (data: Step4Data) => {
-      console.log('Step 4 data:', data);
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
       console.log('Form data state:', formData);
-      console.log('Form validation state:', form.formState.errors);
       
-      // Use formData state as the primary source
+      // Simple validation
       if (!formData.documentPhoto || formData.documentPhoto.trim().length === 0) {
+        setFormErrors({ documentPhoto: 'Foto do documento é obrigatória' });
         console.error('Document photo is required but missing');
-        form.setError('documentPhoto', { 
-          type: 'manual', 
-          message: 'Foto do documento é obrigatória' 
-        });
         return;
       }
       
+      setFormErrors({});
       console.log('Submitting form data:', formData);
       saveDraft(formData);
       setCurrentStep(5);
     };
 
-    const handleDocumentUpload = async (url: string) => {
+    const handleDocumentUpload = (url: string) => {
       console.log('Document uploaded:', url);
-      
-      // Update both state and form
       const newFormData = { ...formData, documentPhoto: url };
       setFormData(newFormData);
-      form.setValue('documentPhoto', url, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-      
-      // Clear any existing validation errors
-      form.clearErrors('documentPhoto');
-      
-      console.log('Form value after upload:', url);
+      setFormErrors(prev => ({ ...prev, documentPhoto: '' })); // Clear error
       console.log('Form data state after upload:', newFormData);
     };
 
     const handleAddressProofUpload = (url: string) => {
       const newFormData = { ...formData, addressProof: url };
       setFormData(newFormData);
-      form.setValue('addressProof', url);
-      form.clearErrors('addressProof');
     };
 
     return (
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="text-center mb-6">
-            <h2 className="text-lg font-semibold mb-2">Documentação Necessária</h2>
-            <p className="text-gray-600">Upload dos documentos obrigatórios</p>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="text-center mb-6">
+          <h2 className="text-lg font-semibold mb-2">Documentação Necessária</h2>
+          <p className="text-gray-600">Upload dos documentos obrigatórios</p>
+        </div>
 
-          <FormField
-            control={form.control}
-            name="documentPhoto"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Foto do Documento de Identidade (RG ou CNH) *</FormLabel>
-                <FormControl>
-                  <StepImageUpload
-                    onUpload={handleDocumentUpload}
-                    category="documents"
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8"
-                    currentImage={field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Foto do Documento de Identidade (RG ou CNH) *</label>
+          <StepImageUpload
+            onUpload={handleDocumentUpload}
+            category="documents"
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8"
+            currentImage={formData.documentPhoto}
           />
+          {formErrors.documentPhoto && (
+            <p className="text-red-500 text-sm">{formErrors.documentPhoto}</p>
+          )}
+        </div>
 
-          <FormField
-            control={form.control}
-            name="cnpj"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CNPJ (opcional - caso atue como empresa)</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="00.000.000/0000-00" 
-                    {...field}
-                    onChange={(e) => {
-                      const formatted = formatCpfCnpj(e.target.value);
-                      field.onChange(formatted);
-                      setFormData(prev => ({ ...prev, cnpj: formatted }));
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">CNPJ (opcional - caso atue como empresa)</label>
+          <Input 
+            placeholder="00.000.000/0000-00" 
+            value={formData.cnpj}
+            onChange={(e) => {
+              const formatted = formatCpfCnpj(e.target.value);
+              setFormData(prev => ({ ...prev, cnpj: formatted }));
+            }}
           />
+        </div>
 
-          <FormField
-            control={form.control}
-            name="addressProof"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Comprovante de Endereço (opcional)</FormLabel>
-                <FormControl>
-                  <StepImageUpload
-                    onUpload={handleAddressProofUpload}
-                    category="documents"
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8"
-                    currentImage={field.value}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Comprovante de Endereço (opcional)</label>
+          <StepImageUpload
+            onUpload={handleAddressProofUpload}
+            category="documents"
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8"
+            currentImage={formData.addressProof}
           />
+        </div>
 
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setCurrentStep(3)}>
-              Voltar
-            </Button>
-            <Button 
-              type="submit" 
-              onClick={async () => {
-                console.log('Submit button clicked');
-                console.log('Current form values:', form.getValues());
-                console.log('Form validation errors:', form.formState.errors);
-                
-                // Try manual validation
-                const isValid = await form.trigger();
-                console.log('Manual validation result:', isValid);
-                
-                if (!isValid) {
-                  console.log('Validation failed, errors:', form.formState.errors);
-                }
-              }}
-            >
-              Próximo Passo
-            </Button>
-          </div>
-        </form>
-      </Form>
+        <div className="flex justify-between">
+          <Button type="button" variant="outline" onClick={() => setCurrentStep(3)}>
+            Voltar
+          </Button>
+          <Button type="submit">
+            Próximo Passo
+          </Button>
+        </div>
+      </form>
     );
   };
 
