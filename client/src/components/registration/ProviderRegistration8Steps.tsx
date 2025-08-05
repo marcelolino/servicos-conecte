@@ -161,6 +161,11 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
     setSelectedCity(cityState);
     setIsLocationModalOpen(false);
     
+    // Update location in draft data
+    const updatedData = { ...registrationData, city: cityState.city, state: cityState.state };
+    setRegistrationData(updatedData);
+    localStorage.setItem('providerRegistrationDraft', JSON.stringify(updatedData));
+    
     toast({
       title: 'Localização selecionada',
       description: `${cityState.city} - ${cityState.state}`,
@@ -300,6 +305,18 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
         workingHours: registrationData.workingHours || '',
       },
     });
+
+    // Watch form values to preserve them during re-renders
+    const formValues = form.watch();
+    
+    // Save form data whenever it changes to prevent loss during location updates
+    useEffect(() => {
+      if (formValues.name || formValues.categoryId || formValues.workingHours) {
+        const draftData = { ...registrationData, ...formValues };
+        setRegistrationData(draftData);
+        localStorage.setItem('providerRegistrationDraft', JSON.stringify(draftData));
+      }
+    }, [formValues]);
 
     const onSubmit = (data: Step2Data) => {
       saveDraft(data);
