@@ -13,7 +13,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import ClientDashboard from "@/pages/client-dashboard";
 import ProviderDashboard from "@/pages/provider-dashboard";
-import AdminDashboard from "@/pages/admin-dashboard";
+import AdminDashboard from "@/pages/admin-dashboard-modern";
 import AdminDashboardEnhanced from "@/pages/admin-dashboard-enhanced";
 import AdminBookings from "@/pages/admin-bookings";
 import AdminPayments from "@/pages/admin/payments";
