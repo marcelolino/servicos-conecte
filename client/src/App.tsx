@@ -123,6 +123,7 @@ function Router() {
           <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
           <Route path="/admin-providers" component={AdminProviders} />
           <Route path="/admin-users" component={AdminUsers} />
+          <Route path="/admin-services" component={lazy(() => import("@/pages/admin/services"))} />
           <Route path="/admin-categories" component={AdminCategories} />
           <Route path="/admin-media" component={AdminMedia} />
           <Route path="/admin-chat" component={AdminChat} />

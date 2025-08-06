@@ -75,6 +75,7 @@ const menuData: MenuItem[] = [
     title: "Serviços",
     icon: Package,
     items: [
+      { title: "Gerenciamento de Serviços", href: "/admin-services" },
       { title: "Categorias de Serviços", href: "/admin-categories" },
       { title: "Gerenciamento de Mídia", href: "/admin-media" },
     ]

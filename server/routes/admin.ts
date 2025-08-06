@@ -2,7 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
 import { eq, and, gte, sql, desc } from 'drizzle-orm';
-import { users, providers, serviceRequests, serviceCategories } from '../../shared/schema';
+import { users, providers, serviceRequests, serviceCategories, providerServices } from '../../shared/schema';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -198,6 +198,82 @@ router.patch('/providers/:id/reject', authenticateToken, requireAdmin, async (re
     res.json({ success: true, message: 'Prestador rejeitado' });
   } catch (error) {
     console.error('Erro ao rejeitar prestador:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/admin/services - Obter todos os serviços
+router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const services = await storage.db
+      .select({
+        id: providerServices.id,
+        title: providerServices.title,
+        description: providerServices.description,
+        categoryId: providerServices.categoryId,
+        providerId: providerServices.providerId,
+        basePrice: providerServices.basePrice,
+        minPrice: providerServices.minPrice,
+        maxPrice: providerServices.maxPrice,
+        pricingType: providerServices.pricingType,
+        serviceArea: providerServices.serviceArea,
+        isActive: providerServices.isActive,
+        createdAt: providerServices.createdAt,
+        category: {
+          id: serviceCategories.id,
+          name: serviceCategories.name,
+        },
+        provider: {
+          id: providers.id,
+          user: {
+            name: users.name,
+            email: users.email,
+          },
+        },
+      })
+      .from(providerServices)
+      .leftJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .leftJoin(providers, eq(providerServices.providerId, providers.id))
+      .leftJoin(users, eq(providers.userId, users.id))
+      .orderBy(desc(providerServices.createdAt));
+
+    res.json(services);
+  } catch (error) {
+    console.error('Erro ao buscar serviços:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/admin/services/:id/status - Atualizar status do serviço
+router.put('/services/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    await storage.db
+      .update(providerServices)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(providerServices.id, parseInt(id)));
+
+    res.json({ message: 'Status do serviço atualizado com sucesso' });
+  } catch (error) {
+    console.error('Erro ao atualizar status do serviço:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/admin/services/:id - Excluir serviço
+router.delete('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await storage.db
+      .delete(providerServices)
+      .where(eq(providerServices.id, parseInt(id)));
+
+    res.json({ message: 'Serviço excluído com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir serviço:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
