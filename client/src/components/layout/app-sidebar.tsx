@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { 
   Home, 
   Users, 
+  UserCheck,
   Package, 
   Settings, 
   CreditCard, 
@@ -56,13 +57,19 @@ interface MenuItem {
 
 const menuData: MenuItem[] = [
   {
-    title: "Principal",
+    title: "Dashboard",
     icon: Home,
-    items: [
-      { title: "Dashboard", href: "/admin-dashboard" },
-      { title: "Gestão de Usuários", href: "/admin-users" },
-      { title: "Gestão de Prestadores", href: "/admin-providers" },
-    ]
+    href: "/admin-dashboard",
+  },
+  {
+    title: "Gestão de Usuários",
+    icon: Users,
+    href: "/admin-users",
+  },
+  {
+    title: "Gestão de Prestadores",
+    icon: UserCheck,
+    href: "/admin-providers",
   },
   {
     title: "Serviços",
