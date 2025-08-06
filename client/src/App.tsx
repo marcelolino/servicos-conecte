@@ -97,6 +97,29 @@ function Router() {
       <Route path="/admin-chat" component={AdminChat} />
       <Route path="/admin-layout-demo" component={LayoutDemo} />
 
+      {/* Provider Routes - Without Header/Footer */}
+      <Route path="/provider-dashboard" component={ProviderDashboard} />
+      <Route path="/provider-services" component={ProviderServiceFlow} />
+      <Route path="/provider-payments" component={ProviderPayments} />
+      <Route path="/provider-bookings" component={ProviderBookings} />
+      <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
+      <Route path="/provider-bookings/pending" component={ProviderBookings} />
+      <Route path="/provider-bookings/accepted" component={ProviderBookings} />
+      <Route path="/provider-bookings/ongoing" component={ProviderBookingsOngoing} />
+      <Route path="/provider-bookings/completed" component={ProviderBookings} />
+      <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
+      <Route path="/provider-cash-payments" component={ProviderCashPayments} />
+      <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
+      <Route path="/provider-wallet" component={ProviderWalletEnhanced} />
+      <Route path="/provider-payment-methods" component={ProviderPaymentMethods} />
+      <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
+      <Route path="/provider-all-services" component={ProviderAllServices} />
+      <Route path="/provider-packages" component={ProviderPackages} />
+      <Route path="/provider-add-ons" component={ProviderAddOns} />
+      <Route path="/meus-servicos" component={MeusServicos} />
+      <Route path="/provider-chat" component={ProviderChat} />
+      <Route path="/employee-management" component={EmployeeManagement} />
+
       {/* Regular Routes - With Header/Footer */}
       <Route>
         {(params) => (
@@ -115,28 +138,7 @@ function Router() {
                 <Route path="/client-orders" component={ClientOrders} />
                 <Route path="/client-order-details/:id" component={ClientOrderDetails} />
                 <Route path="/client-chat" component={ClientChat} />
-                <Route path="/provider-dashboard" component={ProviderDashboard} />
-                <Route path="/provider-services" component={ProviderServiceFlow} />
-                <Route path="/provider-payments" component={ProviderPayments} />
-                <Route path="/provider-bookings" component={ProviderBookings} />
-                <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
-                <Route path="/provider-bookings/pending" component={ProviderBookings} />
-                <Route path="/provider-bookings/accepted" component={ProviderBookings} />
-                <Route path="/provider-bookings/ongoing" component={ProviderBookingsOngoing} />
-                <Route path="/provider-bookings/completed" component={ProviderBookings} />
-                <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
-                <Route path="/provider-cash-payments" component={ProviderCashPayments} />
-                <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
-                <Route path="/provider-wallet" component={ProviderWalletEnhanced} />
-                <Route path="/provider-payment-methods" component={ProviderPaymentMethods} />
-                <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
-                <Route path="/provider-all-services" component={ProviderAllServices} />
-                <Route path="/provider-packages" component={ProviderPackages} />
-                <Route path="/provider-add-ons" component={ProviderAddOns} />
-                <Route path="/meus-servicos" component={MeusServicos} />
-                <Route path="/provider-chat" component={ProviderChat} />
                 <Route path="/service-management" component={ServiceManagement} />
-                <Route path="/employee-management" component={EmployeeManagement} />
                 <Route path="/media-management" component={MediaManagement} />
                 <Route path="/upload-test" component={UploadTest} />
                 <Route path="/advanced-upload" component={AdvancedUploadDemo} />

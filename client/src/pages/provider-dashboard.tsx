@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import ProviderDashboardHome from "./provider-dashboard-home";
 import CreateProviderProfile from "@/components/create-provider-profile";
 
@@ -60,8 +60,8 @@ export default function ProviderDashboard() {
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <ProviderDashboardHome />
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }
