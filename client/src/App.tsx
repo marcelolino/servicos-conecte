@@ -77,83 +77,91 @@ import Footer from "@/components/layout/footer";
 
 function Router() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
-          <Route path="/provider-register" component={ProviderRegister} />
-          <Route path="/client-dashboard" component={ClientDashboard} />
-          <Route path="/client-reservas" component={ClientReservas} />
-          <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
-          <Route path="/client-offers" component={ClientOffers} />
-          <Route path="/client-orders" component={ClientOrders} />
-          <Route path="/client-order-details/:id" component={ClientOrderDetails} />
-          <Route path="/client-chat" component={ClientChat} />
-          <Route path="/provider-dashboard" component={ProviderDashboard} />
-          <Route path="/provider-services" component={ProviderServiceFlow} />
-          <Route path="/provider-payments" component={ProviderPayments} />
-          <Route path="/provider-bookings" component={ProviderBookings} />
-          <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
-          <Route path="/provider-bookings/pending" component={ProviderBookings} />
-          <Route path="/provider-bookings/accepted" component={ProviderBookings} />
-          <Route path="/provider-bookings/ongoing" component={ProviderBookingsOngoing} />
-          <Route path="/provider-bookings/completed" component={ProviderBookings} />
-          <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
-          <Route path="/provider-cash-payments" component={ProviderCashPayments} />
-          <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
-          <Route path="/provider-wallet" component={ProviderWalletEnhanced} />
-          <Route path="/provider-payment-methods" component={ProviderPaymentMethods} />
-          <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
-          <Route path="/provider-all-services" component={ProviderAllServices} />
-          <Route path="/provider-packages" component={ProviderPackages} />
-          <Route path="/provider-add-ons" component={ProviderAddOns} />
-          <Route path="/meus-servicos" component={MeusServicos} />
-          <Route path="/provider-chat" component={ProviderChat} />
-          <Route path="/admin-dashboard" component={AdminDashboard} />
-          <Route path="/admin" component={AdminDashboardEnhanced} />
-          <Route path="/admin-enhanced" component={AdminDashboardEnhanced} />
-          <Route path="/admin-bookings" component={AdminBookings} />
-          <Route path="/admin-settings" component={AdminSettings} />
-          <Route path="/admin-payments" component={AdminPayments} />
-          <Route path="/admin-cash-payments" component={AdminCashPayments} />
-          <Route path="/admin-earnings" component={AdminEarnings} />
-          <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
-          <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
-          <Route path="/admin-providers" component={AdminProviders} />
-          <Route path="/admin-users" component={AdminUsers} />
-          <Route path="/admin-services" component={AdminServices} />
-          <Route path="/admin-categories" component={AdminCategories} />
-          <Route path="/admin-media" component={AdminMedia} />
-          <Route path="/admin-chat" component={AdminChat} />
-          <Route path="/admin-layout-demo" component={LayoutDemo} />
+    <Switch>
+      {/* Admin Routes - Without Header/Footer */}
+      <Route path="/admin-dashboard" component={AdminDashboard} />
+      <Route path="/admin" component={AdminDashboardEnhanced} />
+      <Route path="/admin-enhanced" component={AdminDashboardEnhanced} />
+      <Route path="/admin-bookings" component={AdminBookings} />
+      <Route path="/admin-settings" component={AdminSettings} />
+      <Route path="/admin-payments" component={AdminPayments} />
+      <Route path="/admin-cash-payments" component={AdminCashPayments} />
+      <Route path="/admin-earnings" component={AdminEarnings} />
+      <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
+      <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
+      <Route path="/admin-providers" component={AdminProviders} />
+      <Route path="/admin-users" component={AdminUsers} />
+      <Route path="/admin-services" component={AdminServices} />
+      <Route path="/admin-categories" component={AdminCategories} />
+      <Route path="/admin-media" component={AdminMedia} />
+      <Route path="/admin-chat" component={AdminChat} />
+      <Route path="/admin-layout-demo" component={LayoutDemo} />
 
-          <Route path="/service-management" component={ServiceManagement} />
-          <Route path="/employee-management" component={EmployeeManagement} />
-          <Route path="/media-management" component={MediaManagement} />
-          <Route path="/upload-test" component={UploadTest} />
-          <Route path="/advanced-upload" component={AdvancedUploadDemo} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/profile/:id" component={ProviderProfile} />
-          <Route path="/services" component={Services} />
-          <Route path="/cart" component={Cart} />
-          <Route path="/checkout" component={Checkout} />
-          <Route path="/checkout/scheduling" component={CheckoutStep1} />
-          <Route path="/checkout/payment" component={CheckoutStep2} />
-          <Route path="/checkout/confirmation" component={CheckoutStep3} />
-          <Route path="/order-success" component={OrderSuccess} />
-          <Route path="/orders" component={Orders} />
-          <Route path="/orders/:id" component={OrderDetails} />
-          <Route path="/order-success/:id" component={OrderSuccess} />
-          <Route path="/test-mercadopago" component={TestMercadoPago} />
-          <Route path="/test-mercadopago-simple" component={TestMercadoPagoSimple} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-      <Footer />
-    </div>
+      {/* Regular Routes - With Header/Footer */}
+      <Route>
+        {(params) => (
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">
+              <Switch>
+                <Route path="/" component={Home} />
+                <Route path="/login" component={Login} />
+                <Route path="/register" component={Register} />
+                <Route path="/provider-register" component={ProviderRegister} />
+                <Route path="/client-dashboard" component={ClientDashboard} />
+                <Route path="/client-reservas" component={ClientReservas} />
+                <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
+                <Route path="/client-offers" component={ClientOffers} />
+                <Route path="/client-orders" component={ClientOrders} />
+                <Route path="/client-order-details/:id" component={ClientOrderDetails} />
+                <Route path="/client-chat" component={ClientChat} />
+                <Route path="/provider-dashboard" component={ProviderDashboard} />
+                <Route path="/provider-services" component={ProviderServiceFlow} />
+                <Route path="/provider-payments" component={ProviderPayments} />
+                <Route path="/provider-bookings" component={ProviderBookings} />
+                <Route path="/provider-bookings/details/:id" component={ProviderBookingDetails} />
+                <Route path="/provider-bookings/pending" component={ProviderBookings} />
+                <Route path="/provider-bookings/accepted" component={ProviderBookings} />
+                <Route path="/provider-bookings/ongoing" component={ProviderBookingsOngoing} />
+                <Route path="/provider-bookings/completed" component={ProviderBookings} />
+                <Route path="/provider-bookings/cancelled" component={ProviderBookings} />
+                <Route path="/provider-cash-payments" component={ProviderCashPayments} />
+                <Route path="/provider-withdrawal-requests" component={ProviderWithdrawalRequests} />
+                <Route path="/provider-wallet" component={ProviderWalletEnhanced} />
+                <Route path="/provider-payment-methods" component={ProviderPaymentMethods} />
+                <Route path="/provider-promotional-banners" component={ProviderPromotionalBanners} />
+                <Route path="/provider-all-services" component={ProviderAllServices} />
+                <Route path="/provider-packages" component={ProviderPackages} />
+                <Route path="/provider-add-ons" component={ProviderAddOns} />
+                <Route path="/meus-servicos" component={MeusServicos} />
+                <Route path="/provider-chat" component={ProviderChat} />
+                <Route path="/service-management" component={ServiceManagement} />
+                <Route path="/employee-management" component={EmployeeManagement} />
+                <Route path="/media-management" component={MediaManagement} />
+                <Route path="/upload-test" component={UploadTest} />
+                <Route path="/advanced-upload" component={AdvancedUploadDemo} />
+                <Route path="/profile" component={Profile} />
+                <Route path="/profile/:id" component={ProviderProfile} />
+                <Route path="/services" component={Services} />
+                <Route path="/cart" component={Cart} />
+                <Route path="/checkout" component={Checkout} />
+                <Route path="/checkout/scheduling" component={CheckoutStep1} />
+                <Route path="/checkout/payment" component={CheckoutStep2} />
+                <Route path="/checkout/confirmation" component={CheckoutStep3} />
+                <Route path="/order-success" component={OrderSuccess} />
+                <Route path="/orders" component={Orders} />
+                <Route path="/orders/:id" component={OrderDetails} />
+                <Route path="/order-success/:id" component={OrderSuccess} />
+                <Route path="/test-mercadopago" component={TestMercadoPago} />
+                <Route path="/test-mercadopago-simple" component={TestMercadoPagoSimple} />
+                <Route component={NotFound} />
+              </Switch>
+            </main>
+            <Footer />
+          </div>
+        )}
+      </Route>
+    </Switch>
   );
 }
 
