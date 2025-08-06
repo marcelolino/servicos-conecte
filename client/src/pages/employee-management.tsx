@@ -16,6 +16,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { 
   Plus, 
   Edit, 
@@ -40,7 +41,7 @@ const employeeSchema = z.object({
 
 type EmployeeForm = z.infer<typeof employeeSchema>;
 
-export default function EmployeeManagement() {
+function EmployeeManagementContent() {
   const { user, loading: authLoading, isLoggingOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -532,5 +533,13 @@ export default function EmployeeManagement() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function EmployeeManagement() {
+  return (
+    <ModernProviderLayout>
+      <EmployeeManagementContent />
+    </ModernProviderLayout>
   );
 }

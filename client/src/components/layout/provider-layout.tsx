@@ -99,11 +99,8 @@ const menuItems: MenuSection[] = [
     items: [
       { 
         icon: Users, 
-        label: "Faz-Tudo", 
-        href: "/provider-handyman",
-        subItems: [
-          { label: "Lista de Funcionários", href: "/employee-management" },
-        ]
+        label: "Funcionários", 
+        href: "/employee-management"
       },
     ]
   },
