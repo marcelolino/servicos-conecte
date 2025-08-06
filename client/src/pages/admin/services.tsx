@@ -152,10 +152,10 @@ export default function AdminServicesPage() {
 
   // Filter services
   const filteredServices = services?.filter(service => {
-    const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.provider.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.category.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || service.categoryId.toString() === selectedCategory;
+    const matchesSearch = service.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.provider?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || service.categoryId?.toString() === selectedCategory;
     const matchesStatus = selectedStatus === "all" || 
                          (selectedStatus === "active" && service.isActive) ||
                          (selectedStatus === "inactive" && !service.isActive);
@@ -358,13 +358,13 @@ export default function AdminServicesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{service.category.name}</Badge>
+                        <Badge variant="outline">{service.category?.name || "Sem categoria"}</Badge>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{service.provider.user.name}</p>
+                          <p className="font-medium">{service.provider?.user?.name || "Prestador não encontrado"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {service.provider.user.email}
+                            {service.provider?.user?.email || "Email não disponível"}
                           </p>
                         </div>
                       </TableCell>

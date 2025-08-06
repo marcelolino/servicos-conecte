@@ -1,4 +1,4 @@
-import React, { lazy } from "react";
+import React from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -45,6 +45,7 @@ import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
 import AdminSettings from "@/pages/admin-settings";
 import AdminPaymentMethods from "@/pages/admin-payment-methods";
+import AdminServices from "@/pages/admin/services";
 import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
@@ -123,7 +124,7 @@ function Router() {
           <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
           <Route path="/admin-providers" component={AdminProviders} />
           <Route path="/admin-users" component={AdminUsers} />
-          <Route path="/admin-services" component={lazy(() => import("@/pages/admin/services"))} />
+          <Route path="/admin-services" component={AdminServices} />
           <Route path="/admin-categories" component={AdminCategories} />
           <Route path="/admin-media" component={AdminMedia} />
           <Route path="/admin-chat" component={AdminChat} />
