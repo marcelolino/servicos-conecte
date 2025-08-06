@@ -67,29 +67,31 @@ export default function CashPaymentsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+      <ModernAdminLayout>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      </ModernAdminLayout>
     );
   }
 
@@ -98,13 +100,14 @@ export default function CashPaymentsPage() {
   const pendingPayments = cashPayments?.filter(p => p.status === 'pending') || [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pagamentos Em Dinheiro</h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Gerencie pagamentos realizados em dinheiro que necessitam confirmação
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Pagamentos Em Dinheiro</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie pagamentos realizados em dinheiro que necessitam confirmação
+          </p>
+        </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -251,6 +254,7 @@ export default function CashPaymentsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </ModernAdminLayout>
   );
 }

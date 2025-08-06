@@ -39,10 +39,11 @@ export default function EarningsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+      <ModernAdminLayout>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
         </div>
         <div className="grid gap-4 md:grid-cols-4">
           <Skeleton className="h-32" />
@@ -62,7 +63,8 @@ export default function EarningsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </ModernAdminLayout>
     );
   }
 
@@ -75,13 +77,14 @@ export default function EarningsPage() {
   const uniqueProviders = new Set(earnings?.map(e => e.providerId)).size;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ganhos</h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Acompanhe os ganhos dos prestadores e taxas da plataforma
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Ganhos</h1>
+          <p className="text-muted-foreground mt-1">
+            Acompanhe os ganhos dos prestadores e taxas da plataforma
+          </p>
+        </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -225,6 +228,7 @@ export default function EarningsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </ModernAdminLayout>
   );
 }

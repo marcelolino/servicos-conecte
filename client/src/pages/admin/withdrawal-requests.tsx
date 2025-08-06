@@ -123,16 +123,17 @@ export default function WithdrawalRequestsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      <ModernAdminLayout>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
         </div>
         <Card>
           <CardHeader>
@@ -146,7 +147,8 @@ export default function WithdrawalRequestsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </ModernAdminLayout>
     );
   }
 
@@ -159,13 +161,14 @@ export default function WithdrawalRequestsPage() {
   const totalApprovedAmount = approvedRequests.reduce((sum, req) => sum + parseFloat(req.amount), 0);
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Solicitações De Retirada</h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Gerencie as solicitações de retirada dos prestadores
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Solicitações De Retirada</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie as solicitações de retirada dos prestadores
+          </p>
+        </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -407,6 +410,7 @@ export default function WithdrawalRequestsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </ModernAdminLayout>
   );
 }
