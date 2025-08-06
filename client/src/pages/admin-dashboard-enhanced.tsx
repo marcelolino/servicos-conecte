@@ -4,6 +4,7 @@ import { PendingProviders } from '@/components/admin/PendingProviders';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
+import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
 import { 
   Users, 
   Settings, 
@@ -41,17 +42,18 @@ export default function AdminDashboardEnhanced() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Admin</h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie sua plataforma de serviços
-          </p>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard Admin</h1>
+            <p className="text-muted-foreground mt-1">
+              Gerencie sua plataforma de serviços
+            </p>
+          </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -143,7 +145,8 @@ export default function AdminDashboardEnhanced() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </ModernAdminLayout>
   );
 }
