@@ -20,6 +20,11 @@ import AdminPayments from "@/pages/admin/payments";
 import AdminCashPayments from "@/pages/admin/cash-payments";
 import AdminEarnings from "@/pages/admin/earnings";
 import AdminWithdrawalRequests from "@/pages/admin/withdrawal-requests";
+import AdminProviders from "@/pages/admin-providers";
+import AdminUsers from "@/pages/admin-users";
+import AdminCategories from "@/pages/admin-categories";
+import AdminMedia from "@/pages/admin-media";
+import AdminChat from "@/pages/admin-chat";
 import ProviderProfile from "@/pages/provider-profile";
 import ProviderServiceFlow from "@/pages/provider-service-flow";
 import ProviderPayments from "@/pages/provider-payments";
@@ -116,6 +121,11 @@ function Router() {
           <Route path="/admin-earnings" component={AdminEarnings} />
           <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
           <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
+          <Route path="/admin-providers" component={AdminProviders} />
+          <Route path="/admin-users" component={AdminUsers} />
+          <Route path="/admin-categories" component={AdminCategories} />
+          <Route path="/admin-media" component={AdminMedia} />
+          <Route path="/admin-chat" component={AdminChat} />
           <Route path="/admin-layout-demo" component={LayoutDemo} />
 
           <Route path="/service-management" component={ServiceManagement} />

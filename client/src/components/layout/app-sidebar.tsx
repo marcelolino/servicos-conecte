@@ -60,8 +60,16 @@ const menuData: MenuItem[] = [
     icon: Home,
     items: [
       { title: "Dashboard", href: "/admin-dashboard" },
-      { title: "Os Clientes", href: "/admin-clients" },
-      { title: "Todos Os Usuários", href: "/admin-users" },
+      { title: "Gestão de Usuários", href: "/admin-users" },
+      { title: "Gestão de Prestadores", href: "/admin-providers" },
+    ]
+  },
+  {
+    title: "Serviços",
+    icon: Package,
+    items: [
+      { title: "Categorias de Serviços", href: "/admin-categories" },
+      { title: "Gerenciamento de Mídia", href: "/admin-media" },
     ]
   },
   {
@@ -75,7 +83,7 @@ const menuData: MenuItem[] = [
     title: "Comunicação",
     icon: MessageCircle,
     items: [
-      { title: "Chat com Usuários", href: "/admin-chat-management" },
+      { title: "Chat com Usuários", href: "/admin-chat" },
     ]
   },
   {
@@ -90,7 +98,7 @@ const menuData: MenuItem[] = [
   },
   {
     title: "Promoção",
-    icon: Package,
+    icon: TrendingUp,
     items: [
       { title: "Banner Promocional", href: "/admin-banners" },
       { title: "Lista De Cupons", href: "/admin-coupons" },
