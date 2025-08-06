@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "@/components/layout/admin-layout";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 import { Search, User, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
@@ -37,19 +37,19 @@ export default function AdminCashPayments() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <ModernAdminLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Carregando...</p>
           </div>
         </div>
-      </AdminLayout>
+      </ModernAdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <ModernAdminLayout>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center gap-4">
@@ -164,6 +164,6 @@ export default function AdminCashPayments() {
           © 2024 Todos os direitos reservados por IQONIC Design
         </div>
       </div>
-    </AdminLayout>
+    </ModernAdminLayout>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import AdminLayout from "@/components/layout/admin-layout";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 import {
   Card,
   CardContent,
@@ -152,7 +152,7 @@ export default function AdminBookingsPage() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <ModernAdminLayout>
         <div className="p-6 space-y-6">
           <div className="space-y-2">
             <Skeleton className="h-8 w-64" />
@@ -171,12 +171,12 @@ export default function AdminBookingsPage() {
             </CardContent>
           </Card>
         </div>
-      </AdminLayout>
+      </ModernAdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <ModernAdminLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="space-y-2">
@@ -404,6 +404,6 @@ export default function AdminBookingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </ModernAdminLayout>
   );
 }

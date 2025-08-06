@@ -13,6 +13,7 @@ import { Wallet, Clock, CheckCircle, XCircle, DollarSign, AlertTriangle } from "
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 
 interface WithdrawalRequest {
   id: number;

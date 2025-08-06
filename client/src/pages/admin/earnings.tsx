@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, Users, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 
 interface ProviderEarning {
   id: number;
