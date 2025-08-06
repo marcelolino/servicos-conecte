@@ -331,6 +331,26 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
       setRegistrationData(prev => ({ ...prev, workingHours: e.target.value }));
     }, [setRegistrationData]);
 
+    // Working hours presets with icons
+    const workingHoursPresets = [
+      { text: "Segunda a Sexta: 8h às 18h", icon: "💼", description: "Horário comercial padrão" },
+      { text: "Segunda a Sexta: 9h às 17h", icon: "🏢", description: "Horário de escritório" },
+      { text: "Segunda a Sábado: 8h às 17h", icon: "📅", description: "Inclui sábados" },
+      { text: "Segunda a Sexta: 8h às 17h / Sábado: 8h às 12h", icon: "⏰", description: "Sábado meio período" },
+      { text: "Segunda a Domingo: 8h às 18h", icon: "🔄", description: "Todos os dias" },
+      { text: "24 horas por dia", icon: "🌙", description: "Atendimento 24h" },
+      { text: "Personalizado", icon: "⚙️", description: "Defina seu próprio horário" }
+    ];
+
+    const handlePresetSelect = useCallback((presetText: string) => {
+      if (presetText === "Personalizado") {
+        setFormData(prev => ({ ...prev, workingHours: "Personalizado" }));
+      } else {
+        setFormData(prev => ({ ...prev, workingHours: presetText }));
+        setRegistrationData(prev => ({ ...prev, workingHours: presetText }));
+      }
+    }, [setRegistrationData]);
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       console.log('Step 2 submit - Form data:', formData);
@@ -431,14 +451,67 @@ export function ProviderRegistration8Steps({ onComplete }: ProviderRegistration8
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Horário de Funcionamento</label>
-          <Input 
-            placeholder="Ex: Segunda a Sexta: 8h às 18h / Sábados: 8h às 12h" 
-            value={formData.workingHours}
-            onChange={handleWorkingHoursChange}
-            onBlur={handleWorkingHoursBlur}
-          />
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-gray-500" />
+            <label className="text-sm font-medium">Horário de Funcionamento</label>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="text-sm text-gray-600">Escolha uma opção comum ou personalize:</div>
+            
+            <div className="grid gap-3">
+              {workingHoursPresets.map((preset) => (
+                <div
+                  key={preset.text}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    formData.workingHours === preset.text
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
+                  }`}
+                  onClick={() => handlePresetSelect(preset.text)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{preset.icon}</span>
+                      <div>
+                        <div className="text-sm font-medium">{preset.text}</div>
+                        <div className="text-xs text-gray-500">{preset.description}</div>
+                      </div>
+                    </div>
+                    {formData.workingHours === preset.text && (
+                      <Check className="h-4 w-4 text-blue-600" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {(formData.workingHours === "Personalizado" || 
+              !workingHoursPresets.some(preset => preset.text === formData.workingHours)) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Informe seu horário personalizado:
+                </label>
+                <Input 
+                  placeholder="Ex: Segunda a Quinta: 8h às 17h / Sexta: 8h às 16h / Sábado: 9h às 13h" 
+                  value={formData.workingHours === "Personalizado" ? "" : (
+                    workingHoursPresets.some(preset => preset.text === formData.workingHours) ? "" : formData.workingHours
+                  )}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, workingHours: value }));
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value.trim()) {
+                      setRegistrationData(prev => ({ ...prev, workingHours: value }));
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-between">
