@@ -1,0 +1,85 @@
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { useLocation } from "wouter";
+
+interface ModernAdminLayoutProps {
+  children: React.ReactNode;
+}
+
+const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
+  "/admin-dashboard": { title: "Dashboard" },
+  "/admin-clients": { title: "Os Clientes", parent: "Principal" },
+  "/admin-users": { title: "Todos Os Usuários", parent: "Principal" },
+  "/admin-bookings": { title: "Reservas", parent: "Gerenciamento de Reservas" },
+  "/admin-chat-management": { title: "Chat com Usuários", parent: "Comunicação" },
+  "/admin-payments": { title: "Pagamentos", parent: "Transações" },
+  "/admin-cash-payments": { title: "Pagamentos Em Dinheiro", parent: "Transações" },
+  "/admin-earnings": { title: "Ganhos", parent: "Transações" },
+  "/admin-withdrawal-requests": { title: "Solicitações De Retirada", parent: "Transações" },
+  "/admin-banners": { title: "Banner Promocional", parent: "Promoção" },
+  "/admin-coupons": { title: "Lista De Cupons", parent: "Promoção" },
+  "/admin-sliders": { title: "Lista De Sliders", parent: "Promoção" },
+  "/admin-settings": { title: "Configurações" },
+};
+
+export function ModernAdminLayout({ children }: ModernAdminLayoutProps) {
+  const [location] = useLocation();
+  
+  const getCurrentBreadcrumb = () => {
+    const current = routeBreadcrumbs[location];
+    return current || { title: "Painel" };
+  };
+
+  const breadcrumb = getCurrentBreadcrumb();
+
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/admin-dashboard">
+                    Administração
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {breadcrumb.parent && (
+                  <>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbPage>{breadcrumb.parent}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{breadcrumb.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}

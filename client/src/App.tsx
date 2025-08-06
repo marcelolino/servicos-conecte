@@ -64,6 +64,7 @@ import ProviderRegister from "@/pages/provider-register";
 import MeusServicos from "@/pages/meus-servicos";
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
+import LayoutDemo from "@/pages/admin/layout-demo";
 
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -115,6 +116,7 @@ function Router() {
           <Route path="/admin-earnings" component={AdminEarnings} />
           <Route path="/admin-withdrawal-requests" component={AdminWithdrawalRequests} />
           <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
+          <Route path="/admin-layout-demo" component={LayoutDemo} />
 
           <Route path="/service-management" component={ServiceManagement} />
           <Route path="/employee-management" component={EmployeeManagement} />
