@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth";
-import ClientLayout from "@/components/layout/client-layout";
+import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 import RatingModal from "@/components/rating-modal";
 import { 
   Search, 
@@ -457,7 +457,7 @@ export default function ClientReservas() {
   };
 
   return (
-    <ClientLayout>
+    <ModernClientLayout>
       <div className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -686,6 +686,6 @@ export default function ClientReservas() {
           </DialogContent>
         </Dialog>
       </div>
-    </ClientLayout>
+    </ModernClientLayout>
   );
 }

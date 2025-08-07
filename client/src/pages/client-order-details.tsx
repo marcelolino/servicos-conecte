@@ -15,7 +15,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import ClientLayout from "@/components/layout/client-layout";
+import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 
 interface OrderDetails {
   id: number;
@@ -144,7 +144,7 @@ export default function ClientOrderDetailsPage() {
 
   if (isLoading) {
     return (
-      <ClientLayout>
+      <ModernClientLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -153,13 +153,13 @@ export default function ClientOrderDetailsPage() {
             </div>
           </div>
         </div>
-      </ClientLayout>
+      </ModernClientLayout>
     );
   }
 
   if (!order) {
     return (
-      <ClientLayout>
+      <ModernClientLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -179,12 +179,12 @@ export default function ClientOrderDetailsPage() {
             </div>
           </div>
         </div>
-      </ClientLayout>
+      </ModernClientLayout>
     );
   }
 
   return (
-    <ClientLayout>
+    <ModernClientLayout>
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -375,6 +375,6 @@ export default function ClientOrderDetailsPage() {
           </div>
         </div>
       </div>
-    </ClientLayout>
+    </ModernClientLayout>
   );
 }

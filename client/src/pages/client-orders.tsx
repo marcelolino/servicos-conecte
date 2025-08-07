@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Package, Calendar, MapPin, CreditCard, Eye } from "lucide-react";
-import ClientLayout from "@/components/layout/client-layout";
+import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 
 interface Order {
   id: number;
@@ -128,7 +128,7 @@ export default function ClientOrdersPage() {
 
   if (ordersLoading) {
     return (
-      <ClientLayout>
+      <ModernClientLayout>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -137,12 +137,12 @@ export default function ClientOrdersPage() {
             </div>
           </div>
         </div>
-      </ClientLayout>
+      </ModernClientLayout>
     );
   }
 
   return (
-    <ClientLayout>
+    <ModernClientLayout>
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -282,7 +282,7 @@ export default function ClientOrdersPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </ClientLayout>
+    </ModernClientLayout>
   );
 }
 

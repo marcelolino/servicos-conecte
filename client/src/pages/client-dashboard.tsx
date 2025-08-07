@@ -16,7 +16,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import ClientLayout from "@/components/layout/client-layout";
+import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 import RatingModal from "@/components/rating-modal";
 import { 
   Search, 
@@ -263,7 +263,7 @@ export default function ClientDashboard() {
   };
 
   return (
-    <ClientLayout>
+    <ModernClientLayout>
       <div className="py-6">
         {/* Header with user info and stats */}
         <div className="mb-6">
@@ -639,6 +639,6 @@ export default function ClientDashboard() {
           </DialogContent>
         </Dialog>
       </div>
-    </ClientLayout>
+    </ModernClientLayout>
   );
 }
