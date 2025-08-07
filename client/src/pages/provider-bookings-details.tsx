@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -132,7 +132,7 @@ export default function ProviderBookingDetailsPage() {
 
   if (isLoading) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="p-6 space-y-6">
           <div className="space-y-2">
             <Skeleton className="h-8 w-64" />
@@ -165,13 +165,13 @@ export default function ProviderBookingDetailsPage() {
             </Card>
           </div>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
   if (!booking) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="p-6">
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -182,7 +182,7 @@ export default function ProviderBookingDetailsPage() {
             </Button>
           </div>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
@@ -226,7 +226,7 @@ export default function ProviderBookingDetailsPage() {
   const canCancel = ['pending', 'accepted'].includes(booking.status);
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -491,6 +491,6 @@ export default function ProviderBookingDetailsPage() {
           </div>
         </div>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

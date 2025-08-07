@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -153,7 +153,7 @@ export default function ProviderBookingsPage() {
 
   if (isLoading) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="p-6 space-y-6">
           <div className="space-y-2">
             <Skeleton className="h-8 w-64" />
@@ -178,7 +178,7 @@ export default function ProviderBookingsPage() {
             </CardContent>
           </Card>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
@@ -256,7 +256,7 @@ export default function ProviderBookingsPage() {
   const completedBookings = filteredBookings.filter(b => b.status === 'completed').length;
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="space-y-2">
@@ -440,7 +440,7 @@ export default function ProviderBookingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }
 

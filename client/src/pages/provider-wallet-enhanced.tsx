@@ -31,7 +31,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { Link } from "wouter";
 
 // Schemas
@@ -208,7 +208,7 @@ export default function ProviderWalletEnhanced() {
   const totalWithdrawn = (earnings as any)?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount), 0) || 0;
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="p-6 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -589,6 +589,6 @@ export default function ProviderWalletEnhanced() {
           </TabsContent>
         </Tabs>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

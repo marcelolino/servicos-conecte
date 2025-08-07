@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { Search, User, Calendar, DollarSign } from "lucide-react";
 
 export default function ProviderCashPayments() {
@@ -40,19 +40,19 @@ export default function ProviderCashPayments() {
 
   if (isLoading) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Carregando...</p>
           </div>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -175,6 +175,6 @@ export default function ProviderCashPayments() {
           </div>
         </div>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

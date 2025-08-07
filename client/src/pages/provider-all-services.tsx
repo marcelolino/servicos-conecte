@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { Search, Loader2, UserPlus, UserMinus, Filter, X } from "lucide-react";
 
 interface ServiceCategory {
@@ -215,19 +215,19 @@ export default function ProviderAllServices() {
 
   if (adminServicesLoading || providerLoading || servicesLoading || categoriesLoading) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Carregando serviços...</p>
           </div>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -378,6 +378,6 @@ export default function ProviderAllServices() {
           </CardContent>
         </Card>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/use-auth";
 import { CreditCard, DollarSign, Calendar, User, Filter } from "lucide-react";
 import { useState } from "react";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 
 interface Payment {
   id: number;
@@ -85,7 +85,7 @@ export default function ProviderPayments() {
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -216,6 +216,6 @@ export default function ProviderPayments() {
         </div>
       )}
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

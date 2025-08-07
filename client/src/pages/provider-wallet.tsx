@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { 
   Banknote, 
   TrendingUp, 
@@ -110,7 +110,7 @@ export default function ProviderWallet() {
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -364,6 +364,6 @@ export default function ProviderWallet() {
           </TabsContent>
         </Tabs>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { Search, User, Edit, Trash2 } from "lucide-react";
 
 export default function ProviderPackages() {
@@ -89,19 +89,19 @@ export default function ProviderPackages() {
 
   if (isLoading) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Carregando...</p>
           </div>
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -228,6 +228,6 @@ export default function ProviderPackages() {
           </CardContent>
         </Card>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

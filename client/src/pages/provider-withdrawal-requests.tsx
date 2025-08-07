@@ -17,7 +17,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import { 
   DollarSign, 
   Plus, 
@@ -168,7 +168,7 @@ export default function ProviderWithdrawalRequests() {
   const withdrawnAmount = (earnings as any)?.earnings?.filter((e: any) => e.isWithdrawn).reduce((sum: number, earning: any) => sum + parseFloat(earning.providerAmount || 0), 0) || 0;
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -465,6 +465,6 @@ export default function ProviderWithdrawalRequests() {
           </CardContent>
         </Card>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

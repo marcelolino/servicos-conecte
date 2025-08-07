@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 import {
   Select,
   SelectContent,
@@ -421,19 +421,19 @@ export default function MeusServicos() {
 
   if (selectedService) {
     return (
-      <ProviderLayout>
+      <ModernProviderLayout>
         <div className="p-6">
           <ChargingTypeManager 
             service={selectedService} 
             onClose={() => setSelectedService(null)} 
           />
         </div>
-      </ProviderLayout>
+      </ModernProviderLayout>
     );
   }
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -486,6 +486,6 @@ export default function MeusServicos() {
           </div>
         )}
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }

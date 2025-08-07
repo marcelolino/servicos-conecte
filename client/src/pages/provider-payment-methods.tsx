@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CreditCard, Plus, Edit, Trash2, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import ProviderLayout from "@/components/layout/provider-layout";
+import { ModernProviderLayout } from "@/components/layout/modern-provider-layout";
 
 // Schemas
 const bankAccountSchema = z.object({
@@ -233,7 +233,7 @@ export default function ProviderPaymentMethods() {
   };
 
   return (
-    <ProviderLayout>
+    <ModernProviderLayout>
       <div className="p-6 space-y-6 max-w-4xl mx-auto">
         {/* Header */}
         <div>
@@ -566,6 +566,6 @@ export default function ProviderPaymentMethods() {
           </CardContent>
         </Card>
       </div>
-    </ProviderLayout>
+    </ModernProviderLayout>
   );
 }
