@@ -285,7 +285,7 @@ export default function ClientReservas() {
   };
 
   const getTabCounts = () => {
-    if (!serviceRequests) return {
+    if (!serviceRequests || !Array.isArray(serviceRequests)) return {
       todas: 0,
       pending: 0,
       accepted: 0,
@@ -466,49 +466,56 @@ export default function ClientReservas() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-800">
-            <TabsTrigger value="todas" className="text-sm">
-              Todas Reservas
+          <div className="overflow-x-auto pb-2">
+            <TabsList className="inline-flex h-auto w-max min-w-full bg-gray-100 dark:bg-gray-800 p-1 gap-1">
+            <TabsTrigger value="todas" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Todas Reservas</span>
+              <span className="sm:hidden">Todas</span>
               {tabCounts.todas > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.todas}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pending" className="text-sm">
-              Solicitações Pendentes
+            <TabsTrigger value="pending" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Solicitações Pendentes</span>
+              <span className="sm:hidden">Pendentes</span>
               {tabCounts.pending > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.pending}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="accepted" className="text-sm">
-              Reservas Aceitas
+            <TabsTrigger value="accepted" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Reservas Aceitas</span>
+              <span className="sm:hidden">Aceitas</span>
               {tabCounts.accepted > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.accepted}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="in_progress" className="text-sm">
-              Em Andamento
+            <TabsTrigger value="in_progress" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Em Andamento</span>
+              <span className="sm:hidden">Andamento</span>
               {tabCounts.in_progress > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.in_progress}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="completed" className="text-sm">
-              Concluídas
+            <TabsTrigger value="completed" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Concluídas</span>
+              <span className="sm:hidden">Concluídas</span>
               {tabCounts.completed > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.completed}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="cancelled" className="text-sm">
-              Canceladas
+            <TabsTrigger value="cancelled" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
+              <span className="hidden sm:inline">Canceladas</span>
+              <span className="sm:hidden">Canceladas</span>
               {tabCounts.cancelled > 0 && (
                 <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {tabCounts.cancelled}
@@ -516,6 +523,7 @@ export default function ClientReservas() {
               )}
             </TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="todas">
             {renderRequestList("todas")}
@@ -563,11 +571,11 @@ export default function ClientReservas() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories?.map((category: ServiceCategory) => (
+                          {categories && Array.isArray(categories) ? categories.map((category: ServiceCategory) => (
                             <SelectItem key={category.id} value={category.id.toString()}>
                               {category.name}
                             </SelectItem>
-                          ))}
+                          )) : null}
                         </SelectContent>
                       </Select>
                       <FormMessage />
