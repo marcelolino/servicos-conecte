@@ -73,7 +73,6 @@ import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 import LayoutDemo from "@/pages/admin/layout-demo";
 
 import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 
 function Router() {
   return (
@@ -159,7 +158,6 @@ function Router() {
                 <Route component={NotFound} />
               </Switch>
             </main>
-            <Footer />
           </div>
         )}
       </Route>
