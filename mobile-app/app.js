@@ -8,6 +8,7 @@ class MobileApp {
     this.searchResults = [];
     this.cart = JSON.parse(localStorage.getItem('mobile_cart') || '[]');
     this.currentTab = 'home';
+    this.isLoggedIn = this.checkAuthStatus();
     this.init();
   }
 
@@ -27,6 +28,9 @@ class MobileApp {
     
     // Update cart UI
     this.updateCartUI();
+    
+    // Update auth UI
+    this.updateAuthUI();
     
     // Hide loading screen
     this.hideLoading();
@@ -939,6 +943,60 @@ class MobileApp {
     };
     return colors[type] || colors.info;
   }
+
+  // Authentication Functions
+  checkAuthStatus() {
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    return !!(token && userData);
+  }
+
+  getUserData() {
+    try {
+      const userData = localStorage.getItem('user_data');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
+  }
+
+  updateAuthUI() {
+    const profileBtn = document.getElementById('profile-btn');
+    if (!profileBtn) return;
+
+    if (this.isLoggedIn) {
+      const userData = this.getUserData();
+      profileBtn.classList.add('logged-in');
+      profileBtn.innerHTML = userData?.name ? 
+        `<span style="font-size: 12px; font-weight: 600;">${userData.name.charAt(0).toUpperCase()}</span>` : 
+        '<i class="fas fa-user-check"></i>';
+      profileBtn.title = userData?.name || 'Perfil';
+    } else {
+      profileBtn.classList.remove('logged-in');
+      profileBtn.innerHTML = '<i class="fas fa-user"></i>';
+      profileBtn.title = 'Fazer Login';
+    }
+  }
+
+  handleLogin(userData, token) {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    this.isLoggedIn = true;
+    this.updateAuthUI();
+    this.showToast(`Bem-vindo, ${userData.name}!`, 'success');
+  }
+
+  handleLogout() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('mobile_cart');
+    this.isLoggedIn = false;
+    this.cart = [];
+    this.updateAuthUI();
+    this.updateCartUI();
+    this.showToast('Logout realizado com sucesso', 'info');
+  }
 }
 
 // Initialize app when DOM is ready
@@ -956,6 +1014,36 @@ window.showTab = function(tab) {
 window.proceedToCheckout = function() {
   if (window.mobileApp) {
     window.mobileApp.proceedToCheckout();
+  }
+};
+
+window.handleProfileClick = function() {
+  if (window.mobileApp) {
+    if (window.mobileApp.isLoggedIn) {
+      // Show profile menu
+      const userData = window.mobileApp.getUserData();
+      const options = [
+        { text: 'Ver Perfil', action: () => window.open(`${window.mobileApp.apiBase}/profile`, '_blank') },
+        { text: 'Minhas Reservas', action: () => window.open(`${window.mobileApp.apiBase}/client-reservas`, '_blank') },
+        { text: 'Configurações', action: () => window.open(`${window.mobileApp.apiBase}/profile`, '_blank') },
+        { text: 'Sair', action: () => window.mobileApp.handleLogout() }
+      ];
+      
+      // Show simple menu using confirm for demo
+      const choice = confirm(`${userData?.name || 'Usuário'}\n\n1. Ver Perfil\n2. Minhas Reservas\n3. Configurações\n4. Sair\n\nEscolha uma opção (1-4):`);
+      
+      if (choice) {
+        // For demo, just open profile or logout
+        const input = prompt('Digite o número da opção (1-4):');
+        const optionIndex = parseInt(input) - 1;
+        if (optionIndex >= 0 && optionIndex < options.length) {
+          options[optionIndex].action();
+        }
+      }
+    } else {
+      // Redirect to auth page
+      window.location.href = '/mobile/auth';
+    }
   }
 };
 

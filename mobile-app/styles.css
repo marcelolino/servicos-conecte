@@ -139,6 +139,38 @@ body {
   transform: scale(1.05);
 }
 
+.profile-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--primary-blue);
+  background: var(--card-background);
+  color: var(--primary-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.profile-btn:hover {
+  background: var(--primary-blue);
+  color: white;
+  transform: scale(1.05);
+}
+
+.profile-btn.logged-in {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.profile-btn.logged-in:hover {
+  background: #45a049;
+  border-color: #45a049;
+}
+
 /* Banner Section */
 .banner-section {
   margin: 16px;

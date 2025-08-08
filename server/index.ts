@@ -15,6 +15,11 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // Serve mobile app
 app.use('/mobile', express.static(path.join(process.cwd(), 'mobile-app')));
 
+// Mobile authentication routes
+app.get('/mobile/auth', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'mobile-app', 'auth.html'));
+});
+
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
   customCss: '.swagger-ui .topbar { display: none }',
