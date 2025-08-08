@@ -46,6 +46,7 @@ import MediaManagement from "@/pages/media-management";
 import AdminSettings from "@/pages/admin-settings";
 import AdminPaymentMethods from "@/pages/admin-payment-methods";
 import AdminServices from "@/pages/admin/services";
+import AdminProviderServiceRequests from "@/pages/admin/provider-service-requests";
 import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/admin-providers" component={AdminProviders} />
       <Route path="/admin-users" component={AdminUsers} />
       <Route path="/admin-services" component={AdminServices} />
+      <Route path="/admin-provider-service-requests" component={AdminProviderServiceRequests} />
       <Route path="/admin-categories" component={AdminCategories} />
       <Route path="/admin-media" component={AdminMedia} />
       <Route path="/admin-chat" component={AdminChat} />

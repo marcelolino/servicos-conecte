@@ -16,7 +16,8 @@ import {
   Calendar,
   MessageCircle,
   Menu,
-  X
+  X,
+  Folder
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -30,12 +31,21 @@ const menuItems = [
       { icon: Home, label: "Dashboard", href: "/admin-dashboard", exact: true },
       { icon: Users, label: "Os Clientes", href: "/admin-clients" },
       { icon: Users, label: "Todos Os Usuários", href: "/admin-users" },
+      { icon: Users, label: "Prestadores", href: "/admin-providers" },
     ]
   },
   {
     section: "GERENCIAMENTO DE RESERVAS",
     items: [
       { icon: Calendar, label: "Reservas", href: "/admin-bookings" },
+    ]
+  },
+  {
+    section: "SERVIÇOS",
+    items: [
+      { icon: Package, label: "Todos os Serviços", href: "/admin-services" },
+      { icon: FileText, label: "Solicitações de Serviço", href: "/admin-provider-service-requests" },
+      { icon: Folder, label: "Categorias", href: "/admin-categories" },
     ]
   },
   {
