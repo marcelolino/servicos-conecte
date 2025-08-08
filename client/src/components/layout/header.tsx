@@ -14,7 +14,8 @@ import {
   User,
   LogOut,
   ShoppingCart,
-  Calendar
+  Calendar,
+  Smartphone
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -102,6 +103,16 @@ export default function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.open('/mobile', '_blank')}
+              className="hover:bg-muted"
+              title="App Mobile"
+            >
+              <Smartphone className="h-5 w-5" />
+            </Button>
+            
             <Button
               variant="ghost"
               size="icon"

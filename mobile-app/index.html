@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#1E88E5">
+  <title>Qserviços - App Mobile</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+      <div class="loader">
+        <div class="loader-circle"></div>
+        <p>Qserviços</p>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="app-container" style="display: none;">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="location-bar">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Serviços em</span>
+          <strong id="user-location">R. 101, 289 - St. Sul, Goiânia - GO, 74080-150, Brazil</strong>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="search-bar">
+          <input type="text" placeholder="Search services..." id="search-input">
+          <button class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Banner Section -->
+      <section class="banner-section">
+        <div class="banner-slide active">
+          <div class="banner-content">
+            <div class="banner-text">
+              <h2>CLEANING SERVICE</h2>
+              <div class="discount">
+                <span class="discount-number">50</span>
+                <span class="discount-text">% OFF from every purchase</span>
+              </div>
+            </div>
+            <div class="banner-image">
+              <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'%3E%3Crect fill='%23E3F2FD' width='300' height='200'/%3E%3Ctext x='150' y='100' text-anchor='middle' fill='%231976D2' font-size='16'%3ECleaning Tools%3C/text%3E%3C/svg%3E" alt="Cleaning Service">
+            </div>
+          </div>
+        </div>
+        <div class="banner-indicators">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+      </section>
+
+      <!-- Categories -->
+      <section class="categories-section">
+        <h3>All Categories</h3>
+        <div class="categories-grid" id="categories-grid">
+          <!-- Categories will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Popular Services -->
+      <section class="services-section">
+        <div class="section-header">
+          <h3>Popular Services</h3>
+          <a href="#" class="see-all">See All</a>
+        </div>
+        <div class="services-list" id="popular-services">
+          <!-- Services will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Current Offers -->
+      <section class="offers-section">
+        <div class="section-header">
+          <h3>Current Offers</h3>
+          <a href="#" class="see-all">See All</a>
+        </div>
+        <div class="offers-grid" id="current-offers">
+          <!-- Offers will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav">
+        <div class="nav-item active">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </div>
+        <div class="nav-item">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Bookings</span>
+        </div>
+        <div class="nav-item">
+          <i class="fas fa-percent"></i>
+          <span>Offers</span>
+        </div>
+        <div class="nav-item">
+          <i class="fas fa-ellipsis-h"></i>
+          <span>More</span>
+        </div>
+      </nav>
+
+      <!-- Floating Action Button -->
+      <div class="fab">
+        <i class="fas fa-plus"></i>
+      </div>
+
+      <!-- More Menu Modal -->
+      <div id="more-menu" class="more-menu" style="display: none;">
+        <div class="more-menu-content">
+          <div class="more-menu-header">
+            <button class="close-menu">
+              <i class="fas fa-chevron-down"></i>
+            </button>
+          </div>
+          <div class="more-menu-grid">
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-user"></i>
+              </div>
+              <span>Profile</span>
+            </div>
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-inbox"></i>
+              </div>
+              <span>Inbox</span>
+            </div>
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-language"></i>
+              </div>
+              <span>Language</span>
+            </div>
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-cog"></i>
+              </div>
+              <span>Settings</span>
+            </div>
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <span>Track Booking</span>
+            </div>
+            <div class="menu-item">
+              <div class="menu-icon">
+                <i class="fas fa-percent"></i>
+              </div>
+              <span>Coupons</span>
+            </div>
+          </div>
+          <div class="app-version">App Version: 3.2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

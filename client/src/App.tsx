@@ -78,6 +78,7 @@ import AdminReportsTransactions from "@/pages/admin-reports-transactions";
 import AdminReportsBusiness from "@/pages/admin-reports-business";
 import AdminReportsBookings from "@/pages/admin-reports-bookings";
 import AdminReportsProviders from "@/pages/admin-reports-providers";
+import MobileRedirectPage from "@/pages/mobile-redirect";
 
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -110,6 +111,9 @@ function Router() {
       <Route path="/admin-reports-bookings" component={AdminReportsBookings} />
       <Route path="/admin-reports-providers" component={AdminReportsProviders} />
       <Route path="/admin-layout-demo" component={LayoutDemo} />
+
+      {/* Mobile App Route - Without Header/Footer */}
+      <Route path="/mobile-redirect" component={MobileRedirectPage} />
 
       {/* Provider Routes - Without Header/Footer */}
       <Route path="/provider-dashboard" component={ProviderDashboard} />
