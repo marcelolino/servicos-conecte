@@ -1,0 +1,66 @@
+7:27:39 PM [express] GET /api/admin/reports/transactions/[object%20Object] 200 in 13ms
+7:27:39 PM [express] GET /api/admin/cities 401 in 17ms :: {"message":"Access token required"}
+7:27:40 PM [express] GET /api/categories 200 in 921ms :: [{"id":1,"name":"Limpeza","description":"Se…
+7:27:48 PM [express] GET /api/admin/reports/transactions/[object%20Object] 200 in 5ms
+7:27:48 PM [express] GET /api/admin/cities 401 in 0ms :: {"message":"Access token required"}
+7:27:48 PM [express] GET /api/categories 304 in 115ms :: [{"id":1,"name":"Limpeza","description":"Se…
+7:28:17 PM [express] GET /api/auth/me 304 in 509ms :: {"id":6,"email":"joaomoura49@outlook.com","nam…
+7:28:17 PM [express] GET /api/employees 304 in 255ms :: []
+7:28:19 PM [express] GET /api/auth/me 304 in 126ms :: {"id":1,"email":"admin@qservicos.com","name":"…
+7:28:20 PM [express] GET /api/admin/settings 304 in 120ms :: [{"id":1,"key":"commission_rate","value…
+Erro ao buscar cidades: TypeError: storage.getProviders is not a function
+    at <anonymous> (/home/runner/workspace/server/routes/admin.ts:121:40)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at requireAdmin (/home/runner/workspace/server/routes/admin.ts:33:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at <anonymous> (/home/runner/workspace/server/routes/admin.ts:24:5)
+    at /home/runner/workspace/node_modules/jsonwebtoken/verify.js:261:12
+    at getSecret (/home/runner/workspace/node_modules/jsonwebtoken/verify.js:97:14)
+    at module.exports [as verify] (/home/runner/workspace/node_modules/jsonwebtoken/verify.js:101:10)
+    at authenticateToken (/home/runner/workspace/server/routes/admin.ts:19:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at router (/home/runner/workspace/node_modules/express/lib/router/index.js:47:12)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/workspace/server/index.ts:55:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/home/runner/workspace/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at query (/home/runner/workspace/node_modules/express/lib/middleware/query.js:45:5)
+7:37:29 PM [express] GET /api/admin/cities 500 in 19ms :: {"error":"Erro interno do servidor"}
+7:37:29 PM [express] GET /api/admin/reports/transactions/[object%20Object] 200 in 20ms
+7:37:30 PM [express] GET /api/categories 304 in 976ms :: [{"id":1,"name":"Limpeza","description":"Se…
+7:37:37 PM [express] GET /api/admin/reports/transactions/[object%20Object] 200 in 4ms
+7:37:40 PM [express] GET /api/admin/reports/transactions/[object%20Object] 200 in 8ms
