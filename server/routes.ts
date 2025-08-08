@@ -40,7 +40,7 @@ declare global {
         userType: string;
       };
       file?: Express.Multer.File;
-      files?: Express.Multer.File[];
+      files?: { [fieldname: string]: Express.Multer.File[]; } | Express.Multer.File[];
     }
   }
 }
@@ -911,8 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedRequest = await storage.updateServiceRequest(requestId, { 
-        status: "in_progress",
-        updatedAt: new Date()
+        status: "in_progress"
       });
       
       res.json(updatedRequest);
@@ -946,8 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedRequest = await storage.updateServiceRequest(requestId, { 
         status: "completed",
-        completedAt: new Date(),
-        updatedAt: new Date()
+        completedAt: new Date()
       });
       
       // Create provider earning record after completing the service
@@ -1368,8 +1366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const popularProviders = providers
         .filter(provider => provider.status === "approved")
         .sort((a, b) => {
-          const aScore = (parseFloat(a.rating) || 0) * (a.totalReviews || 0);
-          const bScore = (parseFloat(b.rating) || 0) * (b.totalReviews || 0);
+          const aScore = (parseFloat(a.rating || '0') || 0) * (a.totalReviews || 0);
+          const bScore = (parseFloat(b.rating || '0') || 0) * (b.totalReviews || 0);
           return bScore - aScore;
         })
         .slice(0, 10);
@@ -1641,8 +1639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const popularProviders = providers
         .filter(provider => provider.status === "approved")
         .sort((a, b) => {
-          const aScore = (parseFloat(a.rating) || 0) * (a.totalReviews || 0);
-          const bScore = (parseFloat(b.rating) || 0) * (b.totalReviews || 0);
+          const aScore = (parseFloat(a.rating || '0') || 0) * (a.totalReviews || 0);
+          const bScore = (parseFloat(b.rating || '0') || 0) * (b.totalReviews || 0);
           return bScore - aScore;
         })
         .slice(0, 10)
@@ -1881,7 +1879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Coupon expired" });
       }
       
-      if (coupon.maximumUses && coupon.currentUses >= coupon.maximumUses) {
+      if (coupon.maximumUses && (coupon.currentUses || 0) >= coupon.maximumUses) {
         return res.status(400).json({ message: "Coupon limit reached" });
       }
       
@@ -1949,6 +1947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cart/items", authenticateToken, async (req, res) => {
     try {
       const itemData = {
+        orderId: 1, // Temporary orderId, will be set properly in storage
         providerServiceId: parseInt(req.body.providerServiceId),
         quantity: parseInt(req.body.quantity) || 1,
         unitPrice: req.body.unitPrice,
@@ -2523,7 +2522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         connected,
-        version: version.split(' ')[1] || 'Unknown', // Extract version number
+        version: (typeof version === 'string' ? version.split(' ')[1] : 'Unknown') || 'Unknown', // Extract version number
         size,
         tableCount,
         lastBackup: 'Nunca' // This could be enhanced to track actual backup history
@@ -2874,7 +2873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedRequest);
     } catch (error) {
       console.error('Error processing withdrawal request:', error);
-      res.status(500).json({ message: "Failed to process withdrawal request", error: error.message });
+      res.status(500).json({ message: "Failed to process withdrawal request", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

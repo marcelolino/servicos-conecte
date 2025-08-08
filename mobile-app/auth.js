@@ -80,11 +80,13 @@ class MobileAuth {
     const data = Object.fromEntries(formData);
 
     this.setLoading(form, true);
+    this.clearErrors();
 
     try {
       const response = await this.apiRequest('/api/auth/login', 'POST', data);
       
-      if (response.success) {
+      // Check if response contains token and user (successful login)
+      if (response.token && response.user) {
         this.showToast('Login realizado com sucesso!', 'success');
         
         // Save user data
@@ -96,7 +98,15 @@ class MobileAuth {
           window.location.href = '/mobile';
         }, 1000);
       } else {
-        this.showToast(response.message || 'Erro ao fazer login', 'error');
+        // Handle error response
+        const errorMessage = response.message || 'Credenciais inválidas';
+        this.showToast(errorMessage, 'error');
+        
+        if (errorMessage.toLowerCase().includes('email')) {
+          this.showFieldError('login-email', errorMessage);
+        } else if (errorMessage.toLowerCase().includes('senha')) {
+          this.showFieldError('login-password', errorMessage);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -118,27 +128,35 @@ class MobileAuth {
     }
 
     this.setLoading(form, true);
+    this.clearErrors();
 
     try {
       const response = await this.apiRequest('/api/auth/register', 'POST', data);
       
-      if (response.success) {
+      // Check if response contains token and user (successful registration)
+      if (response.token && response.user) {
         this.showToast('Conta criada com sucesso!', 'success');
         
-        // If phone verification is needed
-        if (response.requiresPhoneVerification) {
-          this.showOTPForm(data.phone);
-        } else {
-          // Save user data and redirect
-          localStorage.setItem('auth_token', response.token);
-          localStorage.setItem('user_data', JSON.stringify(response.user));
-          
-          setTimeout(() => {
-            window.location.href = '/mobile';
-          }, 1000);
-        }
+        // Save user data and redirect
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user_data', JSON.stringify(response.user));
+        
+        setTimeout(() => {
+          window.location.href = '/mobile';
+        }, 1000);
       } else {
-        this.showToast(response.message || 'Erro ao criar conta', 'error');
+        // Handle error response
+        const errorMessage = response.message || 'Erro ao criar conta';
+        this.showToast(errorMessage, 'error');
+        
+        // Show specific field errors
+        if (errorMessage.toLowerCase().includes('email')) {
+          this.showFieldError('register-email', errorMessage);
+        } else if (errorMessage.toLowerCase().includes('telefone') || errorMessage.toLowerCase().includes('phone')) {
+          this.showFieldError('register-phone', errorMessage);
+        } else if (errorMessage.toLowerCase().includes('nome')) {
+          this.showFieldError('register-name', errorMessage);
+        }
       }
     } catch (error) {
       console.error('Register error:', error);
