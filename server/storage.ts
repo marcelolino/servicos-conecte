@@ -5,6 +5,7 @@ import {
   providerServices,
   serviceChargingTypes,
   serviceRequests,
+  providerServiceRequests,
   reviews,
   notifications,
   employees,
@@ -30,6 +31,8 @@ import {
   type InsertServiceChargingType,
   type ServiceRequest,
   type InsertServiceRequest,
+  type ProviderServiceRequest,
+  type InsertProviderServiceRequest,
   type Review,
   type InsertReview,
   type Notification,
@@ -122,6 +125,12 @@ export interface IStorage {
   updateServiceChargingType(id: number, chargingType: Partial<InsertServiceChargingType>): Promise<ServiceChargingType>;
   deleteServiceChargingType(id: number): Promise<void>;
   bulkCreateServiceChargingTypes(chargingTypes: InsertServiceChargingType[]): Promise<ServiceChargingType[]>;
+  
+  // Provider service requests (for admin approval)
+  getProviderServiceRequests(): Promise<(ProviderServiceRequest & { provider: Provider & { user: User }; category: ServiceCategory })[]>;
+  getProviderServiceRequestsByProvider(providerId: number): Promise<(ProviderServiceRequest & { category: ServiceCategory })[]>;
+  createProviderServiceRequest(request: InsertProviderServiceRequest): Promise<ProviderServiceRequest>;
+  updateProviderServiceRequestStatus(id: number, status: "pending" | "approved" | "rejected", adminResponse?: string): Promise<ProviderServiceRequest>;
   
   // Service requests
   getServiceRequest(id: number): Promise<(ServiceRequest & { client: User; provider?: Provider; category: ServiceCategory }) | undefined>;
@@ -2680,6 +2689,103 @@ export class DatabaseStorage implements IStorage {
       console.error('Error creating PIX payment:', error);
       throw error;
     }
+  }
+
+  // Provider service requests methods
+  async getProviderServiceRequests(): Promise<(ProviderServiceRequest & { provider: Provider & { user: User }; category: ServiceCategory })[]> {
+    return await db
+      .select({
+        id: providerServiceRequests.id,
+        providerId: providerServiceRequests.providerId,
+        categoryId: providerServiceRequests.categoryId,
+        name: providerServiceRequests.name,
+        description: providerServiceRequests.description,
+        status: providerServiceRequests.status,
+        adminResponse: providerServiceRequests.adminResponse,
+        createdAt: providerServiceRequests.createdAt,
+        updatedAt: providerServiceRequests.updatedAt,
+        provider: {
+          id: providers.id,
+          userId: providers.userId,
+          status: providers.status,
+          city: providers.city,
+          state: providers.state,
+          serviceRadius: providers.serviceRadius,
+          basePrice: providers.basePrice,
+          description: providers.description,
+          experience: providers.experience,
+          cpfCnpj: providers.cpfCnpj,
+          registrationStep: providers.registrationStep,
+          registrationData: providers.registrationData,
+          bankName: providers.bankName,
+          bankAgency: providers.bankAgency,
+          bankAccount: providers.bankAccount,
+          documents: providers.documents,
+          identityDocument: providers.identityDocument,
+          portfolioImages: providers.portfolioImages,
+          fullName: providers.fullName,
+          birthDate: providers.birthDate,
+          cnpj: providers.cnpj,
+          addressProof: providers.addressProof,
+          acceptedTerms: providers.acceptedTerms,
+          workingHours: providers.workingHours,
+          rating: providers.rating,
+          totalReviews: providers.totalReviews,
+          totalServices: providers.totalServices,
+          isTrialActive: providers.isTrialActive,
+          trialEndsAt: providers.trialEndsAt,
+          createdAt: providers.createdAt,
+          updatedAt: providers.updatedAt,
+          user: users,
+        },
+        category: serviceCategories,
+      })
+      .from(providerServiceRequests)
+      .innerJoin(providers, eq(providerServiceRequests.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id))
+      .innerJoin(serviceCategories, eq(providerServiceRequests.categoryId, serviceCategories.id))
+      .orderBy(desc(providerServiceRequests.createdAt));
+  }
+
+  async getProviderServiceRequestsByProvider(providerId: number): Promise<(ProviderServiceRequest & { category: ServiceCategory })[]> {
+    return await db
+      .select({
+        id: providerServiceRequests.id,
+        providerId: providerServiceRequests.providerId,
+        categoryId: providerServiceRequests.categoryId,
+        name: providerServiceRequests.name,
+        description: providerServiceRequests.description,
+        status: providerServiceRequests.status,
+        adminResponse: providerServiceRequests.adminResponse,
+        createdAt: providerServiceRequests.createdAt,
+        updatedAt: providerServiceRequests.updatedAt,
+        category: serviceCategories,
+      })
+      .from(providerServiceRequests)
+      .innerJoin(serviceCategories, eq(providerServiceRequests.categoryId, serviceCategories.id))
+      .where(eq(providerServiceRequests.providerId, providerId))
+      .orderBy(desc(providerServiceRequests.createdAt));
+  }
+
+  async createProviderServiceRequest(request: InsertProviderServiceRequest): Promise<ProviderServiceRequest> {
+    const [newRequest] = await db
+      .insert(providerServiceRequests)
+      .values(request)
+      .returning();
+    return newRequest;
+  }
+
+  async updateProviderServiceRequestStatus(id: number, status: "pending" | "approved" | "rejected", adminResponse?: string): Promise<ProviderServiceRequest> {
+    const [updatedRequest] = await db
+      .update(providerServiceRequests)
+      .set({
+        status,
+        adminResponse,
+        updatedAt: new Date(),
+      })
+      .where(eq(providerServiceRequests.id, id))
+      .returning();
+    return updatedRequest;
   }
 }
 

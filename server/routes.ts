@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema, insertProviderServiceRequestSchema } from "@shared/schema";
 import { 
   upload, 
   uploadDocument,
@@ -3488,6 +3488,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Failed to create PIX payment',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // Provider service request routes
+  // Get all provider service requests (admin only)
+  app.get("/api/admin/provider-service-requests", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const requests = await storage.getProviderServiceRequests();
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get provider service requests", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get provider service requests by provider (provider only)
+  app.get("/api/provider/service-requests", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      const requests = await storage.getProviderServiceRequestsByProvider(provider.id);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get provider service requests", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Create provider service request (provider only)
+  app.post("/api/provider/service-requests", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const requestData = insertProviderServiceRequestSchema.parse({
+        ...req.body,
+        providerId: provider.id,
+      });
+      
+      const request = await storage.createProviderServiceRequest(requestData);
+      res.json(request);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create provider service request", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Update provider service request status (admin only)
+  app.put("/api/admin/provider-service-requests/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const { status, adminResponse } = req.body;
+      
+      if (!["pending", "approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const updatedRequest = await storage.updateProviderServiceRequestStatus(
+        requestId, 
+        status, 
+        adminResponse
+      );
+      
+      // If approved, create the actual provider service
+      if (status === "approved") {
+        const request = await storage.getProviderServiceRequests();
+        const serviceRequest = request.find(r => r.id === requestId);
+        
+        if (serviceRequest) {
+          await storage.createProviderService({
+            providerId: serviceRequest.providerId,
+            categoryId: serviceRequest.categoryId,
+            name: serviceRequest.name,
+            description: serviceRequest.description,
+            price: "50.00", // Default price
+            isActive: true,
+          });
+        }
+      }
+      
+      res.json(updatedRequest);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update provider service request", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

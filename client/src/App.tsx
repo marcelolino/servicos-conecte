@@ -68,6 +68,8 @@ import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
 import ProviderRegister from "@/pages/provider-register";
 import MeusServicos from "@/pages/meus-servicos";
+import ProviderServiceRequests from "@/pages/provider-service-requests";
+import ProviderServiceSubscriptions from "@/pages/provider-service-subscriptions";
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 import LayoutDemo from "@/pages/admin/layout-demo";
@@ -119,6 +121,8 @@ function Router() {
       <Route path="/provider-packages" component={ProviderPackages} />
       <Route path="/provider-add-ons" component={ProviderAddOns} />
       <Route path="/meus-servicos" component={MeusServicos} />
+      <Route path="/provider-service-requests" component={ProviderServiceRequests} />
+      <Route path="/provider-service-subscriptions" component={ProviderServiceSubscriptions} />
       <Route path="/provider-chat" component={ProviderChat} />
       <Route path="/employee-management" component={EmployeeManagement} />
 

@@ -115,8 +115,12 @@ const menuData = {
           url: "/provider-add-ons",
         },
         {
-          title: "Lista De Solicitações De Serviço",
-          url: "/provider-services",
+          title: "Solicitações de Serviço",
+          url: "/provider-service-requests",
+        },
+        {
+          title: "Minhas Inscrições",
+          url: "/provider-service-subscriptions",
         },
       ],
     },

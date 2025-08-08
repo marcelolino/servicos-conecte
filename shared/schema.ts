@@ -15,6 +15,7 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "app
 export const chatStatusEnum = pgEnum("chat_status", ["active", "closed", "archived"]);
 export const messageStatusEnum = pgEnum("message_status", ["sent", "delivered", "read"]);
 export const chargingTypeEnum = pgEnum("charging_type", ["visit", "hour", "daily", "package", "quote"]);
+export const requestStatusEnum = pgEnum("request_status", ["pending", "approved", "rejected"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -116,6 +117,19 @@ export const serviceChargingTypes = pgTable("service_charging_types", {
   minimumQuantity: integer("minimum_quantity").default(1), // For packages
   maximumQuantity: integer("maximum_quantity"), // For packages
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Provider service requests (for admin approval)
+export const providerServiceRequests = pgTable("provider_service_requests", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  status: requestStatusEnum("status").default("pending"),
+  adminResponse: text("admin_response"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -688,6 +702,17 @@ export const paymentGatewayConfigsRelations = relations(paymentGatewayConfigs, (
   // Add relations as needed
 }));
 
+export const providerServiceRequestsRelations = relations(providerServiceRequests, ({ one }) => ({
+  provider: one(providers, {
+    fields: [providerServiceRequests.providerId],
+    references: [providers.id],
+  }),
+  category: one(serviceCategories, {
+    fields: [providerServiceRequests.categoryId],
+    references: [serviceCategories.id],
+  }),
+}));
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -713,6 +738,12 @@ export const insertProviderServiceSchema = createInsertSchema(providerServices).
 });
 
 export const insertServiceChargingTypeSchema = createInsertSchema(serviceChargingTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProviderServiceRequestSchema = createInsertSchema(providerServiceRequests).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -857,6 +888,8 @@ export type ProviderService = typeof providerServices.$inferSelect;
 export type InsertProviderService = z.infer<typeof insertProviderServiceSchema>;
 export type ServiceChargingType = typeof serviceChargingTypes.$inferSelect;
 export type InsertServiceChargingType = z.infer<typeof insertServiceChargingTypeSchema>;
+export type ProviderServiceRequest = typeof providerServiceRequests.$inferSelect;
+export type InsertProviderServiceRequest = z.infer<typeof insertProviderServiceRequestSchema>;
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
 export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
 export type Review = typeof reviews.$inferSelect;
