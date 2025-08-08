@@ -1,8 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
-import { eq, and, gte, sql, desc } from 'drizzle-orm';
-import { users, providers, serviceRequests, serviceCategories, providerServices } from '../../shared/schema';
+import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
+import { users, providers, serviceRequests, serviceCategories, providerServices, payments } from '../../shared/schema';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -274,6 +274,215 @@ router.delete('/services/:id', authenticateToken, requireAdmin, async (req, res)
     res.json({ message: 'Serviço excluído com sucesso' });
   } catch (error) {
     console.error('Erro ao excluir serviço:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// REPORTS ENDPOINTS
+
+// GET /api/admin/reports/transactions - Relatórios de transações
+router.get('/reports/transactions', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Simulated transaction data based on service requests and payments
+    const transactions = [
+      {
+        id: 'TXN001',
+        amount: 25688.00,
+        status: 'completed',
+        paymentMethod: 'digital',
+        transactionId: 'DCMR6604-64C7-4CC7-976CC8F7GH',
+        date: '02-ago-2023',
+        provider: 'Edilson Guardado Trading',
+        serviceType: 'Limpeza',
+        location: 'São Paulo-SP'
+      },
+      {
+        id: 'TXN002', 
+        amount: 24178.00,
+        status: 'completed',
+        paymentMethod: 'pix',
+        transactionId: 'PQSM9234-34B3-4CC4-587EERET4R',
+        date: '02-ago-2023',
+        provider: 'Edilson Guardado Trading',
+        serviceType: 'Jardinagem',
+        location: 'São Paulo-SP'
+      }
+    ];
+
+    const metrics = {
+      totalRevenue: 25688.00,
+      commissionRevenue: 24178.00,
+      depositsRequired: 210.00,
+      lostGain: 7536815.14,
+      completedGain: 17547.89
+    };
+
+    res.json({ metrics, transactions });
+  } catch (error) {
+    console.error('Erro ao buscar relatórios de transações:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/admin/reports/business - Relatórios de negócios
+router.get('/reports/business', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const metrics = {
+      overallEarnings: 23988.00,
+      netEarnings: 25688.00,
+      totalBookings: 1700.00
+    };
+
+    // Chart data for earnings statistics
+    const chartData = [
+      { month: '2022', earnings: 4500 },
+      { month: '2023', earnings: 4200 },
+      { month: '2024', earnings: 4600 }
+    ];
+
+    // Yearly summary
+    const yearlyData = [
+      { year: 2023, bookings: 102756, expenses: 0, totalRevenue: 10756.00, netIncome: 10756.00 },
+      { year: 2024, bookings: 82456, expenses: 0, totalRevenue: 8245.00, netIncome: 8245.00 }
+    ];
+
+    res.json({ metrics, chartData, yearlyData });
+  } catch (error) {
+    console.error('Erro ao buscar relatórios de negócios:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/admin/reports/bookings - Relatórios de reservas
+router.get('/reports/bookings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const metrics = {
+      totalReservations: 78,
+      totalAmount: 7946409.33
+    };
+
+    // Chart data for reservations statistics
+    const chartData = [
+      { month: 'Jan', reservations: 45 },
+      { month: 'Feb', reservations: 35 },
+      { month: 'Mar', reservations: 55 },
+      { month: 'Apr', reservations: 25 },
+      { month: 'May', reservations: 40 },
+      { month: 'Jun', reservations: 60 }
+    ];
+
+    // Booking details
+    const bookings = [
+      {
+        id: 'VXV30',
+        clientInfo: 'Edilson Guardado Trading',
+        providerInfo: 'Edilson Guardado Trading',
+        serviceValue: 1440.00,
+        serviceAmount: 1500.00,
+        depositValue: 0.00,
+        totalAmount: 1500.00,
+        paymentStatus: 'Confirmado',
+        action: 'Check'
+      },
+      {
+        id: 'VXV34',
+        clientInfo: 'Arilda',
+        providerInfo: 'Edilson Guardado Trading',
+        serviceValue: 300.00,
+        serviceAmount: 300.00, 
+        depositValue: 0.00,
+        totalAmount: 300.00,
+        paymentStatus: 'Confirmado',
+        action: 'Check'
+      }
+    ];
+
+    res.json({ metrics, chartData, bookings });
+  } catch (error) {
+    console.error('Erro ao buscar relatórios de reservas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/admin/reports/providers - Relatórios dos provedores
+router.get('/reports/providers', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const providers = [
+      {
+        id: 1,
+        name: 'Ana Maria',
+        subscriptionsNumber: 0,
+        servicesNumber: 0,
+        totalReservations: 0,
+        totalEarnings: 0.00,
+        cancellationData: 0.00,
+        completionRate: '0%'
+      },
+      {
+        id: 2,
+        name: 'Eliset e Parceiros LCC',
+        subscriptionsNumber: 0,
+        servicesNumber: 1,
+        totalReservations: 0,
+        totalEarnings: 0.00,
+        cancellationData: 0.00,
+        completionRate: '0%'
+      },
+      {
+        id: 3,
+        name: 'Edilson Guardado Trading',
+        subscriptionsNumber: 20,
+        servicesNumber: 3,
+        totalReservations: 84,
+        totalEarnings: 15754.00,
+        cancellationData: 200.00,
+        completionRate: '97.6%'
+      },
+      {
+        id: 4,
+        name: 'Margarit B',
+        subscriptionsNumber: 12,
+        servicesNumber: 6,
+        totalReservations: 4,
+        totalEarnings: 2124.00,
+        cancellationData: 0.00,
+        completionRate: '100%'
+      },
+      {
+        id: 5,
+        name: 'Wright e Shannon LLC',
+        subscriptionsNumber: 0,
+        servicesNumber: 5,
+        totalReservations: 0,
+        totalEarnings: 0.00,
+        cancellationData: 0.00,
+        completionRate: '0%'
+      },
+      {
+        id: 6,
+        name: 'Cruz e Briggs LLC',
+        subscriptionsNumber: 0,
+        servicesNumber: 5,
+        totalReservations: 0,
+        totalEarnings: 0.00,
+        cancellationData: 0.00,
+        completionRate: '0%'
+      },
+      {
+        id: 7,
+        name: 'Construção de chova a Jardim',
+        subscriptionsNumber: 30,
+        servicesNumber: 5,
+        totalReservations: 4,
+        totalEarnings: 0.00,
+        cancellationData: 0.00,
+        completionRate: '75.0%'
+      }
+    ];
+
+    res.json({ providers });
+  } catch (error) {
+    console.error('Erro ao buscar relatórios de provedores:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

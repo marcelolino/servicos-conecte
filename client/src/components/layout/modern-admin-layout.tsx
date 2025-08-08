@@ -37,6 +37,10 @@ const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
   "/admin-banners": { title: "Banner Promocional", parent: "Promoção" },
   "/admin-coupons": { title: "Lista De Cupons", parent: "Promoção" },
   "/admin-sliders": { title: "Lista De Sliders", parent: "Promoção" },
+  "/admin-reports-transactions": { title: "Relatórios de Transações", parent: "Relatórios" },
+  "/admin-reports-business": { title: "Relatórios de Negócios", parent: "Relatórios" },
+  "/admin-reports-bookings": { title: "Relatórios de Reservas", parent: "Relatórios" },
+  "/admin-reports-providers": { title: "Relatórios dos Provedores", parent: "Relatórios" },
   "/admin-settings": { title: "Configurações" },
 };
 

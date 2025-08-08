@@ -16,6 +16,23 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (February 2025)
 
+### Comprehensive Admin Reports System ✓
+- **Date**: February 8, 2025
+- **Changes**: Implemented complete reports dashboard with four specialized report types
+- **Details**:
+  - **Relatórios de Transações**: Transaction analysis with revenue metrics, commission tracking, and detailed transaction table
+  - **Relatórios de Negócios**: Business overview with earnings statistics, line charts, and yearly performance data
+  - **Relatórios de Reservas**: Booking analytics with reservation statistics, bar charts, and booking details table
+  - **Relatórios dos Provedores**: Provider performance analysis with completion rates, earnings tracking, and service statistics
+  - **Features**: Interactive filters (date range, zone, category), metric cards with visual indicators, responsive charts using Recharts
+  - **Data Visualization**: Line charts for business trends, bar charts for reservations, metric cards with icons and colors
+  - **Export Functionality**: Download buttons for report data export capabilities
+  - **Navigation**: Added new "Relatórios" section in admin sidebar with collapsible menu
+  - **API Endpoints**: Created `/api/admin/reports/*` endpoints for each report type
+  - **UI Components**: Consistent design using shadcn/ui components, cards, tables, and form elements
+  - **Filter System**: Advanced filtering by date range, geographic zones, categories, and providers
+  - **Responsive Design**: Mobile-friendly tables and charts with proper overflow handling
+
 ### Modern Admin Dashboard with Shadcn/UI Components ✓
 - **Date**: February 6, 2025
 - **Changes**: Replaced traditional admin layout with modern shadcn/ui sidebar components

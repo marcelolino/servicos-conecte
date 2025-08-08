@@ -74,6 +74,10 @@ import ProviderServiceSubscriptions from "@/pages/provider-service-subscriptions
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 import LayoutDemo from "@/pages/admin/layout-demo";
+import AdminReportsTransactions from "@/pages/admin-reports-transactions";
+import AdminReportsBusiness from "@/pages/admin-reports-business";
+import AdminReportsBookings from "@/pages/admin-reports-bookings";
+import AdminReportsProviders from "@/pages/admin-reports-providers";
 
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -101,6 +105,10 @@ function Router() {
       <Route path="/admin-categories" component={AdminCategories} />
       <Route path="/admin-media" component={AdminMedia} />
       <Route path="/admin-chat" component={AdminChat} />
+      <Route path="/admin-reports-transactions" component={AdminReportsTransactions} />
+      <Route path="/admin-reports-business" component={AdminReportsBusiness} />
+      <Route path="/admin-reports-bookings" component={AdminReportsBookings} />
+      <Route path="/admin-reports-providers" component={AdminReportsProviders} />
       <Route path="/admin-layout-demo" component={LayoutDemo} />
 
       {/* Provider Routes - Without Header/Footer */}

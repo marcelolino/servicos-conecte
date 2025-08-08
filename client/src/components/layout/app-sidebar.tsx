@@ -15,6 +15,7 @@ import {
   MessageCircle,
   ChevronRight,
   MoreHorizontal,
+  BarChart3,
 } from "lucide-react";
 
 import {
@@ -112,6 +113,16 @@ const menuData: MenuItem[] = [
       { title: "Banner Promocional", href: "/admin-banners" },
       { title: "Lista De Cupons", href: "/admin-coupons" },
       { title: "Lista De Sliders", href: "/admin-sliders" },
+    ]
+  },
+  {
+    title: "Relatórios",
+    icon: BarChart3,
+    items: [
+      { title: "Relatórios de Transações", href: "/admin-reports-transactions" },
+      { title: "Relatórios de Negócios", href: "/admin-reports-business" },
+      { title: "Relatórios de Reservas", href: "/admin-reports-bookings" },
+      { title: "Relatórios dos Provedores", href: "/admin-reports-providers" },
     ]
   },
   {
