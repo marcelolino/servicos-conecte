@@ -295,7 +295,7 @@ router.get('/reports/transactions', authenticateToken, requireAdmin, async (req,
     
     // Build transaction data with available information
     const transactions = bookings.map((booking, index) => {
-      const amount = parseFloat(booking.finalPrice || booking.basePrice || '0');
+      const amount = parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0');
       
       return {
         id: `TXN${String(index + 1).padStart(3, '0')}`,
@@ -312,10 +312,10 @@ router.get('/reports/transactions', authenticateToken, requireAdmin, async (req,
 
     // Calculate real metrics
     const completedBookings = bookings.filter(b => b.status === 'completed');
-    const totalRevenue = completedBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.basePrice || '0'), 0);
+    const totalRevenue = completedBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.estimatedPrice || b.totalAmount || '0'), 0);
     const totalCommissions = totalRevenue * 0.15; // Assuming 15% commission rate
     const pendingBookings = bookings.filter(b => b.status === 'pending');
-    const depositsRequired = pendingBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.basePrice || '0'), 0) * 0.1;
+    const depositsRequired = pendingBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.estimatedPrice || b.totalAmount || '0'), 0) * 0.1;
 
     const metrics = {
       totalRevenue,
@@ -342,7 +342,7 @@ router.get('/reports/business', authenticateToken, requireAdmin, async (req, res
     
     // Calculate real business metrics
     const completedBookings = bookings.filter(b => b.status === 'completed');
-    const totalRevenue = completedBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.basePrice || '0'), 0);
+    const totalRevenue = completedBookings.reduce((sum, b) => sum + parseFloat(b.finalPrice || b.estimatedPrice || b.totalAmount || '0'), 0);
     const totalCommissions = totalRevenue * 0.15; // 15% commission rate
     const netEarnings = totalRevenue - totalCommissions;
     const totalBookings = bookings.length;
@@ -359,7 +359,7 @@ router.get('/reports/business', authenticateToken, requireAdmin, async (req, res
       if (booking.createdAt) {
         const date = new Date(booking.createdAt);
         const monthKey = date.toISOString().substring(0, 7); // YYYY-MM format
-        const amount = parseFloat(booking.finalPrice || booking.basePrice || '0');
+        const amount = parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0');
         monthlyEarnings[monthKey] = (monthlyEarnings[monthKey] || 0) + amount;
       }
     });
@@ -378,7 +378,7 @@ router.get('/reports/business', authenticateToken, requireAdmin, async (req, res
           yearlyStats[year] = { bookings: 0, revenue: 0 };
         }
         yearlyStats[year].bookings++;
-        const amount = parseFloat(booking.finalPrice || booking.basePrice || '0');
+        const amount = parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0');
         yearlyStats[year].revenue += amount;
       }
     });
@@ -409,7 +409,7 @@ router.get('/reports/bookings', authenticateToken, requireAdmin, async (req, res
     // Calculate real metrics
     const totalReservations = bookings.length;
     const totalAmount = bookings.reduce((sum, booking) => {
-      return sum + parseFloat(booking.finalPrice || booking.basePrice || '0');
+      return sum + parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0');
     }, 0);
 
     const metrics = {
@@ -437,10 +437,10 @@ router.get('/reports/bookings', authenticateToken, requireAdmin, async (req, res
         id: `VXV${booking.id}`,
         clientInfo: booking.client?.name || 'Cliente desconhecido',
         providerInfo: booking.provider?.user?.name || 'Provedor desconhecido',
-        serviceValue: parseFloat(booking.basePrice || '0'),
-        serviceAmount: parseFloat(booking.finalPrice || booking.basePrice || '0'),
+        serviceValue: parseFloat(booking.estimatedPrice || '0'),
+        serviceAmount: parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0'),
         depositValue: 0.00, // Implement if deposit system exists
-        totalAmount: parseFloat(booking.finalPrice || booking.basePrice || '0'),
+        totalAmount: parseFloat(booking.finalPrice || booking.estimatedPrice || booking.totalAmount || '0'),
         paymentStatus: booking.status === 'completed' ? 'Confirmado' : 
                       booking.status === 'pending' ? 'Pendente' : 'Cancelado',
         action: 'Check'
@@ -475,7 +475,7 @@ router.get('/reports/providers', authenticateToken, requireAdmin, async (req, re
       const cancelledReservations = providerBookings.filter(b => b.status === 'cancelled').length;
       const totalEarnings = providerBookings
         .filter(b => b.status === 'completed')
-        .reduce((sum, b) => sum + parseFloat(b.finalPrice || b.basePrice || '0'), 0);
+        .reduce((sum, b) => sum + parseFloat(b.finalPrice || b.estimatedPrice || b.totalAmount || '0'), 0);
       
       const completionRate = totalReservations > 0 
         ? ((completedReservations / totalReservations) * 100).toFixed(1) + '%'

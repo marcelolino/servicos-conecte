@@ -66,15 +66,15 @@ export default function AdminReportsBookings() {
 
   const metricsCards = [
     {
-      title: 'Total de reservas',
-      value: (reportData?.metrics.totalReservations || 78).toString(),
+      title: 'Total de Reservas',
+      value: (reportData?.metrics.totalReservations || 0).toString(),
       icon: Calendar,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Valor total',
-      value: formatCurrency(reportData?.metrics.totalAmount || 7946409.33),
+      title: 'Valor Total',
+      value: formatCurrency(reportData?.metrics.totalAmount || 0),
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100',

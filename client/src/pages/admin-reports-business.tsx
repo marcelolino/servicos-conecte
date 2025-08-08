@@ -62,22 +62,22 @@ export default function AdminReportsBusiness() {
 
   const metricsCards = [
     {
-      title: 'Ganhos Gerais',
-      value: formatCurrency(reportData?.metrics.overallEarnings || 23988.00),
+      title: 'Receita Total',
+      value: formatCurrency(reportData?.metrics.totalRevenue || 0),
       icon: DollarSign,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
       title: 'Ganhos Líquidos',
-      value: formatCurrency(reportData?.metrics.netEarnings || 25688.00),
+      value: formatCurrency(reportData?.metrics.netEarnings || 0),
       icon: TrendingUp,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
       title: 'Total de Reservas',
-      value: formatCurrency(reportData?.metrics.totalBookings || 1700.00),
+      value: reportData?.metrics.totalBookings ? reportData.metrics.totalBookings.toString() : '0',
       icon: Calendar,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
