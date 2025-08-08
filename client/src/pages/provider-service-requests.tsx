@@ -83,7 +83,7 @@ export default function ProviderServiceRequestsPage() {
   // Create service request mutation
   const createRequestMutation = useMutation({
     mutationFn: (data: ServiceRequestForm) =>
-      apiRequest("/api/provider/service-requests", "POST", data),
+      apiRequest("POST", "/api/provider/service-requests", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/provider/service-requests"] });
       toast({

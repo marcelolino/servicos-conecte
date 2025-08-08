@@ -51,7 +51,7 @@ export default function ProviderServiceSubscriptionsPage() {
   // Toggle service status mutation
   const toggleServiceStatusMutation = useMutation({
     mutationFn: ({ serviceId, isActive }: { serviceId: number; isActive: boolean }) =>
-      apiRequest(`/api/provider-services/${serviceId}`, "PUT", { isActive }),
+      apiRequest("PUT", `/api/provider-services/${serviceId}`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
       toast({
