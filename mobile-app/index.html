@@ -31,7 +31,7 @@
           <i class="fas fa-chevron-down"></i>
         </div>
         <div class="search-bar">
-          <input type="text" placeholder="Search services..." id="search-input">
+          <input type="text" placeholder="Buscar serviços..." id="search-input">
           <button class="search-btn">
             <i class="fas fa-search"></i>
           </button>
@@ -60,19 +60,30 @@
         </div>
       </section>
 
+      <!-- Search Results Section -->
+      <section class="search-results-section" id="search-results" style="display: none;">
+        <div class="section-header">
+          <h3>Resultados da Busca</h3>
+          <button class="clear-search" id="clear-search">Limpar</button>
+        </div>
+        <div class="services-list" id="search-results-list">
+          <!-- Search results will be loaded here -->
+        </div>
+      </section>
+
       <!-- Categories -->
-      <section class="categories-section">
-        <h3>All Categories</h3>
+      <section class="categories-section" id="categories-section">
+        <h3>Todas as Categorias</h3>
         <div class="categories-grid" id="categories-grid">
           <!-- Categories will be loaded here -->
         </div>
       </section>
 
       <!-- Popular Services -->
-      <section class="services-section">
+      <section class="services-section" id="popular-services-section">
         <div class="section-header">
-          <h3>Popular Services</h3>
-          <a href="#" class="see-all">See All</a>
+          <h3>Serviços Populares</h3>
+          <button class="view-all" onclick="window.mobileApp?.showAllServices()">Ver Todos</button>
         </div>
         <div class="services-list" id="popular-services">
           <!-- Services will be loaded here -->
@@ -80,10 +91,10 @@
       </section>
 
       <!-- Current Offers -->
-      <section class="offers-section">
+      <section class="offers-section" id="offers-section">
         <div class="section-header">
-          <h3>Current Offers</h3>
-          <a href="#" class="see-all">See All</a>
+          <h3>Ofertas Atuais</h3>
+          <button class="view-all" onclick="window.mobileApp?.showAllOffers()">Ver Todas</button>
         </div>
         <div class="offers-grid" id="current-offers">
           <!-- Offers will be loaded here -->
@@ -92,26 +103,55 @@
 
       <!-- Bottom Navigation -->
       <nav class="bottom-nav">
-        <div class="nav-item active">
+        <div class="nav-item active" data-tab="home">
           <i class="fas fa-home"></i>
-          <span>Home</span>
+          <span>Início</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-tab="cart">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Carrinho</span>
+          <div class="cart-badge" id="cart-badge" style="display: none;">0</div>
+        </div>
+        <div class="nav-item" data-tab="bookings">
           <i class="fas fa-calendar-alt"></i>
-          <span>Bookings</span>
+          <span>Reservas</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-tab="offers">
           <i class="fas fa-percent"></i>
-          <span>Offers</span>
+          <span>Ofertas</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-tab="more">
           <i class="fas fa-ellipsis-h"></i>
-          <span>More</span>
+          <span>Mais</span>
         </div>
       </nav>
 
+      <!-- Cart Section -->
+      <section class="cart-section" id="cart-section" style="display: none;">
+        <div class="section-header">
+          <h3>Meu Carrinho</h3>
+          <button class="clear-cart" id="clear-cart">Limpar Carrinho</button>
+        </div>
+        <div class="cart-items" id="cart-items">
+          <!-- Cart items will be loaded here -->
+        </div>
+        <div class="cart-summary" id="cart-summary" style="display: none;">
+          <div class="cart-total">
+            <span>Total: R$ <span id="cart-total">0,00</span></span>
+          </div>
+          <button class="checkout-btn" onclick="proceedToCheckout()">Finalizar Pedido</button>
+        </div>
+        <div class="empty-cart" id="empty-cart">
+          <div class="empty-state">
+            <i class="fas fa-shopping-cart" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+            <p>Seu carrinho está vazio</p>
+            <button onclick="showTab('home')" class="btn-primary">Continuar Comprando</button>
+          </div>
+        </div>
+      </section>
+
       <!-- Floating Action Button -->
-      <div class="fab">
+      <div class="fab" id="fab">
         <i class="fas fa-plus"></i>
       </div>
 
@@ -124,44 +164,44 @@
             </button>
           </div>
           <div class="more-menu-grid">
-            <div class="menu-item">
+            <div class="menu-item" data-action="profile">
               <div class="menu-icon">
                 <i class="fas fa-user"></i>
               </div>
-              <span>Profile</span>
+              <span>Perfil</span>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" data-action="inbox">
               <div class="menu-icon">
                 <i class="fas fa-inbox"></i>
               </div>
-              <span>Inbox</span>
+              <span>Mensagens</span>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" data-action="language">
               <div class="menu-icon">
                 <i class="fas fa-language"></i>
               </div>
-              <span>Language</span>
+              <span>Idioma</span>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" data-action="settings">
               <div class="menu-icon">
                 <i class="fas fa-cog"></i>
               </div>
-              <span>Settings</span>
+              <span>Configurações</span>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" data-action="track">
               <div class="menu-icon">
                 <i class="fas fa-map-marker-alt"></i>
               </div>
-              <span>Track Booking</span>
+              <span>Rastrear Pedido</span>
             </div>
-            <div class="menu-item">
+            <div class="menu-item" data-action="coupons">
               <div class="menu-icon">
                 <i class="fas fa-percent"></i>
               </div>
-              <span>Coupons</span>
+              <span>Cupons</span>
             </div>
           </div>
-          <div class="app-version">App Version: 3.2</div>
+          <div class="app-version">Versão do App: 3.2</div>
         </div>
       </div>
     </div>
