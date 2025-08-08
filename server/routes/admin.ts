@@ -117,14 +117,19 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/admin/cities - Listar cidades disponíveis
 router.get('/cities', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const cities = await storage.db
-      .selectDistinct({
-        city: providers.city,
-        state: providers.state,
-      })
-      .from(providers)
-      .where(sql`${providers.city} IS NOT NULL AND ${providers.state} IS NOT NULL`)
-      .orderBy(providers.city);
+    // Get providers and extract unique cities
+    const allProviders = await storage.getProviders();
+    const citySet = new Set();
+    
+    allProviders.forEach(provider => {
+      if (provider.city && provider.state) {
+        citySet.add(JSON.stringify({ city: provider.city, state: provider.state }));
+      }
+    });
+    
+    const cities = Array.from(citySet)
+      .map(cityStr => JSON.parse(cityStr))
+      .sort((a, b) => a.city.localeCompare(b.city));
 
     res.json(cities);
   } catch (error) {
@@ -283,38 +288,51 @@ router.delete('/services/:id', authenticateToken, requireAdmin, async (req, res)
 // GET /api/admin/reports/transactions - Relatórios de transações
 router.get('/reports/transactions', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Simulated transaction data based on service requests and payments
-    const transactions = [
-      {
-        id: 'TXN001',
-        amount: 25688.00,
-        status: 'completed',
-        paymentMethod: 'digital',
-        transactionId: 'DCMR6604-64C7-4CC7-976CC8F7GH',
-        date: '02-ago-2023',
-        provider: 'Edilson Guardado Trading',
-        serviceType: 'Limpeza',
-        location: 'São Paulo-SP'
-      },
-      {
-        id: 'TXN002', 
-        amount: 24178.00,
-        status: 'completed',
-        paymentMethod: 'pix',
-        transactionId: 'PQSM9234-34B3-4CC4-587EERET4R',
-        date: '02-ago-2023',
-        provider: 'Edilson Guardado Trading',
-        serviceType: 'Jardinagem',
-        location: 'São Paulo-SP'
-      }
-    ];
+    const { startDate, endDate, zone, category } = req.query;
+    
+    // Get all payments with related service requests
+    const payments = await storage.getPayments();
+    const serviceRequests = await storage.getServiceRequests();
+    const providers = await storage.getProviders();
+    const users = await storage.getUsers();
+    
+    // Create a map for quick lookups
+    const serviceRequestMap = new Map(serviceRequests.map(sr => [sr.id, sr]));
+    const providerMap = new Map(providers.map(p => [p.id, p]));
+    const userMap = new Map(users.map(u => [u.id, u]));
+    
+    // Build transaction data with related information
+    const transactions = payments.map((payment, index) => {
+      const serviceRequest = serviceRequestMap.get(payment.serviceRequestId);
+      const provider = serviceRequest ? providerMap.get(serviceRequest.providerId) : null;
+      const providerUser = provider ? userMap.get(provider.userId) : null;
+      
+      return {
+        id: `TXN${String(index + 1).padStart(3, '0')}`,
+        amount: parseFloat(payment.amount || '0'),
+        status: payment.status || 'pending',
+        paymentMethod: payment.paymentMethod || 'digital',
+        transactionId: payment.transactionId || `TX-${payment.id}`,
+        date: payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('pt-BR') : 'N/A',
+        provider: providerUser ? providerUser.name : 'N/A',
+        serviceType: serviceRequest ? 'Serviço' : 'N/A',
+        location: serviceRequest ? `${serviceRequest.city || 'N/A'}, ${serviceRequest.state || 'N/A'}` : 'N/A'
+      };
+    });
+
+    // Calculate real metrics
+    const completedPayments = payments.filter(p => p.status === 'completed');
+    const totalRevenue = completedPayments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+    const totalCommissions = completedPayments.reduce((sum, p) => sum + parseFloat(p.commissionAmount || '0'), 0);
+    const pendingPayments = payments.filter(p => p.status === 'pending');
+    const depositsRequired = pendingPayments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
 
     const metrics = {
-      totalRevenue: 25688.00,
-      commissionRevenue: 24178.00,
-      depositsRequired: 210.00,
-      lostGain: 7536815.14,
-      completedGain: 17547.89
+      totalRevenue,
+      commissionRevenue: totalCommissions,
+      depositsRequired,
+      lostGain: 0, // Calculate based on cancelled transactions
+      completedGain: totalRevenue - totalCommissions
     };
 
     res.json({ metrics, transactions });
@@ -327,24 +345,63 @@ router.get('/reports/transactions', authenticateToken, requireAdmin, async (req,
 // GET /api/admin/reports/business - Relatórios de negócios
 router.get('/reports/business', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const { startDate, endDate, zone, category } = req.query;
+    
+    // Get real data
+    const payments = await storage.getPayments();
+    const serviceRequests = await storage.getServiceRequests();
+    
+    // Calculate real business metrics
+    const completedPayments = payments.filter(p => p.status === 'completed');
+    const totalRevenue = completedPayments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+    const totalCommissions = completedPayments.reduce((sum, p) => sum + parseFloat(p.commissionAmount || '0'), 0);
+    const netEarnings = totalRevenue - totalCommissions;
+    const totalBookings = serviceRequests.length;
+
     const metrics = {
-      overallEarnings: 23988.00,
-      netEarnings: 25688.00,
-      totalBookings: 1700.00
+      overallEarnings: totalRevenue,
+      netEarnings,
+      totalBookings
     };
 
-    // Chart data for earnings statistics
-    const chartData = [
-      { month: '2022', earnings: 4500 },
-      { month: '2023', earnings: 4200 },
-      { month: '2024', earnings: 4600 }
-    ];
+    // Chart data for earnings statistics - group by month
+    const monthlyEarnings = {};
+    completedPayments.forEach(payment => {
+      if (payment.createdAt) {
+        const date = new Date(payment.createdAt);
+        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM format
+        const amount = parseFloat(payment.amount || '0');
+        monthlyEarnings[monthKey] = (monthlyEarnings[monthKey] || 0) + amount;
+      }
+    });
 
-    // Yearly summary
-    const yearlyData = [
-      { year: 2023, bookings: 102756, expenses: 0, totalRevenue: 10756.00, netIncome: 10756.00 },
-      { year: 2024, bookings: 82456, expenses: 0, totalRevenue: 8245.00, netIncome: 8245.00 }
-    ];
+    const chartData = Object.entries(monthlyEarnings)
+      .map(([month, earnings]) => ({ month, earnings }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6); // Last 6 months
+
+    // Yearly summary - group by year
+    const yearlyStats = {};
+    serviceRequests.forEach(request => {
+      if (request.createdAt) {
+        const year = new Date(request.createdAt).getFullYear();
+        if (!yearlyStats[year]) {
+          yearlyStats[year] = { bookings: 0, revenue: 0 };
+        }
+        yearlyStats[year].bookings++;
+        if (request.finalPrice) {
+          yearlyStats[year].revenue += parseFloat(request.finalPrice);
+        }
+      }
+    });
+
+    const yearlyData = Object.entries(yearlyStats).map(([year, stats]) => ({
+      year: parseInt(year),
+      bookings: stats.bookings,
+      expenses: 0, // Calculate if expense data is available
+      totalRevenue: stats.revenue,
+      netIncome: stats.revenue * 0.85 // Assuming 15% commission rate
+    })).sort((a, b) => b.year - a.year);
 
     res.json({ metrics, chartData, yearlyData });
   } catch (error) {
@@ -356,46 +413,61 @@ router.get('/reports/business', authenticateToken, requireAdmin, async (req, res
 // GET /api/admin/reports/bookings - Relatórios de reservas
 router.get('/reports/bookings', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const { startDate, endDate, zone, category } = req.query;
+    
+    // Get real data
+    const serviceRequests = await storage.getServiceRequests();
+    const providers = await storage.getProviders();
+    const users = await storage.getUsers();
+    
+    // Create maps for quick lookups
+    const providerMap = new Map(providers.map(p => [p.id, p]));
+    const userMap = new Map(users.map(u => [u.id, u]));
+    
+    // Calculate real metrics
+    const totalReservations = serviceRequests.length;
+    const totalAmount = serviceRequests.reduce((sum, sr) => {
+      return sum + parseFloat(sr.finalPrice || sr.basePrice || '0');
+    }, 0);
+
     const metrics = {
-      totalReservations: 78,
-      totalAmount: 7946409.33
+      totalReservations,
+      totalAmount
     };
 
-    // Chart data for reservations statistics
-    const chartData = [
-      { month: 'Jan', reservations: 45 },
-      { month: 'Feb', reservations: 35 },
-      { month: 'Mar', reservations: 55 },
-      { month: 'Apr', reservations: 25 },
-      { month: 'May', reservations: 40 },
-      { month: 'Jun', reservations: 60 }
-    ];
-
-    // Booking details
-    const bookings = [
-      {
-        id: 'VXV30',
-        clientInfo: 'Edilson Guardado Trading',
-        providerInfo: 'Edilson Guardado Trading',
-        serviceValue: 1440.00,
-        serviceAmount: 1500.00,
-        depositValue: 0.00,
-        totalAmount: 1500.00,
-        paymentStatus: 'Confirmado',
-        action: 'Check'
-      },
-      {
-        id: 'VXV34',
-        clientInfo: 'Arilda',
-        providerInfo: 'Edilson Guardado Trading',
-        serviceValue: 300.00,
-        serviceAmount: 300.00, 
-        depositValue: 0.00,
-        totalAmount: 300.00,
-        paymentStatus: 'Confirmado',
-        action: 'Check'
+    // Chart data for reservations statistics - group by month
+    const monthlyReservations = {};
+    serviceRequests.forEach(request => {
+      if (request.createdAt) {
+        const date = new Date(request.createdAt);
+        const monthKey = date.toLocaleDateString('pt-BR', { month: 'short' });
+        monthlyReservations[monthKey] = (monthlyReservations[monthKey] || 0) + 1;
       }
-    ];
+    });
+
+    const chartData = Object.entries(monthlyReservations)
+      .map(([month, reservations]) => ({ month, reservations }))
+      .slice(-6); // Last 6 months
+
+    // Build booking details with real data
+    const bookings = serviceRequests.slice(0, 10).map(request => {
+      const provider = providerMap.get(request.providerId);
+      const providerUser = provider ? userMap.get(provider.userId) : null;
+      const clientUser = userMap.get(request.clientId);
+      
+      return {
+        id: `VXV${request.id}`,
+        clientInfo: clientUser ? clientUser.name : 'Cliente desconhecido',
+        providerInfo: providerUser ? providerUser.name : 'Provedor desconhecido',
+        serviceValue: parseFloat(request.basePrice || '0'),
+        serviceAmount: parseFloat(request.finalPrice || request.basePrice || '0'),
+        depositValue: 0.00, // Implement if deposit system exists
+        totalAmount: parseFloat(request.finalPrice || request.basePrice || '0'),
+        paymentStatus: request.status === 'completed' ? 'Confirmado' : 
+                      request.status === 'pending' ? 'Pendente' : 'Cancelado',
+        action: 'Check'
+      };
+    });
 
     res.json({ metrics, chartData, bookings });
   } catch (error) {
@@ -407,80 +479,48 @@ router.get('/reports/bookings', authenticateToken, requireAdmin, async (req, res
 // GET /api/admin/reports/providers - Relatórios dos provedores
 router.get('/reports/providers', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const providers = [
-      {
-        id: 1,
-        name: 'Ana Maria',
-        subscriptionsNumber: 0,
-        servicesNumber: 0,
-        totalReservations: 0,
-        totalEarnings: 0.00,
-        cancellationData: 0.00,
-        completionRate: '0%'
-      },
-      {
-        id: 2,
-        name: 'Eliset e Parceiros LCC',
-        subscriptionsNumber: 0,
-        servicesNumber: 1,
-        totalReservations: 0,
-        totalEarnings: 0.00,
-        cancellationData: 0.00,
-        completionRate: '0%'
-      },
-      {
-        id: 3,
-        name: 'Edilson Guardado Trading',
-        subscriptionsNumber: 20,
-        servicesNumber: 3,
-        totalReservations: 84,
-        totalEarnings: 15754.00,
-        cancellationData: 200.00,
-        completionRate: '97.6%'
-      },
-      {
-        id: 4,
-        name: 'Margarit B',
-        subscriptionsNumber: 12,
-        servicesNumber: 6,
-        totalReservations: 4,
-        totalEarnings: 2124.00,
-        cancellationData: 0.00,
-        completionRate: '100%'
-      },
-      {
-        id: 5,
-        name: 'Wright e Shannon LLC',
-        subscriptionsNumber: 0,
-        servicesNumber: 5,
-        totalReservations: 0,
-        totalEarnings: 0.00,
-        cancellationData: 0.00,
-        completionRate: '0%'
-      },
-      {
-        id: 6,
-        name: 'Cruz e Briggs LLC',
-        subscriptionsNumber: 0,
-        servicesNumber: 5,
-        totalReservations: 0,
-        totalEarnings: 0.00,
-        cancellationData: 0.00,
-        completionRate: '0%'
-      },
-      {
-        id: 7,
-        name: 'Construção de chova a Jardim',
-        subscriptionsNumber: 30,
-        servicesNumber: 5,
-        totalReservations: 4,
-        totalEarnings: 0.00,
-        cancellationData: 0.00,
-        completionRate: '75.0%'
-      }
-    ];
+    const { startDate, endDate, zone, category } = req.query;
+    
+    // Get real data
+    const providers = await storage.getProviders();
+    const users = await storage.getUsers();
+    const serviceRequests = await storage.getServiceRequests();
+    const services = await storage.getServices();
+    
+    // Create maps for quick lookups
+    const userMap = new Map(users.map(u => [u.id, u]));
+    
+    // Build provider statistics with real data
+    const providerStats = providers.map(provider => {
+      const user = userMap.get(provider.userId);
+      const providerRequests = serviceRequests.filter(sr => sr.providerId === provider.id);
+      const providerServices = services.filter(s => s.providerId === provider.id);
+      
+      // Calculate metrics
+      const totalReservations = providerRequests.length;
+      const completedReservations = providerRequests.filter(sr => sr.status === 'completed').length;
+      const cancelledReservations = providerRequests.filter(sr => sr.status === 'cancelled').length;
+      const totalEarnings = providerRequests
+        .filter(sr => sr.status === 'completed')
+        .reduce((sum, sr) => sum + parseFloat(sr.finalPrice || sr.basePrice || '0'), 0);
+      
+      const completionRate = totalReservations > 0 
+        ? ((completedReservations / totalReservations) * 100).toFixed(1) + '%'
+        : '0%';
+      
+      return {
+        id: provider.id,
+        name: user ? user.name : 'Nome não disponível',
+        subscriptionsNumber: 0, // Implement if subscription system exists
+        servicesNumber: providerServices.length,
+        totalReservations,
+        totalEarnings,
+        cancellationData: cancelledReservations * 50, // Simulated cancellation cost
+        completionRate
+      };
+    }).filter(provider => provider.name !== 'Nome não disponível'); // Filter out providers without user data
 
-    res.json({ providers });
+    res.json({ providers: providerStats });
   } catch (error) {
     console.error('Erro ao buscar relatórios de provedores:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
