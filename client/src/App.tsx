@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LocationProvider } from "@/contexts/LocationContext";
+import { LocationInitialRequest } from "@/components/location/LocationInitialRequest";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
@@ -195,6 +196,7 @@ function App() {
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
+              <LocationInitialRequest />
               <Router />
             </TooltipProvider>
           </AuthProvider>

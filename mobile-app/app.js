@@ -35,6 +35,11 @@ class MobileApp {
     // Hide loading screen
     this.hideLoading();
     
+    // Request location permission after app loads
+    setTimeout(() => {
+      this.requestLocationPermission();
+    }, 1500);
+    
     console.log('Mobile App initialized successfully');
   }
 
@@ -996,6 +1001,314 @@ class MobileApp {
     this.updateAuthUI();
     this.updateCartUI();
     this.showToast('Logout realizado com sucesso', 'info');
+  }
+
+  requestLocationPermission() {
+    // Check if we've already asked for permission
+    const hasAskedPermission = localStorage.getItem('mobile_locationPermissionAsked');
+    const hasLocation = localStorage.getItem('mobile_userLocation') || localStorage.getItem('selectedCity');
+    
+    if (hasAskedPermission || hasLocation) {
+      return; // Don't ask again
+    }
+
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+      console.log('Geolocation not supported by this browser');
+      return;
+    }
+
+    // Create and show location request modal
+    this.showLocationRequestModal();
+  }
+
+  showLocationRequestModal() {
+    // Create modal HTML similar to the browser's location request
+    const modalHtml = `
+      <div id="location-request-modal" class="location-request-modal">
+        <div class="location-modal-backdrop" onclick="window.mobileApp.closeLocationModal('block')"></div>
+        <div class="location-modal-content">
+          <div class="location-modal-header">
+            <div class="location-modal-icon">
+              <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="location-modal-text">
+              <p class="location-site">${window.location.host} quer</p>
+              <p class="location-message">Saber sua localização</p>
+            </div>
+            <button class="location-modal-close" onclick="window.mobileApp.closeLocationModal('block')">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="location-modal-buttons">
+            <button class="location-btn location-btn-block" onclick="window.mobileApp.handleLocationResponse('block')">
+              Bloquear
+            </button>
+            <button class="location-btn location-btn-once" onclick="window.mobileApp.handleLocationResponse('once')">
+              Somente dessa vez
+            </button>
+            <button class="location-btn location-btn-allow" onclick="window.mobileApp.handleLocationResponse('allow')">
+              Permitir
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add modal to document
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add modal styles dynamically
+    this.addLocationModalStyles();
+  }
+
+  addLocationModalStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .location-request-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      
+      .location-modal-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+      }
+      
+      .location-modal-content {
+        position: relative;
+        background: #2d3748;
+        border-radius: 8px;
+        max-width: 400px;
+        width: 100%;
+        color: white;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      }
+      
+      .location-modal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #4a5568;
+      }
+      
+      .location-modal-icon {
+        color: #4299e1;
+        font-size: 20px;
+      }
+      
+      .location-modal-text {
+        flex: 1;
+      }
+      
+      .location-site {
+        font-size: 13px;
+        color: #a0aec0;
+        margin: 0 0 2px 0;
+      }
+      
+      .location-message {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0;
+        color: white;
+      }
+      
+      .location-modal-close {
+        background: none;
+        border: none;
+        color: #a0aec0;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+      
+      .location-modal-close:hover {
+        background: #4a5568;
+        color: white;
+      }
+      
+      .location-modal-buttons {
+        padding: 16px 20px;
+        display: flex;
+        gap: 8px;
+      }
+      
+      .location-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      
+      .location-btn-block,
+      .location-btn-once {
+        background: #4a5568;
+        color: white;
+      }
+      
+      .location-btn-block:hover,
+      .location-btn-once:hover {
+        background: #2d3748;
+      }
+      
+      .location-btn-allow {
+        background: #4299e1;
+        color: white;
+      }
+      
+      .location-btn-allow:hover {
+        background: #3182ce;
+      }
+      
+      .location-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `;
+    
+    document.head.appendChild(style);
+  }
+
+  handleLocationResponse(action) {
+    const modal = document.getElementById('location-request-modal');
+    
+    switch (action) {
+      case 'block':
+        localStorage.setItem('mobile_locationPermissionAsked', 'blocked');
+        this.closeLocationModal();
+        break;
+        
+      case 'once':
+      case 'allow':
+        this.requestCurrentLocation();
+        break;
+    }
+  }
+
+  requestCurrentLocation() {
+    // Disable buttons and show loading
+    const buttons = document.querySelectorAll('.location-btn');
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.textContent !== 'Bloquear') {
+        btn.textContent = btn.textContent === 'Permitir' ? 'Obtendo...' : 'Obtendo...';
+      }
+    });
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Save location data
+        const locationData = {
+          lat: latitude,
+          lng: longitude,
+          address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('mobile_userLocation', JSON.stringify(locationData));
+        localStorage.setItem('mobile_locationPermissionAsked', 'granted');
+        
+        // Update the location display in header
+        this.updateLocationDisplay(locationData);
+        
+        // Try to reverse geocode for a better address
+        this.reverseGeocodeLocation(latitude, longitude);
+        
+        this.showToast('Localização obtida com sucesso!', 'success');
+        this.closeLocationModal();
+      },
+      (error) => {
+        console.error('Erro ao obter localização:', error);
+        localStorage.setItem('mobile_locationPermissionAsked', 'denied');
+        
+        let message = 'Não foi possível obter sua localização.';
+        if (error.code === error.PERMISSION_DENIED) {
+          message = 'Permissão de localização negada.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          message = 'Localização não disponível.';
+        } else if (error.code === error.TIMEOUT) {
+          message = 'Tempo esgotado para obter localização.';
+        }
+        
+        this.showToast(message, 'warning');
+        this.closeLocationModal();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000
+      }
+    );
+  }
+
+  async reverseGeocodeLocation(lat, lng) {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        // Update stored location with proper address
+        const locationData = {
+          lat,
+          lng,
+          address,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('mobile_userLocation', JSON.stringify(locationData));
+        this.updateLocationDisplay(locationData);
+      }
+    } catch (error) {
+      console.error('Erro no reverse geocoding:', error);
+    }
+  }
+
+  updateLocationDisplay(locationData) {
+    const locationElement = document.getElementById('user-location');
+    if (locationElement && locationData.address) {
+      // Extract a more readable part of the address
+      const addressParts = locationData.address.split(',');
+      const displayAddress = addressParts.slice(0, 3).join(',').trim();
+      locationElement.textContent = displayAddress || locationData.address;
+    }
+  }
+
+  closeLocationModal(action = null) {
+    const modal = document.getElementById('location-request-modal');
+    if (modal) {
+      modal.remove();
+    }
+    
+    // If blocked by clicking close button, mark as asked
+    if (action === 'block') {
+      localStorage.setItem('mobile_locationPermissionAsked', 'dismissed');
+    }
   }
 }
 
