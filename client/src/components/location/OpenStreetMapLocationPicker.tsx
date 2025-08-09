@@ -244,8 +244,97 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
   // Função para atualizar localização no mapa
   const handleMapLocationChange = async (lat: number, lng: number) => {
-    const address = await reverseGeocode(lat, lng);
-    const location = { lat, lng, address };
+    const rawAddress = await reverseGeocode(lat, lng);
+    
+    // Processar endereço para extrair dados organizados com sigla do estado
+    const addressParts = rawAddress.split(',').map(part => part.trim());
+    
+    // Mapeamento de estados para suas siglas
+    const stateMapping = {
+      'goiás': 'GO', 'goias': 'GO',
+      'são paulo': 'SP', 'sao paulo': 'SP',
+      'rio de janeiro': 'RJ',
+      'minas gerais': 'MG',
+      'bahia': 'BA',
+      'paraná': 'PR', 'parana': 'PR',
+      'rio grande do sul': 'RS',
+      'pernambuco': 'PE',
+      'ceará': 'CE', 'ceara': 'CE',
+      'pará': 'PA', 'para': 'PA',
+      'santa catarina': 'SC',
+      'maranhão': 'MA', 'maranhao': 'MA',
+      'paraíba': 'PB', 'paraiba': 'PB',
+      'espírito santo': 'ES', 'espirito santo': 'ES',
+      'piauí': 'PI', 'piaui': 'PI',
+      'alagoas': 'AL',
+      'rio grande do norte': 'RN',
+      'mato grosso': 'MT',
+      'mato grosso do sul': 'MS',
+      'distrito federal': 'DF',
+      'sergipe': 'SE',
+      'rondônia': 'RO', 'rondonia': 'RO',
+      'acre': 'AC',
+      'amazonas': 'AM',
+      'roraima': 'RR',
+      'amapá': 'AP', 'amapa': 'AP',
+      'tocantins': 'TO'
+    };
+
+    let street = '';
+    let city = '';
+    let state = '';
+
+    // Extrair informações organizadas
+    if (addressParts.length >= 3) {
+      street = addressParts[0] || '';
+      
+      // Procurar por estado usando o mapeamento
+      for (let i = addressParts.length - 1; i >= 0; i--) {
+        const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
+        
+        for (const [stateName, stateCode] of Object.entries(stateMapping)) {
+          if (!state && part.includes(stateName)) {
+            state = stateCode;
+            break;
+          }
+        }
+        
+        // Se encontrou estado, procurar cidade na parte anterior
+        if (!city && state && i > 0 && addressParts[i-1]) {
+          const cityCandidate = addressParts[i-1].trim();
+          // Verificar se não é uma região geográfica
+          if (!cityCandidate.toLowerCase().includes('região') && 
+              !cityCandidate.toLowerCase().includes('imediata') &&
+              !cityCandidate.toLowerCase().includes('intermediária')) {
+            city = cityCandidate;
+          }
+        }
+        
+        if (state && city) break;
+      }
+      
+      // Fallback se não encontrou cidade/estado
+      if (!city && addressParts.length >= 2) {
+        city = addressParts[addressParts.length - 2] || '';
+      }
+      if (!state && addressParts.length >= 1) {
+        const lastPart = addressParts[addressParts.length - 1]?.replace(/,?\s*Brasil$/, '').trim().toLowerCase() || '';
+        // Tentar mapear novamente com fallback
+        for (const [stateName, stateCode] of Object.entries(stateMapping)) {
+          if (lastPart.includes(stateName)) {
+            state = stateCode;
+            break;
+          }
+        }
+      }
+    } else {
+      street = rawAddress;
+    }
+
+    // Criar endereço organizado para retorno
+    const organizedAddress = `${street}, ${city}, ${state}`.replace(/,\s*$/, '');
+    
+    const location = { lat, lng, address: organizedAddress };
     setSelectedLocation(location);
     setMapPosition([lat, lng]);
   };
