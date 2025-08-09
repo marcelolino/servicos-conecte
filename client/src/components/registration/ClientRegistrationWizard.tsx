@@ -147,28 +147,68 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       if (state) break;
     }
     
-    // Analisar partes do endereço
-    if (addressParts.length >= 4) {
+    // Analisar partes do endereço após processamento do estado
+    if (addressParts.length >= 2) {
       street = addressParts[0] || '';
-      neighborhood = addressParts[1] || '';
-      city = addressParts[2] || '';
-      if (!state) state = addressParts[3]?.replace(/,?\s*Brasil$/, '').trim() || '';
-    } else if (addressParts.length >= 3) {
-      street = addressParts[0] || '';
-      city = addressParts[1] || '';
-      if (!state) state = addressParts[2]?.replace(/,?\s*Brasil$/, '').trim() || '';
-    } else if (addressParts.length >= 2) {
-      street = addressParts[0] || '';
-      city = addressParts[1] || '';
+      
+      // Se já encontramos o estado pelo mapeamento, procurar cidade nas outras partes
+      if (state) {
+        // Procurar cidade nas partes intermediárias (não a primeira que é rua, nem a que contém o estado)
+        for (let i = 1; i < addressParts.length; i++) {
+          const part = addressParts[i].trim();
+          const partLower = part.toLowerCase();
+          
+          // Pular se é uma região geográfica ou contém o estado
+          if (partLower.includes('região') || 
+              partLower.includes('imediata') || 
+              partLower.includes('intermediária') ||
+              partLower.includes('metropolitana') ||
+              partLower.includes('brasil') ||
+              Object.values(stateMapping).some(stateCode => partLower.includes(stateCode.toLowerCase())) ||
+              Object.keys(stateMapping).some(stateName => partLower.includes(stateName))) {
+            continue;
+          }
+          
+          // Se parece ser uma cidade válida
+          if (part.length > 2 && !/^\d+$/.test(part) && !partLower.includes('setor')) {
+            city = part;
+            break;
+          }
+        }
+      }
+      
+      // Fallback para lógica antiga se não encontrou cidade
+      if (!city) {
+        if (addressParts.length >= 4) {
+          street = addressParts[0] || '';
+          neighborhood = addressParts[1] || '';
+          city = addressParts[2] || '';
+        } else if (addressParts.length >= 3) {
+          street = addressParts[0] || '';
+          city = addressParts[1] || '';
+        } else if (addressParts.length >= 2) {
+          street = addressParts[0] || '';
+          city = addressParts[1] || '';
+        }
+      }
     } else {
       street = location.address;
     }
     
+    // Se o location tem dados já processados (do mapa), usar eles
+    const finalStreet = location.parsedStreet || street || location.address;
+    const finalCity = location.parsedCity || city;
+    const finalState = location.parsedState || state;
+    
+    console.log('Debug ClientRegistrationWizard - Final street:', finalStreet);
+    console.log('Debug ClientRegistrationWizard - Final city:', finalCity);
+    console.log('Debug ClientRegistrationWizard - Final state:', finalState);
+    
     setRegistrationData((prev: any) => ({
       ...prev,
-      address: street,
-      city: city,
-      state: state,
+      address: finalStreet,
+      city: finalCity,
+      state: finalState,
       cep: cep || prev.cep || ''
     }));
     

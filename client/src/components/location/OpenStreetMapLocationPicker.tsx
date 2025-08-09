@@ -368,10 +368,26 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
       street = rawAddress;
     }
 
-    // Criar endereço organizado para retorno
-    const organizedAddress = `${street}, ${city}, ${state}`.replace(/,\s*$/, '');
+    // Debug para verificar o que foi extraído
+    console.log('Debug - Raw address:', rawAddress);
+    console.log('Debug - Address parts:', addressParts);
+    console.log('Debug - Extracted street:', street);
+    console.log('Debug - Extracted city:', city);
+    console.log('Debug - Extracted state:', state);
     
-    const location = { lat, lng, address: organizedAddress };
+    // Criar endereço organizado para retorno
+    const organizedAddress = street || rawAddress;
+    
+    const location = { 
+      lat, 
+      lng, 
+      address: organizedAddress,
+      // Adicionar dados estruturados para usar no registro
+      parsedStreet: street,
+      parsedCity: city,
+      parsedState: state
+    };
+    
     setSelectedLocation(location);
     setMapPosition([lat, lng]);
   };
