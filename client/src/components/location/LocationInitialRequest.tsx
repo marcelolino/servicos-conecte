@@ -76,19 +76,58 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
             if (addressParts.length >= 3) {
               street = addressParts[0] || '';
               
-              // Procurar por cidade e estado nas últimas partes
+              // Mapeamento de estados para suas siglas
+              const stateMapping = {
+                'goiás': 'GO', 'goias': 'GO',
+                'são paulo': 'SP', 'sao paulo': 'SP',
+                'rio de janeiro': 'RJ',
+                'minas gerais': 'MG',
+                'bahia': 'BA',
+                'paraná': 'PR', 'parana': 'PR',
+                'rio grande do sul': 'RS',
+                'pernambuco': 'PE',
+                'ceará': 'CE', 'ceara': 'CE',
+                'pará': 'PA', 'para': 'PA',
+                'santa catarina': 'SC',
+                'maranhão': 'MA', 'maranhao': 'MA',
+                'paraíba': 'PB', 'paraiba': 'PB',
+                'espírito santo': 'ES', 'espirito santo': 'ES',
+                'piauí': 'PI', 'piaui': 'PI',
+                'alagoas': 'AL',
+                'rio grande do norte': 'RN',
+                'mato grosso': 'MT',
+                'mato grosso do sul': 'MS',
+                'distrito federal': 'DF',
+                'sergipe': 'SE',
+                'rondônia': 'RO', 'rondonia': 'RO',
+                'acre': 'AC',
+                'amazonas': 'AM',
+                'roraima': 'RR',
+                'amapá': 'AP', 'amapa': 'AP',
+                'tocantins': 'TO'
+              };
+
+              // Procurar por cidade e estado nas partes do endereço
               for (let i = addressParts.length - 1; i >= 0; i--) {
-                const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim();
+                const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
                 
-                // Estados brasileiros conhecidos
-                const states = ['Goiás', 'Goias', 'São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Paraná', 'Rio Grande do Sul', 'Pernambuco', 'Ceará', 'Pará', 'Santa Catarina', 'Maranhão', 'Paraíba', 'Espírito Santo', 'Piauí', 'Alagoas', 'Rio Grande do Norte', 'Mato Grosso', 'Mato Grosso do Sul', 'Distrito Federal', 'Sergipe', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Amapá', 'Tocantins'];
-                
-                if (!state && states.some(s => part.toLowerCase().includes(s.toLowerCase()))) {
-                  state = part;
+                // Procurar por estado usando o mapeamento
+                for (const [stateName, stateCode] of Object.entries(stateMapping)) {
+                  if (!state && part.includes(stateName)) {
+                    state = stateCode;
+                    break;
+                  }
                 }
                 
-                if (!city && i > 0 && state && addressParts[i-1]) {
-                  city = addressParts[i-1].trim();
+                // Se encontrou estado, procurar cidade na parte anterior
+                if (!city && state && i > 0 && addressParts[i-1]) {
+                  const cityCandidate = addressParts[i-1].trim();
+                  // Verificar se não é uma região geográfica
+                  if (!cityCandidate.toLowerCase().includes('região') && 
+                      !cityCandidate.toLowerCase().includes('imediata') &&
+                      !cityCandidate.toLowerCase().includes('intermediária')) {
+                    city = cityCandidate;
+                  }
                 }
               }
               

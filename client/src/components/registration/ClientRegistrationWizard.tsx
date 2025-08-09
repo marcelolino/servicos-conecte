@@ -102,47 +102,48 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       cep = cepMatch[0].replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
     }
     
-    // Lógica melhorada para extrair estado
-    // Procurar por padrões conhecidos de estado brasileiro
-    const statePatterns = [
-      'Goiás', 'Goias', 'GO',
-      'São Paulo', 'Sao Paulo', 'SP',
-      'Rio de Janeiro', 'RJ',
-      'Minas Gerais', 'MG',
-      'Bahia', 'BA',
-      'Paraná', 'Parana', 'PR',
-      'Rio Grande do Sul', 'RS',
-      'Pernambuco', 'PE',
-      'Ceará', 'Ceara', 'CE',
-      'Pará', 'Para', 'PA',
-      'Santa Catarina', 'SC',
-      'Maranhão', 'Maranhao', 'MA',
-      'Paraíba', 'Paraiba', 'PB',
-      'Espírito Santo', 'Espirito Santo', 'ES',
-      'Piauí', 'Piaui', 'PI',
-      'Alagoas', 'AL',
-      'Rio Grande do Norte', 'RN',
-      'Mato Grosso', 'MT',
-      'Mato Grosso do Sul', 'MS',
-      'Distrito Federal', 'DF',
-      'Sergipe', 'SE',
-      'Rondônia', 'Rondonia', 'RO',
-      'Acre', 'AC',
-      'Amazonas', 'AM',
-      'Roraima', 'RR',
-      'Amapá', 'Amapa', 'AP',
-      'Tocantins', 'TO'
-    ];
+    // Mapeamento de estados para suas siglas
+    const stateMapping = {
+      'goiás': 'GO', 'goias': 'GO',
+      'são paulo': 'SP', 'sao paulo': 'SP',
+      'rio de janeiro': 'RJ',
+      'minas gerais': 'MG',
+      'bahia': 'BA',
+      'paraná': 'PR', 'parana': 'PR',
+      'rio grande do sul': 'RS',
+      'pernambuco': 'PE',
+      'ceará': 'CE', 'ceara': 'CE',
+      'pará': 'PA', 'para': 'PA',
+      'santa catarina': 'SC',
+      'maranhão': 'MA', 'maranhao': 'MA',
+      'paraíba': 'PB', 'paraiba': 'PB',
+      'espírito santo': 'ES', 'espirito santo': 'ES',
+      'piauí': 'PI', 'piaui': 'PI',
+      'alagoas': 'AL',
+      'rio grande do norte': 'RN',
+      'mato grosso': 'MT',
+      'mato grosso do sul': 'MS',
+      'distrito federal': 'DF',
+      'sergipe': 'SE',
+      'rondônia': 'RO', 'rondonia': 'RO',
+      'acre': 'AC',
+      'amazonas': 'AM',
+      'roraima': 'RR',
+      'amapá': 'AP', 'amapa': 'AP',
+      'tocantins': 'TO'
+    };
     
-    // Encontrar o estado no endereço
+    // Encontrar o estado no endereço e converter para sigla
     for (const part of addressParts) {
-      const cleanPart = part.replace(/,?\s*Brasil$/, '').trim();
-      for (const statePattern of statePatterns) {
-        if (cleanPart.toLowerCase().includes(statePattern.toLowerCase())) {
-          state = cleanPart;
+      const cleanPart = part.replace(/,?\s*Brasil$/, '').trim().toLowerCase();
+      
+      for (const [stateName, stateCode] of Object.entries(stateMapping)) {
+        if (cleanPart.includes(stateName)) {
+          state = stateCode;
           break;
         }
       }
+      
       if (state) break;
     }
     
