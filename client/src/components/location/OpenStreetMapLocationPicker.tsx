@@ -285,41 +285,78 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
     let state = '';
 
     // Extrair informações organizadas
-    if (addressParts.length >= 3) {
+    if (addressParts.length >= 2) {
       street = addressParts[0] || '';
       
-      // Procurar por estado usando o mapeamento
+      let stateIndex = -1;
+      
+      // Primeiro, encontrar o índice do estado
       for (let i = addressParts.length - 1; i >= 0; i--) {
         const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
         
         for (const [stateName, stateCode] of Object.entries(stateMapping)) {
-          if (!state && part.includes(stateName)) {
+          if (part.includes(stateName)) {
             state = stateCode;
+            stateIndex = i;
             break;
           }
         }
         
-        // Se encontrou estado, procurar cidade na parte anterior
-        if (!city && state && i > 0 && addressParts[i-1]) {
-          const cityCandidate = addressParts[i-1].trim();
-          // Verificar se não é uma região geográfica
-          if (!cityCandidate.toLowerCase().includes('região') && 
-              !cityCandidate.toLowerCase().includes('imediata') &&
-              !cityCandidate.toLowerCase().includes('intermediária')) {
-            city = cityCandidate;
-          }
-        }
-        
-        if (state && city) break;
+        if (state) break;
       }
       
-      // Fallback se não encontrou cidade/estado
-      if (!city && addressParts.length >= 2) {
-        city = addressParts[addressParts.length - 2] || '';
+      // Agora procurar pela cidade antes do estado
+      if (stateIndex > 0) {
+        // Procurar cidade nas partes anteriores ao estado
+        for (let i = stateIndex - 1; i >= 1; i--) {
+          const cityCandidate = addressParts[i].trim();
+          
+          // Verificar se não é uma região geográfica ou outro tipo de divisão administrativa
+          const isNotRegion = !cityCandidate.toLowerCase().includes('região') && 
+                             !cityCandidate.toLowerCase().includes('imediata') &&
+                             !cityCandidate.toLowerCase().includes('intermediária') &&
+                             !cityCandidate.toLowerCase().includes('metropolitana') &&
+                             !cityCandidate.toLowerCase().includes('microrregião');
+          
+          // Verificar se tem características de cidade (não é só números ou muito genérico)
+          const seemsLikeCity = cityCandidate.length > 2 && 
+                               !/^\d+$/.test(cityCandidate) &&
+                               !cityCandidate.toLowerCase().includes('setor') &&
+                               !cityCandidate.toLowerCase().includes('quadra');
+          
+          if (isNotRegion && seemsLikeCity) {
+            city = cityCandidate;
+            break;
+          }
+        }
       }
+      
+      // Fallback: se não encontrou cidade e tem pelo menos 3 partes, usar a segunda parte
+      if (!city && addressParts.length >= 3) {
+        const fallbackCity = addressParts[1].trim();
+        if (fallbackCity && fallbackCity.length > 2 && !fallbackCity.toLowerCase().includes('região')) {
+          city = fallbackCity;
+        }
+      }
+      
+      // Se ainda não encontrou cidade, usar uma parte intermediária válida
+      if (!city && addressParts.length >= 3) {
+        for (let i = 1; i < addressParts.length - 1; i++) {
+          const candidate = addressParts[i].trim();
+          if (candidate && 
+              candidate.length > 2 && 
+              !candidate.toLowerCase().includes('região') &&
+              !candidate.toLowerCase().includes(state.toLowerCase()) &&
+              !/^\d+$/.test(candidate)) {
+            city = candidate;
+            break;
+          }
+        }
+      }
+      
+      // Se ainda não tem estado, tentar fallback
       if (!state && addressParts.length >= 1) {
         const lastPart = addressParts[addressParts.length - 1]?.replace(/,?\s*Brasil$/, '').trim().toLowerCase() || '';
-        // Tentar mapear novamente com fallback
         for (const [stateName, stateCode] of Object.entries(stateMapping)) {
           if (lastPart.includes(stateName)) {
             state = stateCode;
