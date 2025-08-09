@@ -32,6 +32,7 @@ const step2Schema = z.object({
       message: 'CPF inválido',
     }),
   address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
+  complement: z.string().optional(),
   city: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
   state: z.string().min(2, 'Estado deve ter pelo menos 2 caracteres'),
   cep: z.string()
@@ -75,17 +76,48 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     setSavedLocation(location);
     localStorage.setItem('userLocation', JSON.stringify(location));
     
-    // Atualizar registrationData
-    const addressParts = location.address.split(',');
-    const street = addressParts[0]?.trim() || location.address;
-    const city = addressParts[1]?.trim() || '';
-    const state = addressParts[2]?.trim() || '';
+    // Processar endereço mais inteligentemente
+    const addressParts = location.address.split(',').map(part => part.trim());
+    
+    // Tentar extrair informações do endereço
+    let street = '';
+    let neighborhood = '';
+    let city = '';
+    let state = '';
+    let cep = '';
+    
+    // Procurar por CEP no endereço (formato XXXXX-XXX ou XXXXXXXX)
+    const cepMatch = location.address.match(/\b\d{5}-?\d{3}\b/);
+    if (cepMatch) {
+      cep = cepMatch[0].replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
+    }
+    
+    // Analisar partes do endereço
+    if (addressParts.length >= 4) {
+      street = addressParts[0] || '';
+      neighborhood = addressParts[1] || '';
+      city = addressParts[2] || '';
+      state = addressParts[3] || '';
+    } else if (addressParts.length >= 3) {
+      street = addressParts[0] || '';
+      city = addressParts[1] || '';
+      state = addressParts[2] || '';
+    } else if (addressParts.length >= 2) {
+      street = addressParts[0] || '';
+      city = addressParts[1] || '';
+    } else {
+      street = location.address;
+    }
+    
+    // Limpar "Brasil" se estiver no estado
+    state = state.replace(/,?\s*Brasil$/, '').trim();
     
     setRegistrationData((prev: any) => ({
       ...prev,
       address: street,
       city: city,
-      state: state
+      state: state,
+      cep: cep || prev.cep || ''
     }));
     
     setShowLocationPicker(false);
@@ -264,6 +296,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       defaultValues: {
         cpf: registrationData.cpf || '',
         address: registrationData.address || '',
+        complement: registrationData.complement || '',
         city: registrationData.city || '',
         state: registrationData.state || '',
         cep: registrationData.cep || '',
@@ -273,18 +306,25 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       shouldUnregister: false, // Manter valores dos campos mesmo com erros
     });
 
-    // Atualizar valores do formulário quando registrationData for carregado (apenas se os campos estiverem vazios)
+    // Atualizar valores do formulário quando registrationData for carregado
     useEffect(() => {
       const currentValues = form.getValues();
       
-      if (registrationData.address && !currentValues.address) {
+      // Sempre atualizar com novos dados do mapa
+      if (registrationData.address !== undefined) {
         form.setValue('address', registrationData.address);
       }
-      if (registrationData.city && !currentValues.city) {
+      if (registrationData.complement !== undefined) {
+        form.setValue('complement', registrationData.complement);
+      }
+      if (registrationData.city !== undefined) {
         form.setValue('city', registrationData.city);
       }
-      if (registrationData.state && !currentValues.state) {
+      if (registrationData.state !== undefined) {
         form.setValue('state', registrationData.state);
+      }
+      if (registrationData.cep !== undefined) {
+        form.setValue('cep', registrationData.cep);
       }
     }, [registrationData, form]);
 
@@ -456,6 +496,25 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
 
             <FormField
               control={form.control}
+              name="complement"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Complemento</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Apto 101, Bloco A" 
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
               name="state"
               render={({ field }) => (
                 <FormItem>
@@ -467,9 +526,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 </FormItem>
               )}
             />
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="city"
@@ -483,31 +540,31 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="cep"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CEP</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="00000-000" 
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        const formatted = value.length > 5 
-                          ? `${value.slice(0, 5)}-${value.slice(5, 8)}` 
-                          : value;
-                        field.onChange(formatted);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
+
+          <FormField
+            control={form.control}
+            name="cep"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CEP</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="00000-000" 
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      const formatted = value.length > 5 
+                        ? `${value.slice(0, 5)}-${value.slice(5, 8)}` 
+                        : value;
+                      field.onChange(formatted);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="flex justify-between">
             <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
