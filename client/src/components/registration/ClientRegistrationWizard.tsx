@@ -61,15 +61,25 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   // Carregar endereço detectado na memória ao carregar o componente
   useEffect(() => {
     const userLocation = localStorage.getItem('userLocation');
-    if (userLocation) {
+    if (userLocation && !registrationData.address) {
       try {
         const location = JSON.parse(userLocation);
         setSavedLocation(location);
+        
+        // Se a localização foi detectada automaticamente e tem dados estruturados
+        if (location.isDetected && location.city && location.state) {
+          setRegistrationData((prev: any) => ({
+            ...prev,
+            address: location.address || '',
+            city: location.city || '',
+            state: location.state || ''
+          }));
+        }
       } catch (error) {
         console.error('Erro ao carregar localização detectada:', error);
       }
     }
-  }, []);
+  }, [registrationData.address]);
 
   // Função para lidar com atualização de localização do mapa
   const handleLocationUpdate = (location: { lat: number; lng: number; address: string }) => {
@@ -92,25 +102,66 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       cep = cepMatch[0].replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2');
     }
     
+    // Lógica melhorada para extrair estado
+    // Procurar por padrões conhecidos de estado brasileiro
+    const statePatterns = [
+      'Goiás', 'Goias', 'GO',
+      'São Paulo', 'Sao Paulo', 'SP',
+      'Rio de Janeiro', 'RJ',
+      'Minas Gerais', 'MG',
+      'Bahia', 'BA',
+      'Paraná', 'Parana', 'PR',
+      'Rio Grande do Sul', 'RS',
+      'Pernambuco', 'PE',
+      'Ceará', 'Ceara', 'CE',
+      'Pará', 'Para', 'PA',
+      'Santa Catarina', 'SC',
+      'Maranhão', 'Maranhao', 'MA',
+      'Paraíba', 'Paraiba', 'PB',
+      'Espírito Santo', 'Espirito Santo', 'ES',
+      'Piauí', 'Piaui', 'PI',
+      'Alagoas', 'AL',
+      'Rio Grande do Norte', 'RN',
+      'Mato Grosso', 'MT',
+      'Mato Grosso do Sul', 'MS',
+      'Distrito Federal', 'DF',
+      'Sergipe', 'SE',
+      'Rondônia', 'Rondonia', 'RO',
+      'Acre', 'AC',
+      'Amazonas', 'AM',
+      'Roraima', 'RR',
+      'Amapá', 'Amapa', 'AP',
+      'Tocantins', 'TO'
+    ];
+    
+    // Encontrar o estado no endereço
+    for (const part of addressParts) {
+      const cleanPart = part.replace(/,?\s*Brasil$/, '').trim();
+      for (const statePattern of statePatterns) {
+        if (cleanPart.toLowerCase().includes(statePattern.toLowerCase())) {
+          state = cleanPart;
+          break;
+        }
+      }
+      if (state) break;
+    }
+    
     // Analisar partes do endereço
     if (addressParts.length >= 4) {
       street = addressParts[0] || '';
       neighborhood = addressParts[1] || '';
       city = addressParts[2] || '';
-      state = addressParts[3] || '';
+      if (!state) state = addressParts[3]?.replace(/,?\s*Brasil$/, '').trim() || '';
     } else if (addressParts.length >= 3) {
       street = addressParts[0] || '';
       city = addressParts[1] || '';
-      state = addressParts[2] || '';
+      if (!state) state = addressParts[2]?.replace(/,?\s*Brasil$/, '').trim() || '';
     } else if (addressParts.length >= 2) {
       street = addressParts[0] || '';
       city = addressParts[1] || '';
     } else {
       street = location.address;
     }
-    
-    // Limpar "Brasil" se estiver no estado
-    state = state.replace(/,?\s*Brasil$/, '').trim();
     
     setRegistrationData((prev: any) => ({
       ...prev,

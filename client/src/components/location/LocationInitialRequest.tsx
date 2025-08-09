@@ -65,19 +65,53 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
         // Fazer reverse geocoding para obter o endereço
         reverseGeocode(latitude, longitude)
           .then((address) => {
-            // Extrair cidade e estado do endereço
-            const cityMatch = address.match(/([^,]+),\s*([A-Z]{2})/);
-            if (cityMatch) {
-              const city = cityMatch[1].trim();
-              const state = cityMatch[2].trim();
-              setSelectedCity({ city, state });
+            // Processar endereço para extrair dados estruturados
+            const addressParts = address.split(',').map(part => part.trim());
+            
+            let street = '';
+            let city = '';
+            let state = '';
+            
+            // Extrair informações mais organizadas
+            if (addressParts.length >= 3) {
+              street = addressParts[0] || '';
+              
+              // Procurar por cidade e estado nas últimas partes
+              for (let i = addressParts.length - 1; i >= 0; i--) {
+                const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim();
+                
+                // Estados brasileiros conhecidos
+                const states = ['Goiás', 'Goias', 'São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Paraná', 'Rio Grande do Sul', 'Pernambuco', 'Ceará', 'Pará', 'Santa Catarina', 'Maranhão', 'Paraíba', 'Espírito Santo', 'Piauí', 'Alagoas', 'Rio Grande do Norte', 'Mato Grosso', 'Mato Grosso do Sul', 'Distrito Federal', 'Sergipe', 'Rondônia', 'Acre', 'Amazonas', 'Roraima', 'Amapá', 'Tocantins'];
+                
+                if (!state && states.some(s => part.toLowerCase().includes(s.toLowerCase()))) {
+                  state = part;
+                }
+                
+                if (!city && i > 0 && state && addressParts[i-1]) {
+                  city = addressParts[i-1].trim();
+                }
+              }
+              
+              // Fallback se não encontrou cidade/estado
+              if (!city && addressParts.length >= 2) {
+                city = addressParts[addressParts.length - 2] || '';
+              }
+              if (!state && addressParts.length >= 1) {
+                state = addressParts[addressParts.length - 1]?.replace(/,?\s*Brasil$/, '').trim() || '';
+              }
+            } else {
+              street = address;
             }
 
-            // Salvar localização completa
+            // Salvar localização estruturada
             const locationData = {
               lat: latitude,
               lng: longitude,
-              address: address
+              address: street,
+              city: city,
+              state: state,
+              originalAddress: address,
+              isDetected: true
             };
             
             localStorage.setItem('userLocation', JSON.stringify(locationData));
