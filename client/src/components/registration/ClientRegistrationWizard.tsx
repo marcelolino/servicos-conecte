@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { RegistrationImageUpload } from './RegistrationImageUpload';
 import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { OpenStreetMapLocationPicker } from '@/components/location/OpenStreetMapLocationPicker';
 import { validateCPF, formatCPF, getCPFErrorMessage } from '@/utils/cpf-validator';
 
 // Schemas para cada passo
@@ -52,14 +54,15 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [savedLocation, setSavedLocation] = useState<any>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const { toast } = useToast();
 
   // Carregar endereço detectado na memória ao carregar o componente
   useEffect(() => {
-    const detectedLocation = localStorage.getItem('detectedLocation');
-    if (detectedLocation) {
+    const userLocation = localStorage.getItem('userLocation');
+    if (userLocation) {
       try {
-        const location = JSON.parse(detectedLocation);
+        const location = JSON.parse(userLocation);
         setSavedLocation(location);
       } catch (error) {
         console.error('Erro ao carregar localização detectada:', error);
@@ -67,16 +70,47 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     }
   }, []);
 
+  // Função para lidar com atualização de localização do mapa
+  const handleLocationUpdate = (location: { lat: number; lng: number; address: string }) => {
+    setSavedLocation(location);
+    localStorage.setItem('userLocation', JSON.stringify(location));
+    
+    // Atualizar registrationData
+    const addressParts = location.address.split(',');
+    const street = addressParts[0]?.trim() || location.address;
+    const city = addressParts[1]?.trim() || '';
+    const state = addressParts[2]?.trim() || '';
+    
+    setRegistrationData((prev: any) => ({
+      ...prev,
+      address: street,
+      city: city,
+      state: state
+    }));
+    
+    setShowLocationPicker(false);
+    
+    toast({
+      title: "Localização atualizada!",
+      description: "Seu endereço foi ajustado com sucesso.",
+    });
+  };
+
   // Preencher automaticamente os campos quando a localização está disponível
   useEffect(() => {
     if (savedLocation && currentStep === 2) {
+      const addressParts = savedLocation.address ? savedLocation.address.split(',') : [];
+      const street = addressParts[0]?.trim() || '';
+      const neighborhood = addressParts[1]?.trim() || '';
+      const city = addressParts[2]?.trim() || '';
+      const state = addressParts[3]?.trim() || '';
+      
       // Atualizar o registrationData com os dados da localização detectada
       setRegistrationData((prev: any) => ({
         ...prev,
-        address: savedLocation.address || prev.address || '',
-        city: savedLocation.city || prev.city || '',
-        state: savedLocation.state || prev.state || '',
-        cep: savedLocation.cep || prev.cep || ''
+        address: street || prev.address || '',
+        city: city || prev.city || '',
+        state: state || prev.state || ''
       }));
     }
   }, [savedLocation, currentStep]);
@@ -311,37 +345,28 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
             </div>
           </div>
 
-          {/* Endereço Salvo na Memória */}
+          {/* Localização Detectada */}
           {savedLocation && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
+                <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
-                    Endereço Encontrado na Memória
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Localização Detectada
                   </p>
-                  <p className="text-xs text-green-700 dark:text-green-300 mb-2">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
                     {savedLocation.address}
                   </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    Este endereço será usado automaticamente no cadastro
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!savedLocation && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
-                    Nenhum Endereço Salvo
-                  </p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                    Você pode definir um endereço na página inicial antes de se cadastrar
-                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLocationPicker(true)}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Ajustar localização
+                  </Button>
                 </div>
               </div>
             </div>
@@ -545,6 +570,22 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
           {currentStep === 2 && <Step2Form />}
         </CardContent>
       </Card>
+
+      {/* Modal do mapa para ajustar localização */}
+      <Dialog open={showLocationPicker} onOpenChange={setShowLocationPicker}>
+        <DialogContent className="sm:max-w-[600px] h-[500px]">
+          <DialogHeader>
+            <DialogTitle>Buscar Endereço</DialogTitle>
+          </DialogHeader>
+          <div className="h-full">
+            <OpenStreetMapLocationPicker
+              isOpen={true}
+              onLocationSelect={handleLocationUpdate}
+              onClose={() => setShowLocationPicker(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

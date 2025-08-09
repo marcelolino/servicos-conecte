@@ -92,10 +92,7 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
             setIsOpen(false);
             setIsRequestingLocation(false);
             
-            // Show register modal after location is detected
-            setTimeout(() => {
-              setShowRegister(true);
-            }, 1000);
+            // Don't show register modal automatically, it's now in the register page
           })
           .catch(() => {
             // Fallback sem reverse geocoding
@@ -223,16 +220,18 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
         </DialogContent>
       </Dialog>
 
-      {/* Register Modal */}
-      <RegisterWithLocationFlow
-        isOpen={showRegister}
-        onClose={() => setShowRegister(false)}
-        onComplete={(userData) => {
-          console.log('Registration completed:', userData);
-          setShowRegister(false);
-        }}
-        detectedLocation={detectedLocationData}
-      />
+      {/* Register Modal - Only shown when explicitly requested */}
+      {showRegister && (
+        <RegisterWithLocationFlow
+          isOpen={showRegister}
+          onClose={() => setShowRegister(false)}
+          onComplete={(userData) => {
+            console.log('Registration completed:', userData);
+            setShowRegister(false);
+          }}
+          detectedLocation={detectedLocationData}
+        />
+      )}
     </>
   );
 }

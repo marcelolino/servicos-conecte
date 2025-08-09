@@ -16,6 +16,22 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (February 2025)
 
+### Automatic Location Detection with Registration Integration ✓
+- **Date**: February 8, 2025
+- **Changes**: Implemented automatic location detection upon app entry with two-step registration process
+- **Details**:
+  - **Location Permission Modal**: Appears automatically when entering web or mobile app
+  - **localStorage Integration**: Saves location preferences (blocked/granted/denied/once) permanently
+  - **Reverse Geocoding**: Uses OpenStreetMap to convert coordinates to readable addresses
+  - **Registration Integration**: Original registration form maintained with location pre-filling
+  - **Map Adjustment Modal**: Added "Ajustar localização" button in step 2 that opens iFood-style map modal
+  - **Address Auto-fill**: Detected location automatically fills address, city, and state fields
+  - **Mobile App Integration**: Mobile app also requests location and redirects to location-aware registration
+  - **User Experience**: Smooth flow from location detection → registration → address pre-filling → map adjustment
+  - **Data Persistence**: Location data saved in localStorage and used across registration process
+  - **Error Handling**: Graceful fallback when location services are denied or unavailable
+  - **OpenStreetMap Integration**: Complete map interface for precise location adjustment
+
 ### Mobile App Client Created ✓
 - **Date**: February 8, 2025
 - **Changes**: Created separate mobile app client with Flutter-style interface

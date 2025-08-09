@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { register as registerUser } from "@/lib/auth";
 import { ClientRegistrationWizard } from "@/components/registration/ClientRegistrationWizard";
+import { LocationInitialRequest } from "@/components/location/LocationInitialRequest";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -49,6 +50,8 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted px-4 py-8">
+      <LocationInitialRequest />
+      
       <div className="w-full max-w-md">
         <ClientRegistrationWizard onComplete={handleRegistrationComplete} />
         
