@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#1E88E5">
+  <title>Cadastro - Qserviços</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .register-flow {
+      padding: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+    
+    .register-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #666;
+      margin-right: 15px;
+      cursor: pointer;
+    }
+    
+    .step-indicator {
+      flex: 1;
+      text-align: center;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #1E88E5;
+    }
+    
+    .form-input.error {
+      border-color: #e74c3c;
+    }
+    
+    .error-message {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    
+    .location-card {
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .location-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .location-icon {
+      color: #1976d2;
+      margin-right: 8px;
+    }
+    
+    .location-title {
+      font-weight: 500;
+      color: #1976d2;
+    }
+    
+    .location-address {
+      color: #1565c0;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .adjust-location-btn {
+      background: white;
+      border: 1px solid #1976d2;
+      color: #1976d2;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .form-row .form-group {
+      flex: 1;
+    }
+    
+    .form-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-primary {
+      background: #1E88E5;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #1976D2;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+    
+    .btn-secondary:hover {
+      background: #f5f5f5;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    /* Loading state */
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    /* Toast styles */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #323232;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 4px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-flow">
+    <!-- Step 1: Personal Information -->
+    <div id="step1" class="step">
+      <div class="register-header">
+        <button class="back-btn" onclick="goBack()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="step-indicator">Passo 1 de 2</div>
+      </div>
+      
+      <h2 style="margin-bottom: 30px; text-align: center; color: #333;">Seus dados pessoais</h2>
+      
+      <form id="step1Form">
+        <div class="form-group">
+          <label class="form-label">Nome completo</label>
+          <input type="text" class="form-input" id="name" name="name" placeholder="Digite seu nome completo" required>
+          <div class="error-message" id="nameError"></div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="email" name="email" placeholder="seu@email.com" required>
+          <div class="error-message" id="emailError"></div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="tel" class="form-input" id="phone" name="phone" placeholder="(00) 00000-0000" required>
+          <div class="error-message" id="phoneError"></div>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-primary">Próximo</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Step 2: Location Information -->
+    <div id="step2" class="step hidden">
+      <div class="register-header">
+        <button class="back-btn" onclick="goToStep1()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="step-indicator">Passo 2 de 2</div>
+      </div>
+      
+      <h2 style="margin-bottom: 30px; text-align: center; color: #333;">Seu endereço</h2>
+      
+      <!-- Location Card -->
+      <div class="location-card" id="locationCard" style="display: none;">
+        <div class="location-header">
+          <i class="fas fa-map-marker-alt location-icon"></i>
+          <span class="location-title">Localização Detectada</span>
+        </div>
+        <div class="location-address" id="detectedAddress"></div>
+        <button type="button" class="adjust-location-btn" onclick="adjustLocation()">
+          <i class="fas fa-edit"></i>
+          Ajustar localização
+        </button>
+      </div>
+      
+      <form id="step2Form">
+        <div class="form-group">
+          <label class="form-label">Endereço</label>
+          <input type="text" class="form-input" id="address" name="address" placeholder="Rua, número" required>
+          <div class="error-message" id="addressError"></div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Bairro</label>
+            <input type="text" class="form-input" id="neighborhood" name="neighborhood" placeholder="Bairro" required>
+            <div class="error-message" id="neighborhoodError"></div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">CEP</label>
+            <input type="text" class="form-input" id="zipCode" name="zipCode" placeholder="00000-000" required>
+            <div class="error-message" id="zipCodeError"></div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cidade</label>
+            <input type="text" class="form-input" id="city" name="city" placeholder="Cidade" required>
+            <div class="error-message" id="cityError"></div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <input type="text" class="form-input" id="state" name="state" placeholder="UF" maxlength="2" required>
+            <div class="error-message" id="stateError"></div>
+          </div>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="button" class="btn btn-secondary" onclick="goToStep1()">Voltar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check" style="margin-right: 8px;"></i>
+            Finalizar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    class LocationRegisterFlow {
+      constructor() {
+        this.step1Data = null;
+        this.detectedLocation = this.getDetectedLocation();
+        this.init();
+      }
+      
+      init() {
+        this.setupEventListeners();
+        this.setupFormMasks();
+        
+        // Show detected location if available
+        if (this.detectedLocation) {
+          this.showDetectedLocation();
+        }
+      }
+      
+      getDetectedLocation() {
+        try {
+          const userLocation = localStorage.getItem('mobile_userLocation') || localStorage.getItem('userLocation');
+          return userLocation ? JSON.parse(userLocation) : null;
+        } catch (error) {
+          console.error('Error getting detected location:', error);
+          return null;
+        }
+      }
+      
+      showDetectedLocation() {
+        const locationCard = document.getElementById('locationCard');
+        const addressElement = document.getElementById('detectedAddress');
+        
+        if (locationCard && addressElement && this.detectedLocation) {
+          const addressParts = this.detectedLocation.address.split(',');
+          const displayAddress = addressParts.slice(0, 3).join(',').trim() || this.detectedLocation.address;
+          
+          addressElement.textContent = displayAddress;
+          locationCard.style.display = 'block';
+          
+          // Pre-fill form fields from detected location
+          this.parseAddressToForm(this.detectedLocation.address);
+        }
+      }
+      
+      parseAddressToForm(address) {
+        const parts = address.split(',').map(part => part.trim());
+        
+        if (parts.length >= 4) {
+          const addressField = document.getElementById('address');
+          const neighborhoodField = document.getElementById('neighborhood');
+          const cityField = document.getElementById('city');
+          const stateField = document.getElementById('state');
+          const zipCodeField = document.getElementById('zipCode');
+          
+          if (addressField) addressField.value = parts[0] || '';
+          if (neighborhoodField) neighborhoodField.value = parts[1] || '';
+          if (cityField) cityField.value = parts[2] || '';
+          
+          // Extract state and ZIP from the last parts
+          const stateZipPart = parts[parts.length - 1];
+          const stateMatch = stateZipPart.match(/([A-Z]{2})/);
+          const zipMatch = stateZipPart.match(/(\d{5}-?\d{3})/);
+          
+          if (stateField && stateMatch) stateField.value = stateMatch[1];
+          if (zipCodeField && zipMatch) zipCodeField.value = zipMatch[1].replace('-', '');
+        }
+      }
+      
+      setupEventListeners() {
+        // Step 1 form
+        const step1Form = document.getElementById('step1Form');
+        step1Form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleStep1Submit();
+        });
+        
+        // Step 2 form
+        const step2Form = document.getElementById('step2Form');
+        step2Form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleStep2Submit();
+        });
+      }
+      
+      setupFormMasks() {
+        // Phone mask
+        const phoneInput = document.getElementById('phone');
+        phoneInput.addEventListener('input', (e) => {
+          let value = e.target.value.replace(/\D/g, '');
+          if (value.length >= 11) {
+            value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+          } else if (value.length >= 7) {
+            value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+          } else if (value.length >= 3) {
+            value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+          }
+          e.target.value = value;
+        });
+        
+        // ZIP code mask
+        const zipCodeInput = document.getElementById('zipCode');
+        zipCodeInput.addEventListener('input', (e) => {
+          let value = e.target.value.replace(/\D/g, '');
+          if (value.length >= 5) {
+            value = value.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+          }
+          e.target.value = value;
+        });
+        
+        // State uppercase
+        const stateInput = document.getElementById('state');
+        stateInput.addEventListener('input', (e) => {
+          e.target.value = e.target.value.toUpperCase().slice(0, 2);
+        });
+      }
+      
+      handleStep1Submit() {
+        const formData = new FormData(document.getElementById('step1Form'));
+        const data = Object.fromEntries(formData);
+        
+        // Validate
+        if (this.validateStep1(data)) {
+          this.step1Data = data;
+          this.goToStep2();
+        }
+      }
+      
+      handleStep2Submit() {
+        const formData = new FormData(document.getElementById('step2Form'));
+        const data = Object.fromEntries(formData);
+        
+        // Validate
+        if (this.validateStep2(data)) {
+          this.completeRegistration(data);
+        }
+      }
+      
+      validateStep1(data) {
+        let isValid = true;
+        
+        // Name validation
+        if (!data.name || data.name.length < 2) {
+          this.showFieldError('name', 'Nome deve ter pelo menos 2 caracteres');
+          isValid = false;
+        } else {
+          this.clearFieldError('name');
+        }
+        
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!data.email || !emailRegex.test(data.email)) {
+          this.showFieldError('email', 'Email inválido');
+          isValid = false;
+        } else {
+          this.clearFieldError('email');
+        }
+        
+        // Phone validation
+        const phoneNumbers = data.phone.replace(/\D/g, '');
+        if (!data.phone || phoneNumbers.length < 10) {
+          this.showFieldError('phone', 'Telefone deve ter pelo menos 10 dígitos');
+          isValid = false;
+        } else {
+          this.clearFieldError('phone');
+        }
+        
+        return isValid;
+      }
+      
+      validateStep2(data) {
+        let isValid = true;
+        
+        const fields = ['address', 'neighborhood', 'city', 'state', 'zipCode'];
+        const minLengths = { address: 5, neighborhood: 2, city: 2, state: 2, zipCode: 8 };
+        const messages = {
+          address: 'Endereço deve ter pelo menos 5 caracteres',
+          neighborhood: 'Bairro é obrigatório',
+          city: 'Cidade é obrigatória',
+          state: 'Estado é obrigatório',
+          zipCode: 'CEP deve ter 8 dígitos'
+        };
+        
+        fields.forEach(field => {
+          const value = field === 'zipCode' ? data[field].replace(/\D/g, '') : data[field];
+          if (!value || value.length < minLengths[field]) {
+            this.showFieldError(field, messages[field]);
+            isValid = false;
+          } else {
+            this.clearFieldError(field);
+          }
+        });
+        
+        return isValid;
+      }
+      
+      showFieldError(fieldName, message) {
+        const field = document.getElementById(fieldName);
+        const errorElement = document.getElementById(fieldName + 'Error');
+        
+        if (field) field.classList.add('error');
+        if (errorElement) errorElement.textContent = message;
+      }
+      
+      clearFieldError(fieldName) {
+        const field = document.getElementById(fieldName);
+        const errorElement = document.getElementById(fieldName + 'Error');
+        
+        if (field) field.classList.remove('error');
+        if (errorElement) errorElement.textContent = '';
+      }
+      
+      goToStep2() {
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
+      }
+      
+      goToStep1() {
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step1').classList.remove('hidden');
+      }
+      
+      completeRegistration(step2Data) {
+        const completeData = {
+          ...this.step1Data,
+          ...step2Data,
+          location: this.detectedLocation
+        };
+        
+        // Save user data
+        localStorage.setItem('user_data', JSON.stringify(completeData));
+        localStorage.setItem('auth_token', 'mobile_user_' + Date.now());
+        
+        this.showToast('Cadastro realizado com sucesso!', 'success');
+        
+        // Redirect back to main app
+        setTimeout(() => {
+          window.location.href = '/mobile-app/';
+        }, 2000);
+      }
+      
+      showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Show toast
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
+      }
+    }
+    
+    // Global functions
+    function goBack() {
+      // Go back to main mobile app
+      window.location.href = '/mobile-app/';
+    }
+    
+    function goToStep1() {
+      if (window.registerFlow) {
+        window.registerFlow.goToStep1();
+      }
+    }
+    
+    function adjustLocation() {
+      // Simple implementation - in production, would open a map picker
+      alert('Funcionalidade de ajuste de localização em desenvolvimento. Use os campos do formulário para corrigir seu endereço.');
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      window.registerFlow = new LocationRegisterFlow();
+    });
+  </script>
+</body>
+</html>

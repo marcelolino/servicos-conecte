@@ -1354,8 +1354,8 @@ window.handleProfileClick = function() {
         }
       }
     } else {
-      // Redirect to auth page
-      window.location.href = '/mobile/auth';
+      // Redirect to location-aware registration
+      window.location.href = '/mobile-app/location-register.html';
     }
   }
 };

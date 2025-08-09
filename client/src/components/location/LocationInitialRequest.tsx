@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { RegisterWithLocationFlow } from "@/components/auth/RegisterWithLocationFlow";
 import { MapPin, X } from "lucide-react";
 import { useLocation } from "@/contexts/LocationContext";
 
@@ -8,9 +9,15 @@ interface LocationInitialRequestProps {
   onLocationGranted?: (location: { lat: number; lng: number; address: string }) => void;
 }
 
+interface LocationInitialRequestWithRegisterProps extends LocationInitialRequestProps {
+  showRegisterAfterLocation?: boolean;
+}
+
 export function LocationInitialRequest({ onLocationGranted }: LocationInitialRequestProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [detectedLocationData, setDetectedLocationData] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const { setSelectedCity } = useLocation();
 
   useEffect(() => {
@@ -74,7 +81,9 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
             };
             
             localStorage.setItem('userLocation', JSON.stringify(locationData));
-            localStorage.setItem('locationPermissionAsked', 'true');
+            localStorage.setItem('locationPermissionAsked', 'granted');
+            
+            setDetectedLocationData(locationData);
             
             if (onLocationGranted) {
               onLocationGranted(locationData);
@@ -82,6 +91,11 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
             
             setIsOpen(false);
             setIsRequestingLocation(false);
+            
+            // Show register modal after location is detected
+            setTimeout(() => {
+              setShowRegister(true);
+            }, 1000);
           })
           .catch(() => {
             // Fallback sem reverse geocoding
@@ -92,7 +106,7 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
             };
             
             localStorage.setItem('userLocation', JSON.stringify(locationData));
-            localStorage.setItem('locationPermissionAsked', 'true');
+            localStorage.setItem('locationPermissionAsked', 'granted');
             
             if (onLocationGranted) {
               onLocationGranted(locationData);
@@ -104,7 +118,7 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
       },
       (error) => {
         console.error('Erro ao obter localização:', error);
-        localStorage.setItem('locationPermissionAsked', 'true');
+        localStorage.setItem('locationPermissionAsked', 'denied');
         setIsOpen(false);
         setIsRequestingLocation(false);
         
@@ -141,69 +155,84 @@ export function LocationInitialRequest({ onLocationGranted }: LocationInitialReq
   };
 
   const handleBlock = () => {
-    localStorage.setItem('locationPermissionAsked', 'true');
+    localStorage.setItem('locationPermissionAsked', 'blocked');
     setIsOpen(false);
   };
 
   const handleOnlyOnce = () => {
+    localStorage.setItem('locationPermissionAsked', 'once');
     handleLocationRequest();
   };
 
   const handleAllow = () => {
+    localStorage.setItem('locationPermissionAsked', 'granted');
     handleLocationRequest();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[425px] p-0 gap-0 bg-slate-800 border-slate-700 text-white">
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-blue-400" />
-            <div>
-              <p className="text-sm text-slate-300">
-                {window.location.host.includes('replit.dev') ? window.location.host : 'Qserviços'} quer
-              </p>
-              <p className="text-sm font-medium">Saber sua localização</p>
+    <>
+      <Dialog open={isOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[425px] p-0 gap-0 bg-slate-800 border-slate-700 text-white">
+          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <MapPin className="h-5 w-5 text-blue-400" />
+              <div>
+                <p className="text-sm text-slate-300">
+                  {window.location.host.includes('replit.dev') ? window.location.host : 'Qserviços'} quer
+                </p>
+                <p className="text-sm font-medium">Saber sua localização</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBlock}
+              className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="p-4">
+            <div className="flex justify-between gap-2">
+              <Button
+                variant="ghost"
+                onClick={handleBlock}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white border-0"
+                disabled={isRequestingLocation}
+              >
+                Bloquear
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleOnlyOnce}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white border-0"
+                disabled={isRequestingLocation}
+              >
+                {isRequestingLocation ? 'Obtendo...' : 'Somente dessa vez'}
+              </Button>
+              <Button
+                onClick={handleAllow}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-0"
+                disabled={isRequestingLocation}
+              >
+                {isRequestingLocation ? 'Obtendo...' : 'Permitir'}
+              </Button>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBlock}
-            className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="p-4">
-          <div className="flex justify-between gap-2">
-            <Button
-              variant="ghost"
-              onClick={handleBlock}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-white border-0"
-              disabled={isRequestingLocation}
-            >
-              Bloquear
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleOnlyOnce}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-white border-0"
-              disabled={isRequestingLocation}
-            >
-              {isRequestingLocation ? 'Obtendo...' : 'Somente dessa vez'}
-            </Button>
-            <Button
-              onClick={handleAllow}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-0"
-              disabled={isRequestingLocation}
-            >
-              {isRequestingLocation ? 'Obtendo...' : 'Permitir'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Register Modal */}
+      <RegisterWithLocationFlow
+        isOpen={showRegister}
+        onClose={() => setShowRegister(false)}
+        onComplete={(userData) => {
+          console.log('Registration completed:', userData);
+          setShowRegister(false);
+        }}
+        detectedLocation={detectedLocationData}
+      />
+    </>
   );
 }
