@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,16 +52,7 @@ export default function ClientDashboard() {
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
-  // Get status filter from URL params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get("status");
-    if (status) {
-      setSelectedStatus(status);
-    }
-  }, [location]);
 
   const form = useForm<ServiceRequestForm>({
     resolver: zodResolver(serviceRequestSchema),
@@ -189,74 +180,7 @@ export default function ClientDashboard() {
     }
   };
 
-  const filteredRequests = serviceRequests?.filter?.((request: ServiceRequest) => 
-    selectedStatus === "all" || request.status === selectedStatus
-  ) || [];
-
-  const canStartService = (request: any) => request.status === "accepted";
-  const canCompleteService = (request: any) => request.status === "in_progress";
-
-  const getServiceActionButton = (request: any) => {
-    if (canStartService(request)) {
-      return (
-        <Button
-          size="sm"
-          onClick={() => startServiceMutation.mutate(request.id)}
-          disabled={startServiceMutation.isPending}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          {startServiceMutation.isPending ? (
-            <Clock className="h-4 w-4 mr-1 animate-spin" />
-          ) : (
-            <Play className="h-4 w-4 mr-1" />
-          )}
-          Iniciar Serviço
-        </Button>
-      );
-    }
-
-    if (canCompleteService(request)) {
-      return (
-        <Button
-          size="sm"
-          onClick={() => completeServiceMutation.mutate(request.id)}
-          disabled={completeServiceMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {completeServiceMutation.isPending ? (
-            <CheckCircle className="h-4 w-4 mr-1 animate-spin" />
-          ) : (
-            <CheckCircle className="h-4 w-4 mr-1" />
-          )}
-          Finalizar Serviço
-        </Button>
-      );
-    }
-
-    if (request.status === "completed" && request.provider) {
-      return (
-        <RatingModal
-          serviceRequestId={request.id}
-          providerId={request.provider.id}
-          providerName={request.provider.user?.name || "Prestador"}
-          trigger={
-            <Button variant="outline" size="sm">
-              <Star className="h-4 w-4 mr-1" />
-              Avaliar
-            </Button>
-          }
-          onSuccess={() => {
-            toast({
-              title: "Avaliação enviada!",
-              description: "Sua avaliação foi registrada com sucesso.",
-            });
-          }}
-        />
-      );
-    }
-
-    return null;
-  };
+  // Service action functions removed - not needed in dashboard overview
 
   const onSubmit = (data: ServiceRequestForm) => {
     createRequestMutation.mutate(data);
@@ -293,7 +217,7 @@ export default function ClientDashboard() {
                 <div>
                   <p className="text-white/80 text-sm font-medium">Reserva Total</p>
                   <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : stats?.totalServices || 17}
+                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : (stats as any)?.totalServices || 17}
                   </p>
                 </div>
                 <Calendar className="h-10 w-10 text-white/80" />
@@ -305,7 +229,7 @@ export default function ClientDashboard() {
                 <div>
                   <p className="text-white/80 text-sm font-medium">Serviços</p>
                   <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : stats?.completedServices || 12}
+                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : (stats as any)?.completedServices || 12}
                   </p>
                 </div>
                 <Package className="h-10 w-10 text-white/80" />
@@ -317,7 +241,7 @@ export default function ClientDashboard() {
                 <div>
                   <p className="text-white/80 text-sm font-medium">Gasto Total</p>
                   <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-16 bg-white/20" /> : `R$ ${(stats?.totalSpent || 1250).toFixed(2)}`}
+                    {statsLoading ? <Skeleton className="h-8 w-16 bg-white/20" /> : `R$ ${((stats as any)?.totalSpent || 1250).toFixed(2)}`}
                   </p>
                 </div>
                 <CreditCard className="h-10 w-10 text-white/80" />
@@ -338,161 +262,135 @@ export default function ClientDashboard() {
           </div>
         </div>
 
-        {/* Service Request List with Modern Cards */}
-        <div className="space-y-6">
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: "all", label: "Todas" },
-              { key: "pending", label: "Pendentes" },
-              { key: "accepted", label: "Aceitas" },
-              { key: "in_progress", label: "Em Andamento" },  
-              { key: "completed", label: "Concluídas" },
-              { key: "cancelled", label: "Canceladas" }
-            ].map((filter) => (
-              <Button
-                key={filter.key}
-                variant={selectedStatus === filter.key ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedStatus(filter.key)}
-                className="rounded-full"
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* New Request Button */}
-          <div className="flex justify-end">
-            <Button onClick={() => setIsNewRequestOpen(true)} className="modern-card bg-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Solicitação
-            </Button>
-          </div>
-
-          {/* Service Requests */}
-          <div className="space-y-4">
-          </div>
-        </div>
-
-        {/* Main Content Area */}
+        {/* Recent Activity Summary */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-              Minhas Solicitações de Serviço
+              Atividade Recente
             </h2>
+            <Button 
+              variant="outline" 
+              onClick={() => setLocation("/client-reservas")}
+              className="flex items-center gap-2"
+            >
+              Ver Todas as Reservas
+              <Calendar className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Service Requests List */}
-          <div className="space-y-4">
-            {requestsLoading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <Skeleton className="h-6 w-64 mb-2" />
-                        <Skeleton className="h-4 w-32 mb-4" />
-                        <Skeleton className="h-4 w-full mb-2" />
-                        <Skeleton className="h-4 w-3/4" />
-                      </div>
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : filteredRequests?.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    Nenhuma solicitação encontrada
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Você ainda não criou nenhuma solicitação de serviço.
-                  </p>
-                  <Button onClick={() => setIsNewRequestOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeira Solicitação
+          {/* Quick Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Solicitações Pendentes</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      {Array.isArray(serviceRequests) ? serviceRequests.filter((r: ServiceRequest) => r.status === "pending").length : 0}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Em Andamento</p>
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {Array.isArray(serviceRequests) ? serviceRequests.filter((r: ServiceRequest) => r.status === "in_progress").length : 0}
+                    </p>
+                  </div>
+                  <Play className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Concluídas</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                      {Array.isArray(serviceRequests) ? serviceRequests.filter((r: ServiceRequest) => r.status === "completed").length : 0}
+                    </p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={() => setIsNewRequestOpen(true)} 
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Solicitação
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setLocation("/client-reservas?tab=pending")}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Ver Pendentes
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setLocation("/client-reservas?tab=in_progress")}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Ver Em Andamento
+            </Button>
+          </div>
+
+          {/* Latest Requests Preview */}
+          {Array.isArray(serviceRequests) && serviceRequests.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Últimas Solicitações</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setLocation("/client-reservas")}
+                  >
+                    Ver Todas
                   </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredRequests?.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
-                <div key={request.id} className="modern-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {serviceRequests.slice(0, 3).map((request: ServiceRequest & { category?: ServiceCategory }) => (
+                    <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-foreground">{request.title}</h3>
-                          <Badge className={`px-3 py-1 rounded-full text-xs ${getStatusColor(request.status)}`}>
-                            {getStatusText(request.status)}
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-sm">{request.title || 'Sem título'}</h4>
+                          <Badge className={`text-xs ${getStatusColor(request.status || 'pending')}`}>
+                            {getStatusText(request.status || 'pending')}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {request.category?.name} • {new Date(request.createdAt).toLocaleDateString()}
+                        <p className="text-xs text-muted-foreground">
+                          {request.category?.name || 'Categoria'} • {request.createdAt ? new Date(request.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
                         </p>
-                        <p className="text-sm text-foreground mb-3">{request.description}</p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {[request.city, request.state].filter(Boolean).join(', ') || 'Localização não informada'}
-                          </div>
-                          {request.estimatedPrice && (
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
-                              R$ {Number(request.estimatedPrice).toFixed(2)}
-                            </div>
-                          )}
-                          {request.scheduledAt && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {new Date(request.scheduledAt).toLocaleDateString('pt-BR')} às {new Date(request.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          )}
-                        </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLocation(`/client-booking-details/${request.id}`)}
-                        >
-                          Ver Detalhes
-                        </Button>
-                        {getServiceActionButton(request)}
-                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setLocation(`/client-booking-details/${request.id}`)}
+                      >
+                        Ver
+                      </Button>
                     </div>
-                    
-                    {request.provider && (
-                      <div className="border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-bold text-primary">
-                                {request.provider.user?.name?.charAt(0) || "P"}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">
-                                {request.provider.user?.name || "Prestador"}
-                              </p>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="text-xs text-muted-foreground">
-                                  {Number(request.provider.rating || 0).toFixed(1)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              ))
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* New Request Dialog */}
