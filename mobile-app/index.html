@@ -20,6 +20,200 @@
       </div>
     </div>
 
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="auth-screen" style="display: none;">
+      <div class="auth-container">
+        <!-- Header -->
+        <div class="auth-header">
+          <div class="logo-section">
+            <div class="logo">
+              <i class="fas fa-cogs"></i>
+            </div>
+            <h1>Qserviços</h1>
+            <p class="logo-subtitle">Conectando serviços e clientes</p>
+          </div>
+        </div>
+
+        <!-- Login Form -->
+        <div class="auth-form" id="login-form">
+          <div class="form-content">
+            <h2>Entrar</h2>
+            <p class="form-subtitle">Acesse sua conta para continuar</p>
+            
+            <form id="loginForm">
+              <div class="form-group">
+                <label for="login-email">Email/Telefone *</label>
+                <input type="text" id="login-email" name="email" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="login-password">Senha *</label>
+                <div class="password-input">
+                  <input type="password" id="login-password" name="password" required>
+                  <button type="button" class="toggle-password" onclick="togglePassword('login-password')">
+                    <i class="far fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="form-options">
+                <label class="checkbox-container">
+                  <input type="checkbox" id="remember-me">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-text">Lembrar de mim</span>
+                </label>
+                <a href="#" class="forgot-password" onclick="showForgotPassword()">Esqueceu a senha?</a>
+              </div>
+              
+              <button type="submit" class="auth-btn primary">
+                <span class="btn-text">Entrar</span>
+                <div class="btn-loading" style="display: none;">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+              </button>
+            </form>
+            
+            <div class="divider">
+              <span>ou</span>
+            </div>
+            
+            <button class="auth-btn google" onclick="signInWithGoogle()">
+              <i class="fab fa-google"></i>
+              <span>Continuar com Google</span>
+            </button>
+            
+            <div class="auth-footer">
+              <span>Não tem uma conta? </span>
+              <a href="#" onclick="showRegister()">Cadastre-se</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div class="auth-form" id="register-form" style="display: none;">
+          <div class="form-content">
+            <h2>Criar Conta</h2>
+            <p class="form-subtitle">Preencha os dados para se cadastrar</p>
+            
+            <form id="registerForm">
+              <div class="form-group">
+                <label for="register-name">Nome Completo *</label>
+                <input type="text" id="register-name" name="name" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="register-email">Email *</label>
+                <input type="email" id="register-email" name="email" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="register-phone">Telefone *</label>
+                <input type="tel" id="register-phone" name="phone" required placeholder="(11) 99999-9999">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-cpf">CPF</label>
+                <input type="text" id="register-cpf" name="cpf" placeholder="000.000.000-00">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-cep">CEP</label>
+                <input type="text" id="register-cep" name="cep" placeholder="00000-000">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-address">Endereço</label>
+                <input type="text" id="register-address" name="address" placeholder="Rua, número">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-city">Cidade</label>
+                <input type="text" id="register-city" name="city" placeholder="Ex: Goiânia">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-state">Estado</label>
+                <input type="text" id="register-state" name="state" placeholder="Ex: GO">
+              </div>
+              
+              <div class="form-group">
+                <label for="register-password">Senha *</label>
+                <div class="password-input">
+                  <input type="password" id="register-password" name="password" required>
+                  <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
+                    <i class="far fa-eye"></i>
+                  </button>
+                </div>
+                <div class="password-strength" id="password-strength">
+                  <div class="strength-bar">
+                    <div class="strength-fill"></div>
+                  </div>
+                  <span class="strength-text">Digite uma senha</span>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="register-confirm">Confirmar Senha *</label>
+                <div class="password-input">
+                  <input type="password" id="register-confirm" name="confirmPassword" required>
+                  <button type="button" class="toggle-password" onclick="togglePassword('register-confirm')">
+                    <i class="far fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="checkbox-container">
+                  <input type="checkbox" id="accept-terms" required>
+                  <span class="checkmark"></span>
+                  <span class="checkbox-text">Aceito os <a href="#" class="link">Termos de Uso</a> e <a href="#" class="link">Política de Privacidade</a></span>
+                </label>
+              </div>
+              
+              <button type="submit" class="auth-btn primary">
+                <span class="btn-text">Criar Conta</span>
+                <div class="btn-loading" style="display: none;">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+              </button>
+            </form>
+            
+            <div class="auth-footer">
+              <span>Já tem uma conta? </span>
+              <a href="#" onclick="showLogin()">Entrar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div class="auth-form" id="forgot-form" style="display: none;">
+          <div class="form-content">
+            <h2>Recuperar Senha</h2>
+            <p class="form-subtitle">Digite seu email para receber o código de recuperação</p>
+            
+            <form id="forgotForm">
+              <div class="form-group">
+                <label for="forgot-email">Email *</label>
+                <input type="email" id="forgot-email" name="email" required>
+              </div>
+              
+              <button type="submit" class="auth-btn primary">
+                <span class="btn-text">Enviar Código</span>
+                <div class="btn-loading" style="display: none;">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+              </button>
+            </form>
+            
+            <div class="auth-footer">
+              <span>Lembrou da senha? </span>
+              <a href="#" onclick="showLogin()">Entrar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main App -->
     <div id="main-app" class="app-container" style="display: none;">
       <!-- Header -->
@@ -104,6 +298,135 @@
         </div>
       </section>
 
+      <!-- Reservas/Bookings Section -->
+      <section class="reservas-section" id="reservas-section" style="display: none;">
+        <div class="section-header">
+          <h3>Minhas Reservas</h3>
+          <button class="new-booking-btn" id="new-booking-btn">
+            <i class="fas fa-plus"></i>
+            Nova Solicitação
+          </button>
+        </div>
+        
+        <!-- Tabs for reservas -->
+        <div class="reservas-tabs">
+          <div class="tab-item active" data-status="todas">Todas</div>
+          <div class="tab-item" data-status="pending">Pendentes</div>
+          <div class="tab-item" data-status="in_progress">Em Andamento</div>
+          <div class="tab-item" data-status="completed">Concluídas</div>
+        </div>
+        
+        <div class="reservas-list" id="reservas-list">
+          <!-- Reservas will be loaded here -->
+        </div>
+        
+        <div class="empty-reservas" id="empty-reservas" style="display: none;">
+          <div class="empty-state">
+            <i class="fas fa-calendar-alt" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+            <p>Nenhuma reserva encontrada</p>
+            <button class="btn-primary" id="create-first-booking">Fazer Primeira Solicitação</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile Section -->
+      <section class="profile-section" id="profile-section" style="display: none;">
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <img id="profile-avatar" src="" alt="Avatar">
+            <div class="avatar-placeholder">
+              <i class="fas fa-user"></i>
+            </div>
+            <button class="change-avatar-btn">
+              <i class="fas fa-camera"></i>
+            </button>
+          </div>
+          <div class="profile-info">
+            <h3 id="profile-name">Nome do Usuário</h3>
+            <p id="profile-email">email@example.com</p>
+            <span class="profile-badge" id="profile-badge">Cliente</span>
+          </div>
+        </div>
+
+        <div class="profile-form">
+          <form id="profile-form">
+            <div class="form-group">
+              <label for="profile-name-input">Nome Completo</label>
+              <input type="text" id="profile-name-input" name="name" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-email-input">Email</label>
+              <input type="email" id="profile-email-input" name="email" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-phone-input">Telefone</label>
+              <input type="tel" id="profile-phone-input" name="phone">
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-cpf-input">CPF</label>
+              <input type="text" id="profile-cpf-input" name="cpf" placeholder="000.000.000-00">
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-cep-input">CEP</label>
+              <input type="text" id="profile-cep-input" name="cep" placeholder="00000-000">
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-address-input">Endereço</label>
+              <input type="text" id="profile-address-input" name="address">
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-city-input">Cidade</label>
+              <input type="text" id="profile-city-input" name="city">
+            </div>
+            
+            <div class="form-group">
+              <label for="profile-state-input">Estado</label>
+              <input type="text" id="profile-state-input" name="state">
+            </div>
+            
+            <button type="submit" class="save-profile-btn">
+              <i class="fas fa-save"></i>
+              Salvar Alterações
+            </button>
+          </form>
+        </div>
+
+        <!-- Profile Actions -->
+        <div class="profile-actions">
+          <div class="action-item" onclick="showChangePassword()">
+            <i class="fas fa-key"></i>
+            <span>Alterar Senha</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+          <div class="action-item" onclick="showNotificationSettings()">
+            <i class="fas fa-bell"></i>
+            <span>Notificações</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+          <div class="action-item" onclick="showPrivacySettings()">
+            <i class="fas fa-shield-alt"></i>
+            <span>Privacidade</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+          <div class="action-item" onclick="showHelp()">
+            <i class="fas fa-question-circle"></i>
+            <span>Ajuda</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+          <div class="action-item logout" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Sair</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </div>
+      </section>
+
       <!-- Bottom Navigation -->
       <nav class="bottom-nav">
         <div class="nav-item active" data-tab="home">
@@ -115,7 +438,7 @@
           <span>Carrinho</span>
           <div class="cart-badge" id="cart-badge" style="display: none;">0</div>
         </div>
-        <div class="nav-item" data-tab="bookings">
+        <div class="nav-item" data-tab="reservas">
           <i class="fas fa-calendar-alt"></i>
           <span>Reservas</span>
         </div>
@@ -123,9 +446,9 @@
           <i class="fas fa-percent"></i>
           <span>Ofertas</span>
         </div>
-        <div class="nav-item" data-tab="more">
-          <i class="fas fa-ellipsis-h"></i>
-          <span>Mais</span>
+        <div class="nav-item" data-tab="profile">
+          <i class="fas fa-user"></i>
+          <span>Perfil</span>
         </div>
       </nav>
 
@@ -210,6 +533,6 @@
     </div>
   </div>
 
-  <script src="./app.js"></script>
+  <script src="./app-complete.js"></script>
 </body>
 </html>

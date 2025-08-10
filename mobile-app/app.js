@@ -1,4 +1,4 @@
-// Mobile App JavaScript - Consumes existing APIs
+// Mobile App JavaScript - Complete implementation
 class MobileApp {
   constructor() {
     this.apiBase = window.location.origin;
@@ -7,8 +7,11 @@ class MobileApp {
     this.currentOffers = [];
     this.searchResults = [];
     this.cart = JSON.parse(localStorage.getItem('mobile_cart') || '[]');
+    this.reservas = [];
+    this.currentUser = null;
     this.currentTab = 'home';
-    this.isLoggedIn = this.checkAuthStatus();
+    this.currentReservasTab = 'todas';
+    this.isLoggedIn = false;
     this.init();
   }
 
@@ -16,29 +19,32 @@ class MobileApp {
     // Show loading screen
     this.showLoading();
     
-    // Load data from APIs
-    await Promise.all([
-      this.loadCategories(),
-      this.loadPopularServices(),
-      this.loadCurrentOffers()
-    ]);
+    // Check authentication first
+    await this.checkAuthStatus();
+    
+    // If logged in, load main app data
+    if (this.isLoggedIn) {
+      await Promise.all([
+        this.loadCategories(),
+        this.loadPopularServices(),
+        this.loadCurrentOffers(),
+        this.loadUserProfile(),
+        this.loadReservas()
+      ]);
+      this.showMainApp();
+    } else {
+      this.showAuthScreen();
+    }
     
     // Setup event listeners
     this.setupEventListeners();
+    this.setupAuthListeners();
     
     // Update cart UI
     this.updateCartUI();
     
-    // Update auth UI
-    this.updateAuthUI();
-    
     // Hide loading screen
     this.hideLoading();
-    
-    // Request location permission after app loads
-    setTimeout(() => {
-      this.requestLocationPermission();
-    }, 1500);
     
     console.log('Mobile App initialized successfully');
   }
@@ -50,28 +56,73 @@ class MobileApp {
 
   hideLoading() {
     document.getElementById('loading').style.display = 'none';
+  }
+
+  showAuthScreen() {
+    document.getElementById('auth-screen').style.display = 'block';
+    document.getElementById('main-app').style.display = 'none';
+  }
+
+  showMainApp() {
+    document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
   }
 
   async apiRequest(endpoint, options = {}) {
     try {
+      const token = localStorage.getItem('authToken');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${this.apiBase}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
+        headers,
         ...options
       });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem('authToken');
+          this.isLoggedIn = false;
+          this.showAuthScreen();
+          throw new Error('Authentication required');
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       return await response.json();
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
+      if (error.message === 'Authentication required') {
+        throw error;
+      }
       return [];
     }
+  }
+
+  async checkAuthStatus() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      try {
+        const user = await this.apiRequest('/api/auth/me');
+        if (user && user.id) {
+          this.currentUser = user;
+          this.isLoggedIn = true;
+          return true;
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('authToken');
+      }
+    }
+    this.isLoggedIn = false;
+    return false;
   }
 
   async loadCategories() {
