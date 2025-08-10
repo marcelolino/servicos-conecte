@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Loader2, Package, Calendar, MapPin, CreditCard, Eye } from "lucide-react";
 import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 
@@ -60,7 +60,8 @@ interface Order {
 }
 
 export default function ClientOrdersPage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Fetch orders
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -118,13 +119,27 @@ export default function ClientOrdersPage() {
     }
   };
 
-  const filteredOrders = orders?.filter((order) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "pending") return ["pending_payment", "confirmed"].includes(order.status);
-    if (activeTab === "active") return order.status === "in_progress";
-    if (activeTab === "completed") return order.status === "completed";
-    return true;
-  });
+  const getPaginatedOrders = () => {
+    if (!orders || !Array.isArray(orders)) return {
+      currentItems: [],
+      totalPages: 0,
+      totalItems: 0
+    };
+    
+    const totalItems = orders.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentItems = orders.slice(startIndex, endIndex);
+    
+    return {
+      currentItems,
+      totalPages,
+      totalItems
+    };
+  };
+
+  const { currentItems: filteredOrders, totalPages, totalItems } = getPaginatedOrders();
 
   if (ordersLoading) {
     return (
@@ -146,44 +161,41 @@ export default function ClientOrdersPage() {
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Meu Histórico de Reservas
+            Meu Histórico
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Acompanhe o status dos seus serviços solicitados
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="pending">Pendentes</TabsTrigger>
-            <TabsTrigger value="active">Em Andamento</TabsTrigger>
-            <TabsTrigger value="completed">Concluídos</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          {/* Summary Header */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {totalItems > 0 && `${totalItems} pedido${totalItems === 1 ? '' : 's'} encontrado${totalItems === 1 ? '' : 's'}`}
+            </div>
+          </div>
 
-          <TabsContent value={activeTab} className="space-y-4">
-            {!filteredOrders || filteredOrders.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center p-12">
-                  <Package className="h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    Nenhum pedido encontrado
-                  </p>
-                  <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
-                    {activeTab === "all" 
-                      ? "Você ainda não fez nenhum pedido."
-                      : `Nenhum pedido ${getTabDescription(activeTab)} encontrado.`
-                    }
-                  </p>
-                  <Link href="/services">
-                    <Button>
-                      Explorar Serviços
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
+          {/* Orders List */}
+          {!filteredOrders || filteredOrders.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center p-12">
+                <Package className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Nenhum pedido encontrado
+                </p>
+                <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
+                  Você ainda não fez nenhum pedido.
+                </p>
+                <Link href="/services">
+                  <Button>
+                    Explorar Serviços
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
                 {filteredOrders.map((order) => (
                   <Card key={order.id} className="overflow-hidden">
                     <CardHeader className="pb-3">
@@ -279,22 +291,46 @@ export default function ClientOrdersPage() {
                 ))}
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={page === currentPage ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </ModernClientLayout>
   );
 }
 
-function getTabDescription(tab: string): string {
-  switch (tab) {
-    case "pending":
-      return "pendente";
-    case "active":
-      return "em andamento";
-    case "completed":
-      return "concluído";
-    default:
-      return "";
-  }
-}
