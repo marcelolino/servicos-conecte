@@ -249,7 +249,7 @@ export default function ProviderProfile() {
                     <h1 className="text-2xl font-bold">{provider.user.name}</h1>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      {provider.user.city}, {provider.user.state}
+                      {[provider.user.city, provider.user.state].filter(Boolean).join(', ') || 'Localização não informada'}
                     </div>
                   </div>
                 </div>

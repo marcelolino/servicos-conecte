@@ -291,7 +291,10 @@ export function AddressSearchModal({ onLocationSelect, onClose, initialQuery = '
                 <span className="text-gray-600 dark:text-gray-300">Ajuste a localização</span>
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
-                {selectedAddress || 'Carregando endereço...'}
+                {typeof selectedAddress === 'object' && selectedAddress !== null 
+                  ? JSON.stringify(selectedAddress)
+                  : String(selectedAddress || 'Carregando endereço...')
+                }
               </p>
             </div>
           </div>

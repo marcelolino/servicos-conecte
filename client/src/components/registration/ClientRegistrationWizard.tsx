@@ -487,7 +487,10 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                     Localização Detectada
                   </p>
                   <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
-                    {savedLocation.address}
+                    {typeof savedLocation.address === 'object' && savedLocation.address !== null 
+                      ? JSON.stringify(savedLocation.address)
+                      : String(savedLocation.address || 'Localização não detectada')
+                    }
                   </p>
                   <Button
                     type="button"
