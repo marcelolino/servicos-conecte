@@ -2866,7 +2866,7 @@ export default function AdminDashboard() {
                 <div>
                   <Label className="text-sm font-medium">Endereço</Label>
                   <p className="text-sm text-muted-foreground">
-                    {selectedBooking.address}, {selectedBooking.city}, {selectedBooking.state} - CEP: {selectedBooking.cep}
+                    {typeof selectedBooking.address === 'string' ? selectedBooking.address : JSON.stringify(selectedBooking.address) || 'N/A'}, {typeof selectedBooking.city === 'string' ? selectedBooking.city : JSON.stringify(selectedBooking.city) || 'N/A'}, {typeof selectedBooking.state === 'string' ? selectedBooking.state : JSON.stringify(selectedBooking.state) || 'N/A'} - CEP: {typeof selectedBooking.cep === 'string' ? selectedBooking.cep : JSON.stringify(selectedBooking.cep) || 'N/A'}
                   </p>
                 </div>
 

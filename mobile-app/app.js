@@ -29,7 +29,8 @@ class MobileApp {
         this.loadPopularServices(),
         this.loadCurrentOffers(),
         this.loadUserProfile(),
-        this.loadReservas()
+        this.loadReservas(),
+        this.loadCartFromServer()
       ]);
       this.showMainApp();
     } else {
@@ -611,42 +612,81 @@ class MobileApp {
     this.showTab('home');
   }
 
-  // Cart Management
-  addToCart(providerId) {
-    const provider = [...this.popularServices, ...this.currentOffers, ...this.searchResults]
-      .find(p => p.id == providerId);
-      
-    if (!provider) {
-      this.showToast('Serviço não encontrado', 'error');
-      return;
+  // Enhanced Cart Management
+  async addToCart(providerId, serviceData = null) {
+    try {
+      // Find the provider/service data
+      const provider = [...this.popularServices, ...this.currentOffers, ...this.searchResults]
+        .find(p => p.id == providerId);
+        
+      if (!provider) {
+        this.showToast('Serviço não encontrado', 'error');
+        return;
+      }
+
+      // Use provided service data or fallback to default
+      const service = serviceData || (provider.services && provider.services[0] ? provider.services[0] : {
+        name: provider.businessName || 'Serviço Disponível',
+        pricing: { hourly: 50, fixed: 100 }
+      });
+
+      // Check if user is logged in, redirect to checkout directly if has backend cart
+      if (this.isLoggedIn && this.currentUser) {
+        try {
+          // Add to server cart via API
+          const cartResponse = await this.apiRequest('/api/cart/add', {
+            method: 'POST',
+            body: JSON.stringify({
+              providerServiceId: service.id || provider.id,
+              quantity: 1,
+              unitPrice: service.pricing?.hourly || service.pricing?.fixed || 50,
+              notes: `Serviço: ${service.name}`
+            })
+          });
+
+          if (cartResponse) {
+            this.showToast(`${service.name} adicionado ao carrinho`, 'success');
+            // Update local cart display
+            await this.loadCartFromServer();
+            this.updateCartUI();
+            return;
+          }
+        } catch (error) {
+          console.error('Error adding to server cart:', error);
+          // Fallback to local cart
+        }
+      }
+
+      // Local cart management (fallback or for guest users)
+      const cartItem = {
+        id: `${provider.id}_${Date.now()}`,
+        providerId: provider.id,
+        providerServiceId: service.id || provider.id,
+        providerName: provider.businessName || provider.user?.name || 'Prestador',
+        serviceName: service.name,
+        price: service.pricing?.hourly || service.pricing?.fixed || 50,
+        image: provider.profilePhoto || provider.user?.avatar || this.generateServiceImage(service.name),
+        quantity: 1,
+        category: service.category || provider.category || { name: 'Serviços' },
+        chargingTypes: service.chargingTypes || [],
+        description: service.description || provider.description || ''
+      };
+
+      // Check if item already exists
+      const existingIndex = this.cart.findIndex(item => item.providerId == providerId);
+      if (existingIndex >= 0) {
+        this.cart[existingIndex].quantity += 1;
+      } else {
+        this.cart.push(cartItem);
+      }
+
+      this.saveCart();
+      this.updateCartUI();
+      this.showToast(`${service.name} adicionado ao carrinho`, 'success');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      this.showToast('Erro ao adicionar ao carrinho', 'error');
     }
-
-    const service = provider.services && provider.services[0] ? provider.services[0] : {
-      name: provider.businessName || 'Serviço Disponível',
-      pricing: { hourly: 50, fixed: 100 }
-    };
-
-    const cartItem = {
-      id: `${provider.id}_${Date.now()}`,
-      providerId: provider.id,
-      providerName: provider.businessName || 'Prestador',
-      serviceName: service.name,
-      price: service.pricing?.hourly || service.pricing?.fixed || 50,
-      image: provider.profilePhoto || this.generateServiceImage(service.name),
-      quantity: 1
-    };
-
-    // Check if item already exists
-    const existingIndex = this.cart.findIndex(item => item.providerId == providerId);
-    if (existingIndex >= 0) {
-      this.cart[existingIndex].quantity += 1;
-    } else {
-      this.cart.push(cartItem);
-    }
-
-    this.saveCart();
-    this.updateCartUI();
-    this.showToast(`${service.name} adicionado ao carrinho`, 'success');
   }
 
   removeFromCart(itemId) {
@@ -696,6 +736,50 @@ class MobileApp {
     }
   }
 
+  async loadCartFromServer() {
+    if (!this.isLoggedIn) return;
+
+    try {
+      const serverCart = await this.apiRequest('/api/cart');
+      if (serverCart && serverCart.items) {
+        // Convert server cart to local format
+        this.cart = serverCart.items.map(item => ({
+          id: item.id,
+          providerId: item.providerService?.provider?.id || 0,
+          providerServiceId: item.providerServiceId,
+          providerName: item.providerService?.provider?.user?.name || 'Prestador',
+          serviceName: item.providerService?.name || item.providerService?.category?.name || 'Serviço',
+          price: parseFloat(item.unitPrice || '0'),
+          quantity: item.quantity,
+          image: this.getServiceImage(item.providerService),
+          category: item.providerService?.category || { name: 'Serviços' },
+          totalPrice: parseFloat(item.totalPrice || '0'),
+          notes: item.notes || ''
+        }));
+        this.saveCart();
+      }
+    } catch (error) {
+      console.error('Error loading cart from server:', error);
+    }
+  }
+
+  getServiceImage(providerService) {
+    try {
+      if (providerService?.images) {
+        const images = JSON.parse(providerService.images);
+        if (images && images.length > 0) {
+          return images[0];
+        }
+      }
+      if (providerService?.provider?.user?.avatar) {
+        return providerService.provider.user.avatar;
+      }
+    } catch (e) {
+      console.error('Error parsing service images:', e);
+    }
+    return this.generateServiceImage(providerService?.name || 'Serviço');
+  }
+
   renderCart() {
     const cartItems = document.getElementById('cart-items');
     const cartSummary = document.getElementById('cart-summary');
@@ -715,29 +799,59 @@ class MobileApp {
     cartSummary.style.display = 'block';
     emptyCart.style.display = 'none';
 
-    const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const serviceFee = subtotal * 0.1; // 10% service fee
+    const total = subtotal + serviceFee;
+    
     if (cartTotal) {
       cartTotal.textContent = total.toFixed(2).replace('.', ',');
+    }
+
+    // Add subtotal and service fee display
+    const cartSummaryElement = document.getElementById('cart-summary');
+    if (cartSummaryElement) {
+      cartSummaryElement.innerHTML = `
+        <div class="cart-totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
+          </div>
+          <div class="total-row">
+            <span>Taxa de serviço (10%):</span>
+            <span>R$ ${serviceFee.toFixed(2).replace('.', ',')}</span>
+          </div>
+          <div class="total-row total-final">
+            <span><strong>Total:</strong></span>
+            <span><strong>R$ <span id="cart-total">${total.toFixed(2).replace('.', ',')}</span></strong></span>
+          </div>
+        </div>
+        <button class="checkout-btn" onclick="window.mobileApp.proceedToCheckout()">
+          <i class="fas fa-credit-card"></i>
+          Finalizar Pedido
+        </button>
+      `;
     }
 
     cartItems.innerHTML = this.cart.map(item => `
       <div class="cart-item">
         <div class="cart-item-image">
-          <img src="${item.image}" alt="${item.serviceName}">
+          <img src="${item.image}" alt="${item.serviceName}" onerror="this.src='${this.generateServiceImage(item.serviceName)}'">
         </div>
         <div class="cart-item-info">
           <div class="cart-item-title">${item.serviceName}</div>
-          <div class="cart-item-price">R$ ${item.price.toFixed(2).replace('.', ',')}</div>
+          <div class="cart-item-provider">${item.providerName}</div>
+          <div class="cart-item-category">${item.category?.name || 'Serviços'}</div>
+          <div class="cart-item-price">R$ ${item.price.toFixed(2).replace('.', ',')} x ${item.quantity}</div>
         </div>
         <div class="cart-item-controls">
-          <button class="quantity-btn" onclick="window.mobileApp.updateQuantity('${item.id}', -1)">
+          <button class="quantity-btn" onclick="window.mobileApp.updateQuantity('${item.id}', -1)" ${item.quantity <= 1 ? 'disabled' : ''}>
             <i class="fas fa-minus"></i>
           </button>
           <span class="quantity-display">${item.quantity}</span>
           <button class="quantity-btn" onclick="window.mobileApp.updateQuantity('${item.id}', 1)">
             <i class="fas fa-plus"></i>
           </button>
-          <button class="quantity-btn" onclick="window.mobileApp.removeFromCart('${item.id}')" style="margin-left: 8px; color: var(--error);">
+          <button class="quantity-btn remove-btn" onclick="window.mobileApp.removeFromCart('${item.id}')">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -871,21 +985,627 @@ class MobileApp {
   }
 
   // Checkout functionality
-  proceedToCheckout() {
+  async proceedToCheckout() {
     if (this.cart.length === 0) {
       this.showToast('Carrinho vazio', 'warning');
       return;
     }
+    
+    if (!this.isLoggedIn) {
+      this.showToast('Faça login para continuar', 'warning');
+      setTimeout(() => {
+        window.location.href = '/mobile-app/location-register.html';
+      }, 1000);
+      return;
+    }
+    
+    // Show checkout modal instead of redirecting
+    this.showCheckoutModal();
+  }
 
-    this.showToast('Redirecionando para checkout...', 'info');
+  showCheckoutModal() {
+    // Create checkout modal with payment options
+    const modal = document.createElement('div');
+    modal.className = 'checkout-modal';
+    modal.id = 'checkout-modal';
     
-    // Save cart to main app's session/localStorage for checkout
-    localStorage.setItem('checkout_cart', JSON.stringify(this.cart));
+    const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const serviceFee = subtotal * 0.1;
+    const total = subtotal + serviceFee;
     
-    // Redirect to main app's checkout
-    setTimeout(() => {
-      window.open(`${this.apiBase}/checkout`, '_blank');
-    }, 1000);
+    modal.innerHTML = `
+      <div class="checkout-modal-content">
+        <div class="checkout-header">
+          <h3>Finalizar Pedido</h3>
+          <button class="close-checkout" onclick="this.closest('.checkout-modal').remove()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="checkout-body">
+          <!-- Order Summary -->
+          <div class="checkout-section">
+            <h4><i class="fas fa-receipt"></i> Resumo do Pedido</h4>
+            <div class="order-summary">
+              ${this.cart.map(item => `
+                <div class="order-item">
+                  <span>${item.serviceName} x${item.quantity}</span>
+                  <span>R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                </div>
+              `).join('')}
+              <div class="order-totals">
+                <div class="order-item">
+                  <span>Subtotal:</span>
+                  <span>R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div class="order-item">
+                  <span>Taxa de serviço:</span>
+                  <span>R$ ${serviceFee.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div class="order-item total">
+                  <span><strong>Total:</strong></span>
+                  <span><strong>R$ ${total.toFixed(2).replace('.', ',')}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Delivery Address -->
+          <div class="checkout-section">
+            <h4><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</h4>
+            <div class="address-form">
+              <input type="text" id="checkout-address" placeholder="Endereço completo" value="${this.currentUser?.address || ''}" required>
+              <div class="address-row">
+                <input type="text" id="checkout-city" placeholder="Cidade" value="${this.currentUser?.city || ''}" required>
+                <input type="text" id="checkout-cep" placeholder="CEP" value="${this.currentUser?.cep || ''}" required>
+              </div>
+              <textarea id="checkout-notes" placeholder="Observações adicionais (opcional)"></textarea>
+            </div>
+          </div>
+          
+          <!-- Payment Method -->
+          <div class="checkout-section">
+            <h4><i class="fas fa-credit-card"></i> Forma de Pagamento</h4>
+            <div class="payment-methods">
+              <div class="payment-option selected" data-method="cash">
+                <i class="fas fa-money-bill-wave"></i>
+                <div>
+                  <strong>Dinheiro</strong>
+                  <small>Pagamento na entrega</small>
+                </div>
+                <input type="radio" name="payment-method" value="cash" checked>
+              </div>
+              <div class="payment-option" data-method="pix">
+                <i class="fas fa-qrcode"></i>
+                <div>
+                  <strong>PIX</strong>
+                  <small>Pagamento instantâneo</small>
+                </div>
+                <input type="radio" name="payment-method" value="pix">
+              </div>
+              <div class="payment-option" data-method="card">
+                <i class="fas fa-credit-card"></i>
+                <div>
+                  <strong>Cartão</strong>
+                  <small>Crédito ou débito</small>
+                </div>
+                <input type="radio" name="payment-method" value="card">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Scheduling -->
+          <div class="checkout-section">
+            <h4><i class="fas fa-calendar-alt"></i> Agendamento</h4>
+            <div class="scheduling-form">
+              <input type="date" id="checkout-date" min="${new Date().toISOString().split('T')[0]}" required>
+              <select id="checkout-time" required>
+                <option value="">Selecione o horário</option>
+                <option value="08:00">08:00</option>
+                <option value="09:00">09:00</option>
+                <option value="10:00">10:00</option>
+                <option value="11:00">11:00</option>
+                <option value="14:00">14:00</option>
+                <option value="15:00">15:00</option>
+                <option value="16:00">16:00</option>
+                <option value="17:00">17:00</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="checkout-footer">
+          <button class="btn-secondary" onclick="this.closest('.checkout-modal').remove()">
+            Voltar
+          </button>
+          <button class="btn-primary checkout-confirm" onclick="window.mobileApp.confirmCheckout()">
+            <i class="fas fa-check"></i>
+            Confirmar Pedido - R$ ${total.toFixed(2).replace('.', ',')}
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Add modal styles
+    if (!document.getElementById('checkout-modal-styles')) {
+      this.injectCheckoutModalStyles();
+    }
+    
+    document.body.appendChild(modal);
+    
+    // Add event listeners for payment method selection
+    document.querySelectorAll('.payment-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        option.querySelector('input[type="radio"]').checked = true;
+      });
+    });
+  }
+
+  injectCheckoutModalStyles() {
+    const style = document.createElement('style');
+    style.id = 'checkout-modal-styles';
+    style.textContent = `
+      .checkout-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+        backdrop-filter: blur(5px);
+        overflow-y: auto;
+      }
+      
+      .checkout-modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        margin: 20px 0;
+      }
+      
+      .checkout-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #e5e5e5;
+        background: #f8f9fa;
+        border-radius: 12px 12px 0 0;
+      }
+      
+      .checkout-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        flex-grow: 1;
+      }
+      
+      .close-checkout {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #718096;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+      
+      .close-checkout:hover {
+        background: #e2e8f0;
+        color: #2d3748;
+      }
+      
+      .checkout-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      
+      .checkout-section {
+        margin-bottom: 24px;
+      }
+      
+      .checkout-section h4 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .order-summary {
+        background: #f7fafc;
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+      }
+      
+      .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .order-item:last-child {
+        border-bottom: none;
+      }
+      
+      .order-totals {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 2px solid #e2e8f0;
+      }
+      
+      .order-item.total {
+        font-size: 18px;
+        color: #2d3748;
+        border-bottom: none;
+        padding-top: 12px;
+      }
+      
+      .address-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .address-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      
+      .address-form input,
+      .address-form textarea,
+      .scheduling-form input,
+      .scheduling-form select {
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+      }
+      
+      .address-form input:focus,
+      .address-form textarea:focus,
+      .scheduling-form input:focus,
+      .scheduling-form select:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+      
+      .address-form textarea {
+        min-height: 80px;
+        resize: vertical;
+        font-family: inherit;
+      }
+      
+      .payment-methods {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .payment-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+      }
+      
+      .payment-option:hover {
+        border-color: #cbd5e0;
+        background: #f7fafc;
+      }
+      
+      .payment-option.selected {
+        border-color: #4299e1;
+        background: #ebf8ff;
+        box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.2);
+      }
+      
+      .payment-option i {
+        font-size: 20px;
+        color: #4299e1;
+        min-width: 20px;
+      }
+      
+      .payment-option div {
+        flex: 1;
+      }
+      
+      .payment-option strong {
+        display: block;
+        font-size: 14px;
+        color: #2d3748;
+      }
+      
+      .payment-option small {
+        color: #718096;
+        font-size: 12px;
+      }
+      
+      .payment-option input[type="radio"] {
+        margin: 0;
+      }
+      
+      .scheduling-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      
+      .checkout-footer {
+        display: flex;
+        gap: 12px;
+        padding: 20px;
+        border-top: 1px solid #e5e5e5;
+        background: #f8f9fa;
+        border-radius: 0 0 12px 12px;
+      }
+      
+      .checkout-footer button {
+        flex: 1;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+      
+      .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+      
+      .btn-secondary:hover {
+        background: #cbd5e0;
+      }
+      
+      .btn-primary {
+        background: #4299e1;
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+      }
+      
+      .btn-primary:disabled {
+        background: #a0aec0;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      
+      /* Cart item styles */
+      .cart-totals {
+        background: #f7fafc;
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+      }
+      
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        font-size: 14px;
+      }
+      
+      .total-final {
+        border-top: 2px solid #e2e8f0;
+        padding-top: 12px;
+        margin-top: 8px;
+        font-size: 16px;
+      }
+      
+      .cart-item-provider {
+        font-size: 12px;
+        color: #718096;
+        margin-bottom: 4px;
+      }
+      
+      .cart-item-category {
+        font-size: 11px;
+        color: #a0aec0;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-bottom: 4px;
+      }
+      
+      .quantity-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      .remove-btn {
+        color: #e53e3e !important;
+      }
+      
+      .remove-btn:hover {
+        background: #fed7d7 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async confirmCheckout() {
+    const address = document.getElementById('checkout-address').value;
+    const city = document.getElementById('checkout-city').value;
+    const cep = document.getElementById('checkout-cep').value;
+    const notes = document.getElementById('checkout-notes').value;
+    const date = document.getElementById('checkout-date').value;
+    const time = document.getElementById('checkout-time').value;
+    const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+
+    if (!address || !city || !cep || !date || !time) {
+      this.showToast('Por favor, preencha todos os campos obrigatórios', 'error');
+      return;
+    }
+
+    const confirmButton = document.querySelector('.checkout-confirm');
+    confirmButton.disabled = true;
+    confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+
+    try {
+      // Prepare order data
+      const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const serviceFee = subtotal * 0.1;
+      const total = subtotal + serviceFee;
+
+      const orderData = {
+        items: this.cart.map(item => ({
+          providerServiceId: item.providerServiceId || item.providerId,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          notes: item.notes || `Serviço: ${item.serviceName}`
+        })),
+        address,
+        city,
+        cep,
+        state: this.currentUser?.state || 'SP',
+        notes,
+        scheduledDate: date,
+        scheduledTime: time,
+        paymentMethod,
+        totalAmount: total,
+        subtotal: subtotal,
+        serviceFee: serviceFee
+      };
+
+      console.log('Creating order:', orderData);
+
+      // Create order via API
+      const response = await this.apiRequest('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
+
+      if (response) {
+        // Clear cart
+        this.cart = [];
+        this.saveCart();
+        this.updateCartUI();
+        
+        // Close modal
+        document.getElementById('checkout-modal').remove();
+        
+        // Show success message
+        this.showToast('Pedido criado com sucesso! Você receberá atualizações sobre o status.', 'success');
+        
+        // Switch to orders tab
+        setTimeout(() => {
+          this.showTab('reservas');
+          this.loadReservas();
+        }, 2000);
+      } else {
+        throw new Error('Falha ao criar pedido');
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      this.showToast('Erro ao processar pedido. Tente novamente.', 'error');
+      
+      // Re-enable button
+      confirmButton.disabled = false;
+      const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const serviceFee = subtotal * 0.1;
+      const total = subtotal + serviceFee;
+      confirmButton.innerHTML = `<i class="fas fa-check"></i> Confirmar Pedido - R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
+  }
+
+  // Enhanced quantity management for mobile cart
+  async updateQuantity(itemId, delta) {
+    const itemIndex = this.cart.findIndex(item => item.id === itemId);
+    if (itemIndex === -1) return;
+
+    const newQuantity = this.cart[itemIndex].quantity + delta;
+    
+    if (newQuantity <= 0) {
+      return this.removeFromCart(itemId);
+    }
+
+    // Update server cart if logged in
+    if (this.isLoggedIn && this.currentUser) {
+      try {
+        const response = await this.apiRequest('/api/cart/update-quantity', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            cartItemId: this.cart[itemIndex].providerServiceId || this.cart[itemIndex].id,
+            quantity: newQuantity
+          })
+        });
+
+        if (response) {
+          this.cart[itemIndex].quantity = newQuantity;
+          this.saveCart();
+          this.updateCartUI();
+          return;
+        }
+      } catch (error) {
+        console.error('Error updating cart quantity on server:', error);
+        // Fallback to local update
+      }
+    }
+
+    // Local cart update
+    this.cart[itemIndex].quantity = newQuantity;
+    this.saveCart();
+    this.updateCartUI();
+  }
+
+  // Clear entire cart
+  async clearCart() {
+    if (this.isLoggedIn && this.currentUser) {
+      try {
+        await this.apiRequest('/api/cart/clear', {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.error('Error clearing server cart:', error);
+      }
+    }
+    
+    this.cart = [];
+    this.saveCart();
+    this.updateCartUI();
+    this.showToast('Carrinho limpo', 'success');
   }
 
   // Show All functions for navigation
