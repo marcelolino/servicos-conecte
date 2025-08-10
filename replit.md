@@ -16,6 +16,25 @@ A comprehensive service marketplace platform that connects service providers and
 
 ## Recent Changes (February 2025)
 
+### Mobile App 3-Step Checkout Implementation ✓
+- **Date**: February 10, 2025
+- **Changes**: Implemented complete 3-step checkout process in mobile app matching web client functionality
+- **Details**:
+  - **Step 1 - Cart Items**: Enhanced cart display with progress indicator and item management
+  - **Step 2 - Scheduling & Address**: Complete form with address fields, date/time selection, and notes
+  - **Step 3 - Payment**: Payment method selection with card forms, PIX support, and order confirmation
+  - **Progress Indicator**: Visual step progression with completed/active states and icons
+  - **Form Validation**: Required field validation with error messages and user feedback
+  - **Address Auto-fill**: User profile data automatically populates address fields
+  - **Payment Methods**: Dynamic loading from API with fallback to default methods (Credit/Debit, PIX, Cash)
+  - **Card Input Formatting**: Real-time formatting for card number, expiry, CVV, and CPF
+  - **Order Summary**: Comprehensive order display with items, totals, address, and schedule
+  - **API Integration**: Full order creation via `/api/orders` endpoint with error handling
+  - **User Experience**: Smooth navigation between steps with back buttons and data persistence
+  - **Mobile Optimization**: Responsive design optimized for mobile devices with touch interactions
+  - **Success Flow**: Order confirmation with cart clearing and redirect to reservations
+  - **Error Handling**: Comprehensive error states with user-friendly messages
+
 ### Automatic Location Detection with Registration Integration ✓
 - **Date**: February 8, 2025
 - **Changes**: Implemented automatic location detection upon app entry with two-step registration process

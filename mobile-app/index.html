@@ -471,41 +471,277 @@
 
       <!-- Cart Section -->
       <section class="cart-section" id="cart-section" style="display: none;">
-        <div class="section-header">
-          <h3>Meu Carrinho</h3>
-          <button class="clear-cart" id="clear-cart" onclick="window.mobileApp.clearCart()">Limpar Carrinho</button>
-        </div>
-        <div class="cart-items" id="cart-items">
-          <!-- Cart items will be loaded here -->
-        </div>
-        
-        <div class="empty-cart" id="empty-cart" style="display: block;">
-          <div class="empty-state">
-            <i class="fas fa-shopping-cart" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
-            <p>Seu carrinho está vazio</p>
-            <button onclick="window.mobileApp.showTab('home')" class="btn-primary">Continuar Comprando</button>
+        <!-- Step 1: Cart Items -->
+        <div class="checkout-step" id="cart-step-1" style="display: block;">
+          <div class="step-header">
+            <h3>Meu Carrinho</h3>
+            <button class="clear-cart" id="clear-cart" onclick="window.mobileApp.clearCart()">Limpar Carrinho</button>
           </div>
-        </div>
-        
-        <div class="cart-summary" id="cart-summary" style="display: none;">
-          <div class="cart-totals">
-            <div class="total-row">
-              <span>Subtotal:</span>
-              <span>R$ <span id="cart-subtotal">0,00</span></span>
+          
+          <!-- Progress Indicator -->
+          <div class="checkout-progress">
+            <div class="progress-step active">
+              <div class="step-number">1</div>
+              <span>Itens</span>
             </div>
-            <div class="total-row">
-              <span>Taxa de serviço (10%):</span>
-              <span>R$ <span id="cart-service-fee">0,00</span></span>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+              <div class="step-number">2</div>
+              <span>Agendamento</span>
             </div>
-            <div class="total-row total-final">
-              <span><strong>Total:</strong></span>
-              <span><strong>R$ <span id="cart-total">0,00</span></strong></span>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+              <div class="step-number">3</div>
+              <span>Pagamento</span>
             </div>
           </div>
-          <button class="checkout-btn" onclick="window.mobileApp.proceedToCheckout()">
-            <i class="fas fa-credit-card"></i>
-            Finalizar Pedido
-          </button>
+          
+          <div class="cart-items" id="cart-items">
+            <!-- Cart items will be loaded here -->
+          </div>
+          
+          <div class="empty-cart" id="empty-cart" style="display: block;">
+            <div class="empty-state">
+              <i class="fas fa-shopping-cart" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+              <p>Seu carrinho está vazio</p>
+              <button onclick="window.mobileApp.showTab('home')" class="btn-primary">Continuar Comprando</button>
+            </div>
+          </div>
+          
+          <div class="cart-summary" id="cart-summary" style="display: none;">
+            <div class="cart-totals">
+              <div class="total-row">
+                <span>Subtotal:</span>
+                <span>R$ <span id="cart-subtotal">0,00</span></span>
+              </div>
+              <div class="total-row">
+                <span>Taxa de serviço (10%):</span>
+                <span>R$ <span id="cart-service-fee">0,00</span></span>
+              </div>
+              <div class="total-row total-final">
+                <span><strong>Total:</strong></span>
+                <span><strong>R$ <span id="cart-total">0,00</span></strong></span>
+              </div>
+            </div>
+            <button class="checkout-btn" onclick="window.mobileApp.goToScheduling()">
+              <i class="fas fa-calendar"></i>
+              Continuar para Agendamento
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Scheduling & Address -->
+        <div class="checkout-step" id="cart-step-2" style="display: none;">
+          <div class="step-header">
+            <button class="back-btn" onclick="window.mobileApp.showCartStep(1)">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <h3>Agendamento</h3>
+          </div>
+
+          <!-- Progress Indicator -->
+          <div class="checkout-progress">
+            <div class="progress-step completed">
+              <div class="step-number"><i class="fas fa-check"></i></div>
+              <span>Itens</span>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step active">
+              <div class="step-number">2</div>
+              <span>Agendamento</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step">
+              <div class="step-number">3</div>
+              <span>Pagamento</span>
+            </div>
+          </div>
+
+          <div class="scheduling-form">
+            <!-- Address Section -->
+            <div class="form-section">
+              <h4><i class="fas fa-map-marker-alt"></i> Endereço de Atendimento</h4>
+              <div class="form-group">
+                <input type="text" id="checkout-address" placeholder="Endereço completo" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <input type="text" id="checkout-cep" placeholder="CEP" maxlength="9" oninput="formatCEP(this)">
+                </div>
+                <div class="form-group">
+                  <input type="text" id="checkout-city" placeholder="Cidade" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <input type="text" id="checkout-state" placeholder="Estado" maxlength="2" required>
+              </div>
+            </div>
+
+            <!-- Date & Time Section -->
+            <div class="form-section">
+              <h4><i class="fas fa-calendar"></i> Data e Horário</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <input type="date" id="checkout-date" required>
+                </div>
+                <div class="form-group">
+                  <input type="time" id="checkout-time" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="form-section">
+              <h4><i class="fas fa-comment"></i> Observações</h4>
+              <div class="form-group">
+                <textarea id="checkout-notes" placeholder="Instruções especiais, detalhes importantes..." rows="3"></textarea>
+              </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary-mobile">
+              <h4>Resumo do Pedido</h4>
+              <div id="scheduling-order-items"></div>
+              <div class="summary-totals">
+                <div class="total-row">
+                  <span>Subtotal:</span>
+                  <span>R$ <span id="scheduling-subtotal">0,00</span></span>
+                </div>
+                <div class="total-row">
+                  <span>Taxa de serviço:</span>
+                  <span>R$ <span id="scheduling-service-fee">0,00</span></span>
+                </div>
+                <div class="total-row total-final">
+                  <span><strong>Total:</strong></span>
+                  <span><strong>R$ <span id="scheduling-total">0,00</span></strong></span>
+                </div>
+              </div>
+            </div>
+
+            <button class="checkout-btn" onclick="window.mobileApp.goToPayment()">
+              <i class="fas fa-credit-card"></i>
+              Continuar para Pagamento
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Payment -->
+        <div class="checkout-step" id="cart-step-3" style="display: none;">
+          <div class="step-header">
+            <button class="back-btn" onclick="window.mobileApp.showCartStep(2)">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <h3>Pagamento</h3>
+          </div>
+
+          <!-- Progress Indicator -->
+          <div class="checkout-progress">
+            <div class="progress-step completed">
+              <div class="step-number"><i class="fas fa-check"></i></div>
+              <span>Itens</span>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step completed">
+              <div class="step-number"><i class="fas fa-check"></i></div>
+              <span>Agendamento</span>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step active">
+              <div class="step-number">3</div>
+              <span>Pagamento</span>
+            </div>
+          </div>
+
+          <div class="payment-form">
+            <!-- Payment Methods -->
+            <div class="form-section">
+              <h4><i class="fas fa-credit-card"></i> Método de Pagamento</h4>
+              <div class="payment-methods" id="payment-methods">
+                <!-- Payment methods will be loaded here -->
+              </div>
+            </div>
+
+            <!-- Card Payment Form -->
+            <div class="card-payment-form" id="card-payment-form" style="display: none;">
+              <div class="form-group">
+                <label>Número do Cartão</label>
+                <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" oninput="formatCardNumber(this)">
+              </div>
+              <div class="form-group">
+                <label>Nome no Cartão</label>
+                <input type="text" id="card-name" placeholder="Nome como no cartão">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Validade</label>
+                  <input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5" oninput="formatCardExpiry(this)">
+                </div>
+                <div class="form-group">
+                  <label>CVV</label>
+                  <input type="text" id="card-cvv" placeholder="123" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>CPF</label>
+                <input type="text" id="card-cpf" placeholder="000.000.000-00" maxlength="14" oninput="formatCPF(this)">
+              </div>
+              <div class="form-group">
+                <label>Parcelas</label>
+                <select id="card-installments">
+                  <option value="1">À vista</option>
+                  <option value="2">2x sem juros</option>
+                  <option value="3">3x sem juros</option>
+                  <option value="6">6x sem juros</option>
+                  <option value="12">12x com juros</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- PIX Payment -->
+            <div class="pix-payment" id="pix-payment" style="display: none;">
+              <div class="pix-info">
+                <i class="fas fa-qrcode"></i>
+                <p>Após confirmar, você receberá o código PIX para pagamento</p>
+              </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary-mobile">
+              <h4>Resumo Final</h4>
+              <div id="payment-order-items"></div>
+              <div class="summary-totals">
+                <div class="total-row">
+                  <span>Subtotal:</span>
+                  <span>R$ <span id="payment-subtotal">0,00</span></span>
+                </div>
+                <div class="total-row">
+                  <span>Taxa de serviço:</span>
+                  <span>R$ <span id="payment-service-fee">0,00</span></span>
+                </div>
+                <div class="total-row total-final">
+                  <span><strong>Total:</strong></span>
+                  <span><strong>R$ <span id="payment-total">0,00</span></strong></span>
+                </div>
+              </div>
+              
+              <!-- Address Summary -->
+              <div class="address-summary">
+                <h5><i class="fas fa-map-marker-alt"></i> Endereço</h5>
+                <p id="payment-address-summary">-</p>
+              </div>
+              
+              <!-- Schedule Summary -->
+              <div class="schedule-summary">
+                <h5><i class="fas fa-calendar"></i> Agendamento</h5>
+                <p id="payment-schedule-summary">-</p>
+              </div>
+            </div>
+
+            <button class="checkout-btn" onclick="window.mobileApp.confirmOrder()" id="confirm-order-btn">
+              <i class="fas fa-check"></i>
+              Confirmar Pedido
+            </button>
+          </div>
         </div>
       </section>
 

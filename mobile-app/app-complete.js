@@ -1065,6 +1065,308 @@ class MobileApp {
       </svg>
     `)}`;
   }
+
+  // 3-Step Checkout Methods
+  showCartStep(step) {
+    // Hide all steps
+    for (let i = 1; i <= 3; i++) {
+      const stepElement = document.getElementById(`cart-step-${i}`);
+      if (stepElement) {
+        stepElement.style.display = 'none';
+      }
+    }
+
+    // Show selected step
+    const selectedStep = document.getElementById(`cart-step-${step}`);
+    if (selectedStep) {
+      selectedStep.style.display = 'block';
+    }
+
+    // Update cart data if going to step 1
+    if (step === 1) {
+      this.renderCart();
+    }
+  }
+
+  goToScheduling() {
+    if (this.cart.length === 0) {
+      this.showToast('Carrinho vazio', 'warning');
+      return;
+    }
+
+    // Fill user address if available
+    this.fillCheckoutAddress();
+    
+    // Update order summary
+    this.updateOrderSummary('scheduling');
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('checkout-date');
+    if (dateInput) {
+      dateInput.min = today;
+      dateInput.value = today;
+    }
+
+    // Set default time
+    const timeInput = document.getElementById('checkout-time');
+    if (timeInput && !timeInput.value) {
+      timeInput.value = '09:00';
+    }
+
+    this.showCartStep(2);
+  }
+
+  goToPayment() {
+    // Validate scheduling form
+    const address = document.getElementById('checkout-address').value.trim();
+    const city = document.getElementById('checkout-city').value.trim();
+    const state = document.getElementById('checkout-state').value.trim();
+    const date = document.getElementById('checkout-date').value;
+    const time = document.getElementById('checkout-time').value;
+
+    if (!address || !city || !state || !date || !time) {
+      this.showToast('Preencha todos os campos obrigatórios', 'error');
+      return;
+    }
+
+    // Store scheduling data
+    this.schedulingData = {
+      address,
+      city,
+      state,
+      cep: document.getElementById('checkout-cep').value.trim(),
+      date,
+      time,
+      notes: document.getElementById('checkout-notes').value.trim()
+    };
+
+    // Load payment methods and update summaries
+    this.loadPaymentMethods();
+    this.updateOrderSummary('payment');
+    this.updateAddressAndScheduleSummary();
+
+    this.showCartStep(3);
+  }
+
+  fillCheckoutAddress() {
+    if (this.currentUser) {
+      const addressInput = document.getElementById('checkout-address');
+      const cityInput = document.getElementById('checkout-city');
+      const stateInput = document.getElementById('checkout-state');
+      const cepInput = document.getElementById('checkout-cep');
+
+      if (addressInput && this.currentUser.address) {
+        addressInput.value = this.currentUser.address;
+      }
+      if (cityInput && this.currentUser.city) {
+        cityInput.value = this.currentUser.city;
+      }
+      if (stateInput && this.currentUser.state) {
+        stateInput.value = this.currentUser.state;
+      }
+      if (cepInput && this.currentUser.cep) {
+        cepInput.value = this.currentUser.cep;
+      }
+    }
+  }
+
+  updateOrderSummary(step) {
+    const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const serviceFee = subtotal * 0.1;
+    const total = subtotal + serviceFee;
+
+    // Update totals
+    const subtotalElement = document.getElementById(`${step}-subtotal`);
+    const serviceFeeElement = document.getElementById(`${step}-service-fee`);
+    const totalElement = document.getElementById(`${step}-total`);
+
+    if (subtotalElement) subtotalElement.textContent = subtotal.toFixed(2).replace('.', ',');
+    if (serviceFeeElement) serviceFeeElement.textContent = serviceFee.toFixed(2).replace('.', ',');
+    if (totalElement) totalElement.textContent = total.toFixed(2).replace('.', ',');
+
+    // Update items list
+    const itemsContainer = document.getElementById(`${step}-order-items`);
+    if (itemsContainer) {
+      itemsContainer.innerHTML = this.cart.map(item => `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+          <span>${item.serviceName} x${item.quantity}</span>
+          <span>R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  updateAddressAndScheduleSummary() {
+    if (!this.schedulingData) return;
+
+    const addressSummary = document.getElementById('payment-address-summary');
+    const scheduleSummary = document.getElementById('payment-schedule-summary');
+
+    if (addressSummary) {
+      addressSummary.textContent = `${this.schedulingData.address}, ${this.schedulingData.city} - ${this.schedulingData.state}`;
+    }
+
+    if (scheduleSummary) {
+      const dateFormatted = new Date(this.schedulingData.date).toLocaleDateString('pt-BR');
+      scheduleSummary.textContent = `${dateFormatted} às ${this.schedulingData.time}`;
+    }
+  }
+
+  async loadPaymentMethods() {
+    try {
+      const methods = await this.apiRequest('/api/payment-methods/active');
+      this.renderPaymentMethods(methods || []);
+    } catch (error) {
+      console.error('Error loading payment methods:', error);
+      this.renderPaymentMethods([]);
+    }
+  }
+
+  renderPaymentMethods(methods) {
+    const container = document.getElementById('payment-methods');
+    if (!container) return;
+
+    // Default methods if none from server
+    const defaultMethods = [
+      { id: 'credit_card', name: 'Cartão de Crédito', icon: 'fas fa-credit-card', desc: 'Parcelado em até 12x' },
+      { id: 'debit_card', name: 'Cartão de Débito', icon: 'fas fa-credit-card', desc: 'Pagamento à vista' },
+      { id: 'pix', name: 'PIX', icon: 'fas fa-qrcode', desc: 'Pagamento instantâneo' },
+      { id: 'cash', name: 'Dinheiro', icon: 'fas fa-money-bill', desc: 'Pagamento na entrega' }
+    ];
+
+    const paymentMethods = methods.length > 0 ? methods.map(m => ({
+      id: m.gatewayName,
+      name: m.gatewayTitle,
+      icon: m.gatewayName === 'stripe' ? 'fas fa-credit-card' : 'fas fa-qrcode',
+      desc: m.gatewayName === 'stripe' ? 'Cartões internacionais' : 'Pagamentos no Brasil'
+    })) : defaultMethods;
+
+    container.innerHTML = paymentMethods.map(method => `
+      <div class="payment-method" data-method="${method.id}" onclick="window.mobileApp.selectPaymentMethod('${method.id}')">
+        <div class="payment-method-icon">
+          <i class="${method.icon}"></i>
+        </div>
+        <div class="payment-method-info">
+          <div class="payment-method-title">${method.name}</div>
+          <div class="payment-method-desc">${method.desc}</div>
+        </div>
+        <div class="payment-method-radio"></div>
+      </div>
+    `).join('');
+  }
+
+  selectPaymentMethod(methodId) {
+    // Remove selection from all methods
+    document.querySelectorAll('.payment-method').forEach(method => {
+      method.classList.remove('selected');
+    });
+
+    // Select current method
+    const selectedMethod = document.querySelector(`[data-method="${methodId}"]`);
+    if (selectedMethod) {
+      selectedMethod.classList.add('selected');
+    }
+
+    this.selectedPaymentMethod = methodId;
+
+    // Show/hide payment forms
+    const cardForm = document.getElementById('card-payment-form');
+    const pixForm = document.getElementById('pix-payment');
+
+    if (cardForm) cardForm.style.display = 'none';
+    if (pixForm) pixForm.style.display = 'none';
+
+    if (methodId === 'credit_card' || methodId === 'debit_card') {
+      if (cardForm) cardForm.style.display = 'block';
+    } else if (methodId === 'pix') {
+      if (pixForm) pixForm.style.display = 'block';
+    }
+  }
+
+  async confirmOrder() {
+    if (!this.selectedPaymentMethod) {
+      this.showToast('Selecione um método de pagamento', 'error');
+      return;
+    }
+
+    // Validate card data if needed
+    if ((this.selectedPaymentMethod === 'credit_card' || this.selectedPaymentMethod === 'debit_card')) {
+      const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
+      const cardName = document.getElementById('card-name').value.trim();
+      const cardExpiry = document.getElementById('card-expiry').value;
+      const cardCvv = document.getElementById('card-cvv').value;
+
+      if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
+        this.showToast('Preencha todos os dados do cartão', 'error');
+        return;
+      }
+    }
+
+    const confirmBtn = document.getElementById('confirm-order-btn');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    }
+
+    try {
+      const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const serviceFee = subtotal * 0.1;
+      const total = subtotal + serviceFee;
+
+      const orderData = {
+        items: this.cart.map(item => ({
+          providerServiceId: item.providerServiceId || item.providerId,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          notes: item.notes || `Serviço: ${item.serviceName}`
+        })),
+        address: this.schedulingData.address,
+        city: this.schedulingData.city,
+        cep: this.schedulingData.cep,
+        state: this.schedulingData.state,
+        notes: this.schedulingData.notes,
+        scheduledDate: this.schedulingData.date,
+        scheduledTime: this.schedulingData.time,
+        paymentMethod: this.selectedPaymentMethod,
+        totalAmount: total,
+        subtotal: subtotal,
+        serviceFee: serviceFee
+      };
+
+      const response = await this.apiRequest('/api/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
+
+      if (response) {
+        // Clear cart and data
+        this.cart = [];
+        this.saveCart();
+        this.updateCartUI();
+        this.schedulingData = null;
+        this.selectedPaymentMethod = null;
+
+        // Show success and redirect
+        this.showToast('Pedido criado com sucesso!', 'success');
+        
+        setTimeout(() => {
+          this.showCartStep(1);
+          this.showTab('reservas');
+        }, 2000);
+      } else {
+        throw new Error('Falha ao criar pedido');
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      this.showToast('Erro ao processar pedido. Tente novamente.', 'error');
+    } finally {
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirmar Pedido';
+      }
+    }
+  }
 }
 
 // Global functions for HTML events
@@ -1162,6 +1464,58 @@ window.proceedToCheckout = function() {
   } else {
     window.mobileApp.showToast('Faça login para finalizar o pedido', 'info');
     window.mobileApp.showAuthScreen();
+  }
+};
+
+// 3-Step Checkout Functions
+window.goToScheduling = function() {
+  if (window.mobileApp) {
+    window.mobileApp.goToScheduling();
+  }
+};
+
+// Input formatting functions
+window.formatCardNumber = function(input) {
+  const value = input.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+  const formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+  input.value = formattedValue;
+};
+
+window.formatCardExpiry = function(input) {
+  const value = input.value.replace(/[^0-9]/g, '');
+  const formattedValue = value.replace(/(\d{2})(\d)/, '$1/$2');
+  input.value = formattedValue;
+};
+
+window.formatCPF = function(input) {
+  let value = input.value.replace(/[^0-9]/g, '');
+  value = value.replace(/(\d{3})(\d)/, '$1.$2');
+  value = value.replace(/(\d{3})(\d)/, '$1.$2');
+  value = value.replace(/(\d{3})(\d{1,2})/, '$1-$2');
+  input.value = value;
+};
+
+window.formatCEP = function(input) {
+  let value = input.value.replace(/[^0-9]/g, '');
+  value = value.replace(/(\d{5})(\d)/, '$1-$2');
+  input.value = value;
+};
+
+window.goToPayment = function() {
+  if (window.mobileApp) {
+    window.mobileApp.goToPayment();
+  }
+};
+
+window.showCartStep = function(step) {
+  if (window.mobileApp) {
+    window.mobileApp.showCartStep(step);
+  }
+};
+
+window.confirmOrder = function() {
+  if (window.mobileApp) {
+    window.mobileApp.confirmOrder();
   }
 };
 
