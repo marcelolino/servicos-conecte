@@ -12,6 +12,7 @@ class MobileApp {
     this.currentTab = 'home';
     this.currentReservasTab = 'todas';
     this.isLoggedIn = false;
+    this.userLocation = null;
     this.init();
   }
 
@@ -21,6 +22,9 @@ class MobileApp {
     
     // Check authentication first
     await this.checkAuthStatus();
+    
+    // Request location permission and detect location
+    this.requestLocationPermission();
     
     // If logged in, load main app data
     if (this.isLoggedIn) {
@@ -469,6 +473,165 @@ class MobileApp {
     setTimeout(() => {
       window.showLogin();
     }, 500);
+  }
+
+  // Location functionality
+  requestLocationPermission() {
+    const locationPreference = localStorage.getItem('locationPreference');
+    
+    if (locationPreference === 'blocked' || locationPreference === 'denied') {
+      console.log('Location permission previously denied');
+      return;
+    }
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.handleLocationSuccess(position);
+        },
+        (error) => {
+          this.handleLocationError(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    } else {
+      console.log('Geolocation is not supported by this browser.');
+    }
+  }
+
+  async handleLocationSuccess(position) {
+    const coords = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    };
+
+    console.log('Location detected:', coords);
+    localStorage.setItem('locationPreference', 'granted');
+    localStorage.setItem('userCoordinates', JSON.stringify(coords));
+
+    try {
+      // Reverse geocoding using OpenStreetMap
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&accept-language=pt-BR`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const address = this.parseOpenStreetMapAddress(data);
+        
+        // Save location data
+        this.userLocation = {
+          coordinates: coords,
+          address: address
+        };
+        
+        localStorage.setItem('userLocation', JSON.stringify(this.userLocation));
+        console.log('Address detected:', address);
+        
+        this.showToast('Localização detectada automaticamente', 'success');
+        
+        // If we're on registration step 2, fill the fields immediately
+        const step2 = document.getElementById('register-step-2');
+        if (step2 && step2.style.display !== 'none') {
+          setTimeout(() => this.fillAddressFromLocation(), 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Error in reverse geocoding:', error);
+    }
+  }
+
+  handleLocationError(error) {
+    let message = '';
+    let preference = 'error';
+
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        message = 'Permissão de localização negada';
+        preference = 'denied';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = 'Localização não disponível';
+        preference = 'unavailable';
+        break;
+      case error.TIMEOUT:
+        message = 'Timeout na detecção de localização';
+        preference = 'timeout';
+        break;
+      default:
+        message = 'Erro desconhecido na localização';
+        break;
+    }
+
+    localStorage.setItem('locationPreference', preference);
+    console.log('Location error:', message);
+  }
+
+  parseOpenStreetMapAddress(data) {
+    if (!data || !data.address) return null;
+
+    const addr = data.address;
+    return {
+      street: addr.road || '',
+      number: addr.house_number || '',
+      neighborhood: addr.neighbourhood || addr.suburb || '',
+      city: addr.city || addr.town || addr.village || '',
+      state: addr.state || '',
+      cep: addr.postcode || '',
+      country: addr.country || 'Brasil'
+    };
+  }
+
+  // Fill address fields with detected location
+  fillAddressFromLocation() {
+    const savedLocation = localStorage.getItem('userLocation');
+    if (!savedLocation) {
+      console.log('No saved location found');
+      return;
+    }
+
+    try {
+      const location = JSON.parse(savedLocation);
+      if (location && location.address) {
+        const addr = location.address;
+        
+        // Fill registration form fields
+        const cepField = document.getElementById('register-cep');
+        const addressField = document.getElementById('register-address');
+        const cityField = document.getElementById('register-city');
+        const stateField = document.getElementById('register-state');
+
+        let fieldsUpdated = false;
+
+        if (cepField && addr.cep) {
+          cepField.value = addr.cep;
+          fieldsUpdated = true;
+        }
+        if (addressField && addr.street) {
+          addressField.value = addr.number ? `${addr.street}, ${addr.number}` : addr.street;
+          fieldsUpdated = true;
+        }
+        if (cityField && addr.city) {
+          cityField.value = addr.city;
+          fieldsUpdated = true;
+        }
+        if (stateField && addr.state) {
+          stateField.value = addr.state;
+          fieldsUpdated = true;
+        }
+
+        if (fieldsUpdated) {
+          this.showToast('Endereço preenchido automaticamente', 'success');
+          console.log('Address fields filled from location:', addr);
+        }
+      }
+    } catch (error) {
+      console.error('Error filling address from location:', error);
+    }
   }
 
   showLoadingButton(button) {
@@ -953,6 +1116,11 @@ window.nextRegisterStep = function() {
   document.getElementById('register-step-1').style.display = 'none';
   document.getElementById('register-step-2').style.display = 'block';
   document.getElementById('register-step-number').textContent = '2';
+  
+  // Auto-fill address fields with detected location
+  if (window.mobileApp) {
+    window.mobileApp.fillAddressFromLocation();
+  }
 };
 
 window.previousRegisterStep = function() {
@@ -960,6 +1128,13 @@ window.previousRegisterStep = function() {
   document.getElementById('register-step-2').style.display = 'none';
   document.getElementById('register-step-1').style.display = 'block';
   document.getElementById('register-step-number').textContent = '1';
+};
+
+// Location functionality
+window.requestLocationPermission = function() {
+  if (window.mobileApp) {
+    window.mobileApp.requestLocationPermission();
+  }
 };
 
 window.togglePassword = function(inputId) {
