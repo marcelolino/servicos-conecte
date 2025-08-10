@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,8 +52,9 @@ export default function ClientReservas() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("todas");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+  const itemsPerPage = 6;
 
   const createChatMutation = useMutation({
     mutationFn: async ({ participantId, serviceRequestId }: { participantId: number; serviceRequestId: number }) => {
@@ -84,13 +85,9 @@ export default function ClientReservas() {
     createChatMutation.mutate({ participantId: providerId, serviceRequestId });
   };
 
-  // Get tab from URL params
+  // Reset page when navigating
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab) {
-      setActiveTab(tab);
-    }
+    setCurrentPage(1);
   }, [location]);
 
   const form = useForm<ServiceRequestForm>({
@@ -213,12 +210,6 @@ export default function ClientReservas() {
     }
   };
 
-  const getFilteredRequests = (status: string) => {
-    if (!serviceRequests || !Array.isArray(serviceRequests)) return [];
-    if (status === "todas") return serviceRequests;
-    return serviceRequests.filter((request: ServiceRequest) => request.status === status);
-  };
-
   const canStartService = (request: any) => request.status === "accepted";
   const canCompleteService = (request: any) => request.status === "in_progress";
 
@@ -284,22 +275,23 @@ export default function ClientReservas() {
     return null;
   };
 
-  const getTabCounts = () => {
+  const getPaginatedRequests = () => {
     if (!serviceRequests || !Array.isArray(serviceRequests)) return {
-      todas: 0,
-      pending: 0,
-      accepted: 0,
-      in_progress: 0,
-      completed: 0,
-      cancelled: 0
+      currentItems: [],
+      totalPages: 0,
+      totalItems: 0
     };
+    
+    const totalItems = serviceRequests.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentItems = serviceRequests.slice(startIndex, endIndex);
+    
     return {
-      todas: serviceRequests.length,
-      pending: serviceRequests.filter((r: ServiceRequest) => r.status === "pending").length,
-      accepted: serviceRequests.filter((r: ServiceRequest) => r.status === "accepted").length,
-      in_progress: serviceRequests.filter((r: ServiceRequest) => r.status === "in_progress").length,
-      completed: serviceRequests.filter((r: ServiceRequest) => r.status === "completed").length,
-      cancelled: serviceRequests.filter((r: ServiceRequest) => r.status === "cancelled").length,
+      currentItems,
+      totalPages,
+      totalItems
     };
   };
 
@@ -307,11 +299,9 @@ export default function ClientReservas() {
     createRequestMutation.mutate(data);
   };
 
-  const tabCounts = getTabCounts();
+  const { currentItems, totalPages, totalItems } = getPaginatedRequests();
 
-  const renderRequestList = (status: string) => {
-    const filteredRequests = getFilteredRequests(status);
-    
+  const renderRequestList = () => {
     if (requestsLoading) {
       return (
         <div className="space-y-4">
@@ -334,16 +324,7 @@ export default function ClientReservas() {
       );
     }
 
-    if (filteredRequests.length === 0) {
-      const emptyMessages = {
-        todas: "Você ainda não criou nenhuma solicitação de serviço.",
-        pending: "Nenhuma solicitação pendente no momento.",
-        accepted: "Nenhuma reserva aceita no momento.",
-        in_progress: "Nenhum serviço em andamento no momento.",
-        completed: "Nenhum serviço concluído ainda.",
-        cancelled: "Nenhuma reserva cancelada."
-      };
-
+    if (currentItems.length === 0 && !requestsLoading) {
       return (
         <Card>
           <CardContent className="p-12 text-center">
@@ -352,14 +333,12 @@ export default function ClientReservas() {
               Nenhuma solicitação encontrada
             </h3>
             <p className="text-muted-foreground mb-4">
-              {emptyMessages[status as keyof typeof emptyMessages]}
+              Você ainda não criou nenhuma solicitação de serviço.
             </p>
-            {status === "todas" && (
-              <Button onClick={() => setIsNewRequestOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeira Solicitação
-              </Button>
-            )}
+            <Button onClick={() => setIsNewRequestOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Criar Primeira Solicitação
+            </Button>
           </CardContent>
         </Card>
       );
@@ -367,7 +346,7 @@ export default function ClientReservas() {
 
     return (
       <div className="space-y-6">
-        {filteredRequests.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
+        {currentItems.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
           <div key={request.id} className="reservation-card">
             <div className="space-y-4">
               <div className="flex items-start justify-between mb-4">
@@ -461,94 +440,70 @@ export default function ClientReservas() {
       <div className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Reservas
+            Meu Histórico
           </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Acompanhe o status dos seus serviços solicitados
+          </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="overflow-x-auto pb-2">
-            <TabsList className="inline-flex h-auto w-max min-w-full bg-gray-100 dark:bg-gray-800 p-1 gap-1">
-            <TabsTrigger value="todas" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Todas Reservas</span>
-              <span className="sm:hidden">Todas</span>
-              {tabCounts.todas > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.todas}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Solicitações Pendentes</span>
-              <span className="sm:hidden">Pendentes</span>
-              {tabCounts.pending > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.pending}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="accepted" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Reservas Aceitas</span>
-              <span className="sm:hidden">Aceitas</span>
-              {tabCounts.accepted > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.accepted}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="in_progress" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Em Andamento</span>
-              <span className="sm:hidden">Andamento</span>
-              {tabCounts.in_progress > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.in_progress}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Concluídas</span>
-              <span className="sm:hidden">Concluídas</span>
-              {tabCounts.completed > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.completed}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="cancelled" className="text-sm whitespace-nowrap flex-shrink-0 px-3 py-2">
-              <span className="hidden sm:inline">Canceladas</span>
-              <span className="sm:hidden">Canceladas</span>
-              {tabCounts.cancelled > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                  {tabCounts.cancelled}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          {/* Summary Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setIsNewRequestOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Solicitação
+              </Button>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {totalItems > 0 && `${totalItems} solicitaç${totalItems === 1 ? 'ão' : 'ões'} encontrada${totalItems === 1 ? '' : 's'}`}
+            </div>
           </div>
 
-          <TabsContent value="todas">
-            {renderRequestList("todas")}
-          </TabsContent>
+          {/* Request List */}
+          {renderRequestList()}
 
-          <TabsContent value="pending">
-            {renderRequestList("pending")}
-          </TabsContent>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={page === currentPage ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
 
-          <TabsContent value="accepted">
-            {renderRequestList("accepted")}
-          </TabsContent>
-
-          <TabsContent value="in_progress">
-            {renderRequestList("in_progress")}
-          </TabsContent>
-
-          <TabsContent value="completed">
-            {renderRequestList("completed")}
-          </TabsContent>
-
-          <TabsContent value="cancelled">
-            {renderRequestList("cancelled")}
-          </TabsContent>
-        </Tabs>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* New Request Dialog */}
         <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>

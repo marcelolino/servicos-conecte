@@ -216,9 +216,13 @@ export default function ClientDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Reserva Total</p>
-                  <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : (stats as any)?.totalServices || 17}
-                  </p>
+                  {statsLoading ? (
+                    <Skeleton className="h-8 w-12 bg-white/20" />
+                  ) : (
+                    <p className="text-3xl font-bold text-white">
+                      {(stats as any)?.totalServices || 17}
+                    </p>
+                  )}
                 </div>
                 <Calendar className="h-10 w-10 text-white/80" />
               </div>
@@ -228,9 +232,13 @@ export default function ClientDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Serviços</p>
-                  <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-12 bg-white/20" /> : (stats as any)?.completedServices || 12}
-                  </p>
+                  {statsLoading ? (
+                    <Skeleton className="h-8 w-12 bg-white/20" />
+                  ) : (
+                    <p className="text-3xl font-bold text-white">
+                      {(stats as any)?.completedServices || 12}
+                    </p>
+                  )}
                 </div>
                 <Package className="h-10 w-10 text-white/80" />
               </div>
@@ -240,9 +248,13 @@ export default function ClientDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Gasto Total</p>
-                  <p className="text-3xl font-bold text-white">
-                    {statsLoading ? <Skeleton className="h-8 w-16 bg-white/20" /> : `R$ ${((stats as any)?.totalSpent || 1250).toFixed(2)}`}
-                  </p>
+                  {statsLoading ? (
+                    <Skeleton className="h-8 w-16 bg-white/20" />
+                  ) : (
+                    <p className="text-3xl font-bold text-white">
+                      {`R$ ${((stats as any)?.totalSpent || 1250).toFixed(2)}`}
+                    </p>
+                  )}
                 </div>
                 <CreditCard className="h-10 w-10 text-white/80" />
               </div>
