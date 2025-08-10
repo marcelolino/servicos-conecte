@@ -198,7 +198,27 @@ export default function ClientBookingDetails() {
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2 text-blue-500" />
                     <span className="font-medium">Endereço:</span>
-                    <span className="ml-2">{booking?.address}, {booking?.city}, {booking?.state}</span>
+                    <span className="ml-2">
+                      {(() => {
+                        if (typeof booking?.address === 'object' && booking?.address !== null) {
+                          const addr = booking.address as any;
+                          const parts = [
+                            addr.street,
+                            addr.number,
+                            addr.neighborhood,
+                            addr.city,
+                            addr.state
+                          ].filter(Boolean);
+                          return parts.join(', ') || 'Endereço não informado';
+                        }
+                        const addressParts = [
+                          booking?.address,
+                          booking?.city,
+                          booking?.state
+                        ].filter(Boolean);
+                        return addressParts.join(', ') || 'Endereço não informado';
+                      })()}
+                    </span>
                   </div>
                 </div>
 

@@ -807,29 +807,15 @@ class MobileApp {
       cartTotal.textContent = total.toFixed(2).replace('.', ',');
     }
 
-    // Add subtotal and service fee display
-    const cartSummaryElement = document.getElementById('cart-summary');
-    if (cartSummaryElement) {
-      cartSummaryElement.innerHTML = `
-        <div class="cart-totals">
-          <div class="total-row">
-            <span>Subtotal:</span>
-            <span>R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
-          </div>
-          <div class="total-row">
-            <span>Taxa de serviço (10%):</span>
-            <span>R$ ${serviceFee.toFixed(2).replace('.', ',')}</span>
-          </div>
-          <div class="total-row total-final">
-            <span><strong>Total:</strong></span>
-            <span><strong>R$ <span id="cart-total">${total.toFixed(2).replace('.', ',')}</span></strong></span>
-          </div>
-        </div>
-        <button class="checkout-btn" onclick="window.mobileApp.proceedToCheckout()">
-          <i class="fas fa-credit-card"></i>
-          Finalizar Pedido
-        </button>
-      `;
+    // Update cart totals
+    const subtotalElement = document.getElementById('cart-subtotal');
+    const serviceFeeElement = document.getElementById('cart-service-fee');
+    
+    if (subtotalElement) {
+      subtotalElement.textContent = subtotal.toFixed(2).replace('.', ',');
+    }
+    if (serviceFeeElement) {
+      serviceFeeElement.textContent = serviceFee.toFixed(2).replace('.', ',');
     }
 
     cartItems.innerHTML = this.cart.map(item => `
@@ -1054,7 +1040,9 @@ class MobileApp {
           <div class="checkout-section">
             <h4><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</h4>
             <div class="address-form">
-              <input type="text" id="checkout-address" placeholder="Endereço completo" value="${this.currentUser?.address || ''}" required>
+              <input type="text" id="checkout-address" placeholder="Endereço completo" value="${typeof this.currentUser?.address === 'object' && this.currentUser?.address !== null ? 
+                Object.values(this.currentUser.address).filter(v => v).join(', ') : 
+                (this.currentUser?.address || '')}" required>
               <div class="address-row">
                 <input type="text" id="checkout-city" placeholder="Cidade" value="${this.currentUser?.city || ''}" required>
                 <input type="text" id="checkout-cep" placeholder="CEP" value="${this.currentUser?.cep || ''}" required>

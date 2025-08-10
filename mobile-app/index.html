@@ -478,18 +478,34 @@
         <div class="cart-items" id="cart-items">
           <!-- Cart items will be loaded here -->
         </div>
-        <div class="cart-summary" id="cart-summary" style="display: none;">
-          <div class="cart-total">
-            <span>Total: R$ <span id="cart-total">0,00</span></span>
-          </div>
-          <button class="checkout-btn" onclick="proceedToCheckout()">Finalizar Pedido</button>
-        </div>
-        <div class="empty-cart" id="empty-cart">
+        
+        <div class="empty-cart" id="empty-cart" style="display: block;">
           <div class="empty-state">
             <i class="fas fa-shopping-cart" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
             <p>Seu carrinho está vazio</p>
-            <button onclick="showTab('home')" class="btn-primary">Continuar Comprando</button>
+            <button onclick="window.mobileApp.showTab('home')" class="btn-primary">Continuar Comprando</button>
           </div>
+        </div>
+        
+        <div class="cart-summary" id="cart-summary" style="display: none;">
+          <div class="cart-totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>R$ <span id="cart-subtotal">0,00</span></span>
+            </div>
+            <div class="total-row">
+              <span>Taxa de serviço (10%):</span>
+              <span>R$ <span id="cart-service-fee">0,00</span></span>
+            </div>
+            <div class="total-row total-final">
+              <span><strong>Total:</strong></span>
+              <span><strong>R$ <span id="cart-total">0,00</span></strong></span>
+            </div>
+          </div>
+          <button class="checkout-btn" onclick="window.mobileApp.proceedToCheckout()">
+            <i class="fas fa-credit-card"></i>
+            Finalizar Pedido
+          </button>
         </div>
       </section>
 
