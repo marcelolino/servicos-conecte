@@ -19,10 +19,30 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   const { selectedCity, setSelectedCity } = useLocation();
 
   // Função para extrair cidade e estado do endereço
-  const formatLocationDisplay = (address: string): string => {
+  const formatLocationDisplay = (address: string | any): string => {
     try {
+      // Handle address objects by converting to string
+      let addressString = '';
+      if (typeof address === 'object' && address !== null) {
+        if (address.street || address.city || address.state) {
+          const parts = [];
+          if (address.street) parts.push(address.street);
+          if (address.number) parts.push(address.number);
+          if (address.neighborhood) parts.push(address.neighborhood);
+          if (address.city) parts.push(address.city);
+          if (address.state) parts.push(address.state);
+          addressString = parts.join(', ');
+        } else {
+          addressString = String(address);
+        }
+      } else if (typeof address === 'string') {
+        addressString = address;
+      } else {
+        addressString = String(address || '');
+      }
+
       // Separar por vírgula e limpar espaços
-      const parts = address.split(',').map(part => part.trim());
+      const parts = addressString.split(',').map(part => part.trim());
       
       // Procurar pela parte que contém o estado (formato: Cidade - UF)
       for (const part of parts) {
@@ -97,7 +117,8 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
       
     } catch (error) {
       console.error('Erro ao formatar localização:', error);
-      return address.length > 20 ? `${address.substring(0, 20)}...` : address;
+      const fallback = String(address || '');
+      return fallback.length > 20 ? `${fallback.substring(0, 20)}...` : fallback;
     }
   };
 
