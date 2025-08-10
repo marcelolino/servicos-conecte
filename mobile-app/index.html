@@ -93,89 +93,98 @@
         <div class="auth-form" id="register-form" style="display: none;">
           <div class="form-content">
             <h2>Criar Conta</h2>
-            <p class="form-subtitle">Preencha os dados para se cadastrar</p>
+            <p class="form-subtitle">Passo <span id="register-step-number">1</span> de 2</p>
             
             <form id="registerForm">
-              <div class="form-group">
-                <label for="register-name">Nome Completo *</label>
-                <input type="text" id="register-name" name="name" required>
-              </div>
-              
-              <div class="form-group">
-                <label for="register-email">Email *</label>
-                <input type="email" id="register-email" name="email" required>
-              </div>
-              
-              <div class="form-group">
-                <label for="register-phone">Telefone *</label>
-                <input type="tel" id="register-phone" name="phone" required placeholder="(11) 99999-9999">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-cpf">CPF</label>
-                <input type="text" id="register-cpf" name="cpf" placeholder="000.000.000-00">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-cep">CEP</label>
-                <input type="text" id="register-cep" name="cep" placeholder="00000-000">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-address">Endereço</label>
-                <input type="text" id="register-address" name="address" placeholder="Rua, número">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-city">Cidade</label>
-                <input type="text" id="register-city" name="city" placeholder="Ex: Goiânia">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-state">Estado</label>
-                <input type="text" id="register-state" name="state" placeholder="Ex: GO">
-              </div>
-              
-              <div class="form-group">
-                <label for="register-password">Senha *</label>
-                <div class="password-input">
-                  <input type="password" id="register-password" name="password" required>
-                  <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
-                    <i class="far fa-eye"></i>
-                  </button>
+              <!-- Step 1: Basic Info -->
+              <div id="register-step-1" class="register-step">
+                <div class="form-group">
+                  <label for="register-name">Nome Completo *</label>
+                  <input type="text" id="register-name" name="name" required>
                 </div>
-                <div class="password-strength" id="password-strength">
-                  <div class="strength-bar">
-                    <div class="strength-fill"></div>
+                
+                <div class="form-group">
+                  <label for="register-email">Email *</label>
+                  <input type="email" id="register-email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-phone">Telefone *</label>
+                  <input type="tel" id="register-phone" name="phone" required placeholder="(11) 99999-9999">
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-cpf">CPF</label>
+                  <input type="text" id="register-cpf" name="cpf" placeholder="000.000.000-00">
+                </div>
+                
+                <button type="button" class="auth-btn primary" onclick="nextRegisterStep()">
+                  <span class="btn-text">Continuar</span>
+                </button>
+              </div>
+
+              <!-- Step 2: Address and Password -->
+              <div id="register-step-2" class="register-step" style="display: none;">
+                <div class="form-group">
+                  <label for="register-cep">CEP</label>
+                  <input type="text" id="register-cep" name="cep" placeholder="00000-000">
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-address">Endereço</label>
+                  <input type="text" id="register-address" name="address" placeholder="Rua, número">
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-city">Cidade</label>
+                  <input type="text" id="register-city" name="city" placeholder="Ex: Goiânia">
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-state">Estado</label>
+                  <input type="text" id="register-state" name="state" placeholder="Ex: GO">
+                </div>
+                
+                <div class="form-group">
+                  <label for="register-password">Senha *</label>
+                  <div class="password-input">
+                    <input type="password" id="register-password" name="password" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
+                      <i class="far fa-eye"></i>
+                    </button>
                   </div>
-                  <span class="strength-text">Digite uma senha</span>
                 </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="register-confirm">Confirmar Senha *</label>
-                <div class="password-input">
-                  <input type="password" id="register-confirm" name="confirmPassword" required>
-                  <button type="button" class="toggle-password" onclick="togglePassword('register-confirm')">
-                    <i class="far fa-eye"></i>
+                
+                <div class="form-group">
+                  <label for="register-confirm">Confirmar Senha *</label>
+                  <div class="password-input">
+                    <input type="password" id="register-confirm" name="confirmPassword" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('register-confirm')">
+                      <i class="far fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="accept-terms" required>
+                    <span class="checkmark"></span>
+                    <span class="checkbox-text">Aceito os <a href="#" class="link">Termos de Uso</a></span>
+                  </label>
+                </div>
+                
+                <div class="register-step-buttons">
+                  <button type="button" class="auth-btn secondary" onclick="previousRegisterStep()">
+                    <span class="btn-text">Voltar</span>
+                  </button>
+                  <button type="submit" class="auth-btn primary">
+                    <span class="btn-text">Criar Conta</span>
+                    <div class="btn-loading" style="display: none;">
+                      <i class="fas fa-spinner fa-spin"></i>
+                    </div>
                   </button>
                 </div>
               </div>
-              
-              <div class="form-group">
-                <label class="checkbox-container">
-                  <input type="checkbox" id="accept-terms" required>
-                  <span class="checkmark"></span>
-                  <span class="checkbox-text">Aceito os <a href="#" class="link">Termos de Uso</a> e <a href="#" class="link">Política de Privacidade</a></span>
-                </label>
-              </div>
-              
-              <button type="submit" class="auth-btn primary">
-                <span class="btn-text">Criar Conta</span>
-                <div class="btn-loading" style="display: none;">
-                  <i class="fas fa-spinner fa-spin"></i>
-                </div>
-              </button>
             </form>
             
             <div class="auth-footer">
@@ -419,7 +428,7 @@
             <span>Ajuda</span>
             <i class="fas fa-chevron-right"></i>
           </div>
-          <div class="action-item logout" onclick="handleLogout()">
+          <div class="action-item logout" onclick="window.mobileApp.handleLogout()">
             <i class="fas fa-sign-out-alt"></i>
             <span>Sair</span>
             <i class="fas fa-chevron-right"></i>

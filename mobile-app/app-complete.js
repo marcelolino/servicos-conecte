@@ -460,8 +460,15 @@ class MobileApp {
     this.currentUser = null;
     this.isLoggedIn = false;
     this.reservas = [];
+    this.cart = [];
+    this.saveCart();
+    this.updateCartUI();
     this.showToast('Logout realizado com sucesso', 'success');
     this.showAuthScreen();
+    // Reset to login form
+    setTimeout(() => {
+      window.showLogin();
+    }, 500);
   }
 
   showLoadingButton(button) {
@@ -908,12 +915,51 @@ window.showRegister = function() {
   document.getElementById('login-form').style.display = 'none';
   document.getElementById('register-form').style.display = 'block';
   document.getElementById('forgot-form').style.display = 'none';
+  // Reset to step 1
+  document.getElementById('register-step-1').style.display = 'block';
+  document.getElementById('register-step-2').style.display = 'none';
+  document.getElementById('register-step-number').textContent = '1';
 };
 
 window.showForgotPassword = function() {
   document.getElementById('login-form').style.display = 'none';
   document.getElementById('register-form').style.display = 'none';
   document.getElementById('forgot-form').style.display = 'block';
+};
+
+window.nextRegisterStep = function() {
+  // Validate step 1 fields
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const phone = document.getElementById('register-phone').value.trim();
+  
+  if (!name || !email || !phone) {
+    if (window.mobileApp) {
+      window.mobileApp.showToast('Preencha todos os campos obrigatórios', 'error');
+    }
+    return;
+  }
+  
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    if (window.mobileApp) {
+      window.mobileApp.showToast('Digite um email válido', 'error');
+    }
+    return;
+  }
+  
+  // Go to step 2
+  document.getElementById('register-step-1').style.display = 'none';
+  document.getElementById('register-step-2').style.display = 'block';
+  document.getElementById('register-step-number').textContent = '2';
+};
+
+window.previousRegisterStep = function() {
+  // Go back to step 1
+  document.getElementById('register-step-2').style.display = 'none';
+  document.getElementById('register-step-1').style.display = 'block';
+  document.getElementById('register-step-number').textContent = '1';
 };
 
 window.togglePassword = function(inputId) {
