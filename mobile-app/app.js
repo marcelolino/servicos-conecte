@@ -463,7 +463,7 @@ class MobileApp {
     document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
     
     // Hide all sections
-    const sections = ['categories-section', 'popular-services-section', 'offers-section', 'search-results', 'cart-section', 'reservas-section'];
+    const sections = ['categories-section', 'popular-services-section', 'offers-section', 'search-results', 'cart-section', 'reservas-section', 'more-section'];
     sections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) section.style.display = 'none';
@@ -503,7 +503,9 @@ class MobileApp {
         this.scrollToSection('#offers-section');
         break;
       case 'more':
-        // Menu toggle is handled in event listeners
+        document.getElementById('more-section').style.display = 'block';
+        document.getElementById('fab').style.display = 'none';
+        this.setupMoreSectionEventListeners();
         break;
     }
   }
@@ -1112,6 +1114,20 @@ class MobileApp {
     }
   }
 
+  setupMoreSectionEventListeners() {
+    // Add click listeners to more items if not already added
+    const moreItems = document.querySelectorAll('.more-item');
+    moreItems.forEach(item => {
+      // Remove existing listeners to prevent duplicates
+      item.removeEventListener('click', this.handleMoreItemClick);
+      // Add new listener
+      item.addEventListener('click', (e) => {
+        const action = e.currentTarget.getAttribute('data-action');
+        this.handleMenuAction(action);
+      });
+    });
+  }
+
   handleMenuAction(action) {
     console.log('Menu action:', action);
     
@@ -1128,6 +1144,9 @@ class MobileApp {
           window.open(`${this.apiBase}/client-chat`, '_blank');
         }, 500);
         break;
+      case 'translate':
+        this.showToast('Recurso de tradução em desenvolvimento', 'info');
+        break;
       case 'language':
         this.showToast('Idioma: Português (Brasil)', 'info');
         break;
@@ -1137,17 +1156,71 @@ class MobileApp {
           window.open(`${this.apiBase}/profile`, '_blank');
         }, 500);
         break;
-      case 'track':
-        this.showToast('Redirecionando para rastreamento...', 'info');
-        setTimeout(() => {
-          window.open(`${this.apiBase}/client-reservas`, '_blank');
-        }, 500);
+      case 'location':
+        this.showToast('Gerenciar localizações de serviço', 'info');
         break;
       case 'coupons':
         this.showToast('Redirecionando para cupons...', 'info');
         setTimeout(() => {
           window.open(`${this.apiBase}/client-offers`, '_blank');
         }, 500);
+        break;
+      case 'favorites':
+        this.showToast('Seus serviços favoritos', 'info');
+        break;
+      case 'posts':
+        this.showToast('Suas publicações', 'info');
+        break;
+      case 'refer':
+        this.showToast('Indique amigos e ganhe benefícios!', 'info');
+        break;
+      case 'service-area':
+        this.showToast('Configurar área de atendimento', 'info');
+        break;
+      case 'support':
+        this.showToast('Redirecionando para ajuda...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/help`, '_blank');
+        }, 500);
+        break;
+      case 'support-alt':
+        this.showToast('Central de ajuda e suporte', 'info');
+        break;
+      case 'mechanic':
+        this.showToast('Torne-se um prestador de serviços!', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/provider-register`, '_blank');
+        }, 500);
+        break;
+      case 'privacy-policy':
+        this.showToast('Redirecionando para política de privacidade...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/privacy`, '_blank');
+        }, 500);
+        break;
+      case 'privacy-policy-alt':
+        this.showToast('Política de privacidade', 'info');
+        break;
+      case 'cancellation-policy':
+        this.showToast('Redirecionando para política de cancelamento...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/cancellation`, '_blank');
+        }, 500);
+        break;
+      case 'cancellation-policy-alt':
+        this.showToast('Política de cancelamento', 'info');
+        break;
+      case 'policy':
+        this.showToast('Termos e políticas gerais', 'info');
+        break;
+      case 'track':
+        this.showToast('Redirecionando para rastreamento...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/client-reservas`, '_blank');
+        }, 500);
+        break;
+      default:
+        this.showToast('Funcionalidade em desenvolvimento', 'info');
         break;
     }
   }
