@@ -1219,6 +1219,12 @@ class MobileApp {
           window.open(`${this.apiBase}/client-reservas`, '_blank');
         }, 500);
         break;
+      case 'terms':
+        this.showToast('Redirecionando para termos e condições...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/terms`, '_blank');
+        }, 500);
+        break;
       case 'logout':
         this.handleLogout();
         break;
