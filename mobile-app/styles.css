@@ -2044,6 +2044,18 @@ body {
   color: #424242;
 }
 
+/* Icon background colors */
+.more-icon.profile { background: linear-gradient(135deg, #5DADE2, #3498DB); }
+.more-icon.messages { background: linear-gradient(135deg, #5DADE2, #2E86AB); }
+.more-icon.settings { background: linear-gradient(135deg, #F0B27A, #E67E22); }
+.more-icon.coupons { background: linear-gradient(135deg, #EC407A, #C2185B); }
+.more-icon.track-order { background: linear-gradient(135deg, #FF7043, #D84315); }
+.more-icon.become-provider { background: linear-gradient(135deg, #58D68D, #27AE60); }
+.more-icon.support { background: linear-gradient(135deg, #F7DC6F, #F4D03F); }
+.more-icon.privacy-policy { background: linear-gradient(135deg, #AED6F1, #5DADE2); }
+.more-icon.terms { background: linear-gradient(135deg, #85C1E9, #5DADE2); }
+.more-icon.cancellation-policy { background: linear-gradient(135deg, #F1948A, #E74C3C); }
+
 .more-item span {
   font-size: 16px;
   font-weight: 400;

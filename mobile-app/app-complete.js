@@ -876,38 +876,41 @@ class MobileApp {
       case 'profile':
         this.showTab('profile');
         break;
-      case 'support':
-        this.showToast('Ajuda em desenvolvimento', 'info');
-        break;
-      case 'wallet':
-        this.showToast('Gerenciar seu dinheiro', 'info');
-        break;
-      case 'crypto':
-        this.showToast('Criptomoedas em desenvolvimento', 'info');
-        break;
-      case 'finance':
-        this.showToast('Open Finance em desenvolvimento', 'info');
-        break;
-      case 'cards':
-        this.showToast('Gerenciar cartões', 'info');
-        break;
-      case 'activity':
-        this.showToast('Visualizar atividades', 'info');
-        break;
-      case 'credit':
-        this.showToast('Mercado Crédito em desenvolvimento', 'info');
-        break;
-      case 'pay':
-        this.showToast('Funcionalidade de pagamento', 'info');
-        break;
-      case 'charge':
-        this.showToast('Funcionalidade de cobrança', 'info');
+      case 'messages':
+        this.showToast('Mensagens em desenvolvimento', 'info');
         break;
       case 'settings':
         this.showToast('Configurações em desenvolvimento', 'info');
         break;
-      case 'logout':
-        this.handleLogout();
+      case 'coupons':
+        this.showToast('Cupons em desenvolvimento', 'info');
+        break;
+      case 'track-order':
+        this.showToast('Rastreamento de pedidos', 'info');
+        break;
+      case 'become-provider':
+        this.showToast('Cadastro de prestador', 'info');
+        break;
+      case 'support':
+        this.showToast('Ajuda e suporte', 'info');
+        break;
+      case 'privacy-policy':
+        this.showToast('Redirecionando para política de privacidade...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/privacy-policy`, '_blank');
+        }, 500);
+        break;
+      case 'terms':
+        this.showToast('Redirecionando para termos e condições...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/terms`, '_blank');
+        }, 500);
+        break;
+      case 'cancellation-policy':
+        this.showToast('Redirecionando para política de cancelamento...', 'info');
+        setTimeout(() => {
+          window.open(`${this.apiBase}/cancellation-policy`, '_blank');
+        }, 500);
         break;
       default:
         this.showToast('Funcionalidade em desenvolvimento', 'info');
