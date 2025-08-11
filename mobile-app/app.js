@@ -1219,6 +1219,9 @@ class MobileApp {
           window.open(`${this.apiBase}/client-reservas`, '_blank');
         }, 500);
         break;
+      case 'logout':
+        this.handleLogout();
+        break;
       default:
         this.showToast('Funcionalidade em desenvolvimento', 'info');
         break;
