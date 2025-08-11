@@ -18,7 +18,7 @@ The platform is built with a modern tech stack to ensure scalability, performanc
 - **Geolocation**: Progressive permission checking for geolocation, leveraging OpenStreetMap for mapping and reverse geocoding to provide location-based services and proximity filtering.
 - **Payment Flow**: Enhanced multi-step checkout processes with auto-fill capabilities and support for various payment methods, including PIX.
 - **Admin & Reports**: A comprehensive admin dashboard built with shadcn/ui, featuring modern sidebar navigation and an extensive reporting system that includes transaction, business, booking, and provider performance analytics with interactive filters and data visualization.
-- **Mobile Integration**: A separate mobile-first client (`/mobile-app/`) is integrated, consuming existing APIs and designed with a Flutter-inspired interface for a native-like experience.
+- **Mobile Integration**: A separate mobile-first client (`/mobile-app/`) is integrated, consuming existing APIs and designed with a Flutter-inspired interface for a native-like experience. Features complete reservation system with inline navigation, status filtering, and real-time updates.
 
 ## External Dependencies
 - **Mapping & Geolocation**: OpenStreetMap (for map services and reverse geocoding)
