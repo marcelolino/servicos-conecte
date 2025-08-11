@@ -4,17 +4,11 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,25 +31,12 @@ import {
 } from "lucide-react";
 import type { ServiceRequest, ServiceCategory } from "@shared/schema";
 
-const serviceRequestSchema = z.object({
-  categoryId: z.string().min(1, "Selecione uma categoria"),
-  title: z.string().min(3, "Título deve ter pelo menos 3 caracteres"),
-  description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
-  address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
-  cep: z.string().min(8, "CEP deve ter 8 caracteres"),
-  city: z.string().min(2, "Cidade é obrigatória"),
-  state: z.string().min(2, "Estado é obrigatório"),
-});
-
-type ServiceRequestForm = z.infer<typeof serviceRequestSchema>;
-
 export default function ClientReservas() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const itemsPerPage = 6;
 
@@ -93,23 +74,7 @@ export default function ClientReservas() {
     setCurrentPage(1);
   }, [location, activeFilter]);
 
-  const form = useForm<ServiceRequestForm>({
-    resolver: zodResolver(serviceRequestSchema),
-    defaultValues: {
-      categoryId: "",
-      title: "",
-      description: "",
-      address: "",
-      cep: "",
-      city: "",
-      state: "",
-    },
-  });
 
-  // Fetch service categories
-  const { data: categories } = useQuery({
-    queryKey: ["/api/categories"],
-  });
 
   // Fetch client's service requests
   const { data: serviceRequests, isLoading: requestsLoading } = useQuery({
@@ -117,27 +82,7 @@ export default function ClientReservas() {
     enabled: !!user,
   });
 
-  // Create service request mutation
-  const createRequestMutation = useMutation({
-    mutationFn: (data: ServiceRequestForm) =>
-      apiRequest("POST", "/api/service-requests", data),
-    onSuccess: () => {
-      toast({
-        title: "Sucesso!",
-        description: "Solicitação criada com sucesso.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/service-requests/client"] });
-      form.reset();
-      setIsNewRequestOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar solicitação.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Start service mutation
   const startServiceMutation = useMutation({
@@ -210,6 +155,23 @@ export default function ClientReservas() {
         return "Cancelada";
       default:
         return "Pendente";
+    }
+  };
+
+  const getFilterStatusText = (filter: string) => {
+    switch (filter) {
+      case "pending":
+        return "pendentes";
+      case "accepted":
+        return "aceitas";
+      case "in_progress":
+        return "em andamento";
+      case "completed":
+        return "concluídas";
+      case "cancelled":
+        return "canceladas";
+      default:
+        return "";
     }
   };
 
@@ -339,9 +301,7 @@ export default function ClientReservas() {
     };
   };
 
-  const onSubmit = (data: ServiceRequestForm) => {
-    createRequestMutation.mutate(data);
-  };
+
 
   const { currentItems, totalPages, totalItems } = getPaginatedRequests();
 
@@ -374,15 +334,14 @@ export default function ClientReservas() {
           <CardContent className="p-12 text-center">
             <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Nenhuma solicitação encontrada
+              {activeFilter === "all" ? "Nenhuma solicitação encontrada" : `Nenhuma reserva ${getFilterStatusText(activeFilter)} encontrada`}
             </h3>
-            <p className="text-muted-foreground mb-4">
-              Você ainda não criou nenhuma solicitação de serviço.
+            <p className="text-muted-foreground">
+              {activeFilter === "all" 
+                ? "Você ainda não criou nenhuma solicitação de serviço. Acesse a página inicial para fazer uma nova solicitação."
+                : `Não há reservas com status "${getFilterStatusText(activeFilter)}" no momento.`
+              }
             </p>
-            <Button onClick={() => setIsNewRequestOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Primeira Solicitação
-            </Button>
           </CardContent>
         </Card>
       );
@@ -493,16 +452,7 @@ export default function ClientReservas() {
 
         <div className="space-y-6">
           {/* Summary Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsNewRequestOpen(true)}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Solicitação
-              </Button>
-            </div>
+          <div className="flex items-center justify-end">
             <div className="text-sm text-muted-foreground">
               {totalItems > 0 && `${totalItems} solicitaç${totalItems === 1 ? 'ão' : 'ões'} encontrada${totalItems === 1 ? '' : 's'}`}
             </div>
@@ -628,149 +578,7 @@ export default function ClientReservas() {
           </Tabs>
         </div>
 
-        {/* New Request Dialog */}
-        <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Criar Nova Solicitação</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria do Serviço</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories && Array.isArray(categories) ? categories.map((category: ServiceCategory) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.name}
-                            </SelectItem>
-                          )) : null}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Título</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Reparo de vazamento na cozinha" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Descreva detalhadamente o serviço que precisa..."
-                          className="resize-none"
-                          rows={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Endereço</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Rua, número" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="cep"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CEP</FormLabel>
-                        <FormControl>
-                          <Input placeholder="00000-000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cidade</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Cidade" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Estado</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Estado" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setIsNewRequestOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={createRequestMutation.isPending}>
-                    {createRequestMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Criando...
-                      </>
-                    ) : (
-                      "Criar Solicitação"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
       </div>
     </ModernClientLayout>
   );
