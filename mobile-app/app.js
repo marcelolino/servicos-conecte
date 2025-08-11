@@ -442,6 +442,18 @@ class MobileApp {
         dot.classList.add('active');
       });
     });
+
+    // Reservas tabs functionality
+    document.querySelectorAll('.reservas-tabs .tab-item').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Update active tab
+        document.querySelectorAll('.reservas-tabs .tab-item').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Re-render reservas with new filter
+        this.renderReservas();
+      });
+    });
   }
 
   // Tab Navigation System
@@ -451,7 +463,7 @@ class MobileApp {
     document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
     
     // Hide all sections
-    const sections = ['categories-section', 'popular-services-section', 'offers-section', 'search-results', 'cart-section'];
+    const sections = ['categories-section', 'popular-services-section', 'offers-section', 'search-results', 'cart-section', 'reservas-section'];
     sections.forEach(sectionId => {
       const section = document.getElementById(sectionId);
       if (section) section.style.display = 'none';
@@ -473,10 +485,14 @@ class MobileApp {
         this.renderCart();
         break;
       case 'bookings':
-        this.showToast('Redirecionando para suas reservas...', 'info');
-        setTimeout(() => {
-          window.open(`${this.apiBase}/client-reservas`, '_blank');
-        }, 500);
+        document.getElementById('reservas-section').style.display = 'block';
+        document.getElementById('fab').style.display = 'none';
+        // Load fresh data when accessing bookings tab
+        if (this.isLoggedIn) {
+          this.loadReservas().then(() => this.renderReservas());
+        } else {
+          this.renderReservas();
+        }
         break;
       case 'offers':
         document.getElementById('offers-section').style.display = 'block';
@@ -760,6 +776,196 @@ class MobileApp {
       }
     } catch (error) {
       console.error('Error loading cart from server:', error);
+    }
+  }
+
+  async loadReservas() {
+    if (!this.isLoggedIn) return;
+
+    try {
+      console.log('Loading client reservas...');
+      this.reservas = await this.apiRequest('/api/service-requests/client');
+      console.log('Reservas loaded:', this.reservas);
+    } catch (error) {
+      console.error('Failed to load reservas:', error);
+      this.reservas = [];
+    }
+  }
+
+  async loadUserProfile() {
+    if (!this.isLoggedIn) return;
+
+    try {
+      console.log('Loading user profile...');
+      const profile = await this.apiRequest('/api/auth/me');
+      if (profile) {
+        this.currentUser = profile;
+        console.log('User profile loaded:', profile);
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  }
+
+  renderReservas() {
+    const reservasList = document.getElementById('reservas-list');
+    const emptyReservas = document.getElementById('empty-reservas');
+    
+    if (!reservasList || !emptyReservas) return;
+
+    // Initialize reservas array if not exists
+    if (!this.reservas) {
+      this.reservas = [];
+    }
+
+    // Get current filter from active tab
+    const activeTab = document.querySelector('.reservas-tabs .tab-item.active');
+    const currentFilter = activeTab ? activeTab.dataset.status : 'todas';
+
+    // Filter reservas based on status
+    let filteredReservas = this.reservas;
+    if (currentFilter !== 'todas') {
+      filteredReservas = this.reservas.filter(reserva => {
+        switch (currentFilter) {
+          case 'pending':
+            return reserva.status === 'pending';
+          case 'in_progress':
+            return reserva.status === 'accepted' || reserva.status === 'in_progress';
+          case 'completed':
+            return reserva.status === 'completed';
+          case 'cancelled':
+            return reserva.status === 'cancelled';
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (!filteredReservas || filteredReservas.length === 0) {
+      reservasList.style.display = 'none';
+      emptyReservas.style.display = 'flex';
+      return;
+    }
+
+    reservasList.style.display = 'block';
+    emptyReservas.style.display = 'none';
+
+    reservasList.innerHTML = filteredReservas.map(reserva => {
+      const statusInfo = this.getStatusInfo(reserva.status);
+      const providerName = reserva.provider?.user?.name || 'Prestador';
+      const serviceName = reserva.providerService?.name || reserva.providerService?.category?.name || 'Serviço';
+      const totalPrice = parseFloat(reserva.totalPrice || 0);
+      const createdAt = new Date(reserva.createdAt).toLocaleDateString('pt-BR');
+
+      return `
+        <div class="reserva-item" onclick="window.mobileApp.showReservaDetails(${reserva.id})">
+          <div class="reserva-header">
+            <div class="reserva-service">
+              <h4>${serviceName}</h4>
+              <p class="provider-name">${providerName}</p>
+            </div>
+            <div class="reserva-status">
+              <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+            </div>
+          </div>
+          
+          <div class="reserva-details">
+            <div class="detail-item">
+              <i class="fas fa-calendar-alt"></i>
+              <span>Solicitado em: ${createdAt}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-dollar-sign"></i>
+              <span>Valor: R$ ${totalPrice.toFixed(2).replace('.', ',')}</span>
+            </div>
+            ${reserva.scheduledDate ? `
+              <div class="detail-item">
+                <i class="fas fa-clock"></i>
+                <span>Agendado para: ${new Date(reserva.scheduledDate).toLocaleDateString('pt-BR')}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="reserva-actions">
+            <button class="btn-secondary small" onclick="event.stopPropagation(); window.mobileApp.showReservaDetails(${reserva.id})">
+              Ver Detalhes
+            </button>
+            ${reserva.status === 'pending' ? `
+              <button class="btn-danger small" onclick="event.stopPropagation(); window.mobileApp.cancelReserva(${reserva.id})">
+                Cancelar
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Update tab counters
+    this.updateReservaTabCounters();
+  }
+
+  getStatusInfo(status) {
+    const statusMap = {
+      'pending': { label: 'Pendente', class: 'status-pending' },
+      'accepted': { label: 'Aceito', class: 'status-accepted' },
+      'in_progress': { label: 'Em Andamento', class: 'status-in-progress' },
+      'completed': { label: 'Concluído', class: 'status-completed' },
+      'cancelled': { label: 'Cancelado', class: 'status-cancelled' }
+    };
+    return statusMap[status] || { label: 'Desconhecido', class: 'status-unknown' };
+  }
+
+  updateReservaTabCounters() {
+    if (!this.reservas) return;
+
+    const counts = {
+      todas: this.reservas.length,
+      pending: this.reservas.filter(r => r.status === 'pending').length,
+      in_progress: this.reservas.filter(r => r.status === 'accepted' || r.status === 'in_progress').length,
+      completed: this.reservas.filter(r => r.status === 'completed').length,
+      cancelled: this.reservas.filter(r => r.status === 'cancelled').length
+    };
+
+    Object.keys(counts).forEach(status => {
+      const tab = document.querySelector(`[data-status="${status}"]`);
+      if (tab) {
+        const currentText = tab.textContent.split(' (')[0];
+        tab.textContent = counts[status] > 0 ? `${currentText} (${counts[status]})` : currentText;
+      }
+    });
+  }
+
+  showReservaDetails(reservaId) {
+    const reserva = this.reservas.find(r => r.id === reservaId);
+    if (!reserva) {
+      this.showToast('Reserva não encontrada', 'error');
+      return;
+    }
+
+    // For now, show details in a toast - could be expanded to a modal
+    const statusInfo = this.getStatusInfo(reserva.status);
+    const serviceName = reserva.providerService?.name || 'Serviço';
+    const providerName = reserva.provider?.user?.name || 'Prestador';
+    
+    this.showToast(`${serviceName} - ${providerName} | Status: ${statusInfo.label}`, 'info');
+  }
+
+  async cancelReserva(reservaId) {
+    if (!confirm('Tem certeza que deseja cancelar esta reserva?')) {
+      return;
+    }
+
+    try {
+      await this.apiRequest(`/api/service-requests/${reservaId}/cancel`, {
+        method: 'PATCH'
+      });
+      
+      this.showToast('Reserva cancelada com sucesso', 'success');
+      await this.loadReservas();
+      this.renderReservas();
+    } catch (error) {
+      console.error('Error cancelling reserva:', error);
+      this.showToast('Erro ao cancelar reserva', 'error');
     }
   }
 

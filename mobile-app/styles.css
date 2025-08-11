@@ -1382,12 +1382,19 @@ body {
   gap: 16px;
 }
 
-.reserva-card {
+.reserva-item {
   background: var(--card-background);
   border-radius: 12px;
   padding: 16px;
   box-shadow: var(--shadow-card);
   border-left: 4px solid var(--primary-blue);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reserva-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .reserva-header {
@@ -1397,23 +1404,30 @@ body {
   margin-bottom: 12px;
 }
 
-.reserva-title {
+.reserva-service h4 {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
-.reserva-category {
+.provider-name {
   font-size: 14px;
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .reserva-status {
-  padding: 4px 8px;
-  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-pending {
@@ -1421,7 +1435,12 @@ body {
   color: #E65100;
 }
 
-.status-in_progress {
+.status-accepted {
+  background: #E8F5E8;
+  color: #2E7D32;
+}
+
+.status-in-progress {
   background: #E3F2FD;
   color: #1565C0;
 }
@@ -1431,11 +1450,21 @@ body {
   color: #2E7D32;
 }
 
+.status-cancelled {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.status-unknown {
+  background: #F5F5F5;
+  color: #757575;
+}
+
 .reserva-details {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .detail-item {
@@ -1450,6 +1479,88 @@ body {
   width: 16px;
   text-align: center;
   color: var(--primary-blue);
+  font-size: 12px;
+}
+
+.reserva-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-secondary.small {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: var(--background);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-secondary.small:hover {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.btn-danger.small {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-danger.small:hover {
+  background: #D32F2F;
+  transform: translateY(-1px);
+}
+
+.empty-reservas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 40px 20px;
+}
+
+.empty-reservas .empty-state {
+  text-align: center;
+}
+
+.empty-reservas .empty-state i {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.empty-reservas .empty-state p {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
 }
 
 /* Profile Section */

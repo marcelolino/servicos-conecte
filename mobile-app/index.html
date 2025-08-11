@@ -319,10 +319,6 @@
       <section class="reservas-section" id="reservas-section" style="display: none;">
         <div class="section-header">
           <h3>Minhas Reservas</h3>
-          <button class="new-booking-btn" id="new-booking-btn">
-            <i class="fas fa-plus"></i>
-            Nova Solicitação
-          </button>
         </div>
         
         <!-- Tabs for reservas -->
@@ -341,7 +337,7 @@
           <div class="empty-state">
             <i class="fas fa-calendar-alt" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
             <p>Nenhuma reserva encontrada</p>
-            <button class="btn-primary" id="create-first-booking">Fazer Primeira Solicitação</button>
+            <button class="btn-primary" onclick="window.mobileApp.showTab('home')">Explore Serviços</button>
           </div>
         </div>
       </section>
