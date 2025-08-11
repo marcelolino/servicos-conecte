@@ -410,6 +410,71 @@
           </form>
         </div>
 
+        <!-- Profile Stats -->
+        <div class="profile-stats">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="total-bookings">0</span>
+                <span class="stat-label">Serviços contratados</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="fas fa-star"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="avg-rating">5.0</span>
+                <span class="stat-label">Avaliação média</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="fas fa-coins"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="total-spent">R$ 0</span>
+                <span class="stat-label">Total investido</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <i class="fas fa-heart"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="favorites-count">0</span>
+                <span class="stat-label">Favoritos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="profile-quick-actions">
+          <h4>Ações Rápidas</h4>
+          <div class="quick-actions-grid">
+            <div class="quick-action" onclick="window.mobileApp.showTab('reservas')">
+              <i class="fas fa-calendar-alt"></i>
+              <span>Minhas Reservas</span>
+            </div>
+            <div class="quick-action" onclick="window.mobileApp.handleMoreAction('coupons')">
+              <i class="fas fa-ticket-alt"></i>
+              <span>Cupons</span>
+            </div>
+            <div class="quick-action" onclick="window.mobileApp.handleMoreAction('support')">
+              <i class="fas fa-headset"></i>
+              <span>Suporte</span>
+            </div>
+            <div class="quick-action" onclick="window.mobileApp.handleMoreAction('become-provider')">
+              <i class="fas fa-user-plus"></i>
+              <span>Seja Prestador</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Profile Actions -->
         <div class="profile-actions">
           <div class="action-item" onclick="showChangePassword()">
@@ -816,6 +881,13 @@
               <i class="fas fa-times-circle"></i>
             </div>
             <span>Política de cancelamento</span>
+          </div>
+          
+          <div class="more-item" data-action="logout">
+            <div class="more-icon logout">
+              <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <span>Sair</span>
           </div>
         </div>
         

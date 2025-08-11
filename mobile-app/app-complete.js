@@ -324,6 +324,9 @@ class MobileApp {
     
     if (profileName) profileName.textContent = this.currentUser.name;
     if (profileEmail) profileEmail.textContent = this.currentUser.email;
+    
+    // Update profile stats
+    this.updateProfileStats();
     if (profileBadge) {
       profileBadge.textContent = this.getUserTypeLabel(this.currentUser.userType);
     }
@@ -357,6 +360,26 @@ class MobileApp {
         input.value = value;
       }
     });
+  }
+
+  updateProfileStats() {
+    // Calculate stats from reservas data
+    const totalBookings = this.reservas.length;
+    const completedBookings = this.reservas.filter(r => r.status === 'completed').length;
+    const totalSpent = this.reservas.reduce((sum, reserva) => {
+      return sum + (reserva.totalPrice || 0);
+    }, 0);
+    
+    // Update stats in UI
+    const totalBookingsEl = document.getElementById('total-bookings');
+    const avgRatingEl = document.getElementById('avg-rating');
+    const totalSpentEl = document.getElementById('total-spent');
+    const favoritesCountEl = document.getElementById('favorites-count');
+    
+    if (totalBookingsEl) totalBookingsEl.textContent = totalBookings;
+    if (avgRatingEl) avgRatingEl.textContent = '4.8'; // Default rating
+    if (totalSpentEl) totalSpentEl.textContent = `R$ ${totalSpent.toFixed(2).replace('.', ',')}`;
+    if (favoritesCountEl) favoritesCountEl.textContent = '0'; // Placeholder for favorites
   }
 
   async handleProfileUpdate(e) {
@@ -911,6 +934,9 @@ class MobileApp {
         setTimeout(() => {
           window.open(`${this.apiBase}/cancellation-policy`, '_blank');
         }, 500);
+        break;
+      case 'logout':
+        this.handleLogout();
         break;
       default:
         this.showToast('Funcionalidade em desenvolvimento', 'info');
