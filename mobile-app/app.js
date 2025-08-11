@@ -1219,6 +1219,30 @@ class MobileApp {
           window.open(`${this.apiBase}/client-reservas`, '_blank');
         }, 500);
         break;
+      case 'wallet':
+        this.showToast('Gerenciar seu dinheiro', 'info');
+        break;
+      case 'crypto':
+        this.showToast('Criptomoedas em desenvolvimento', 'info');
+        break;
+      case 'finance':
+        this.showToast('Open Finance em desenvolvimento', 'info');
+        break;
+      case 'cards':
+        this.showToast('Gerenciar cartões', 'info');
+        break;
+      case 'activity':
+        this.showToast('Visualizar atividades', 'info');
+        break;
+      case 'credit':
+        this.showToast('Mercado Crédito em desenvolvimento', 'info');
+        break;
+      case 'pay':
+        this.showToast('Funcionalidade de pagamento', 'info');
+        break;
+      case 'charge':
+        this.showToast('Funcionalidade de cobrança', 'info');
+        break;
       case 'terms':
         this.showToast('Redirecionando para termos e condições...', 'info');
         setTimeout(() => {
