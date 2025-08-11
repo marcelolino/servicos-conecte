@@ -792,12 +792,12 @@ class MobileApp {
       });
     });
 
-    // More menu close
-    document.addEventListener('click', (e) => {
-      const moreMenu = document.getElementById('more-menu');
-      if (moreMenu && !moreMenu.contains(e.target) && !e.target.closest('[data-tab="more"]')) {
-        moreMenu.style.display = 'none';
-      }
+    // More menu items
+    document.querySelectorAll('.more-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        this.handleMoreAction(action);
+      });
     });
   }
 
@@ -810,7 +810,7 @@ class MobileApp {
 
     // Show/hide sections
     const sections = ['categories-section', 'popular-services-section', 'offers-section', 'search-results-section'];
-    const specificSections = ['cart-section', 'reservas-section', 'profile-section'];
+    const specificSections = ['cart-section', 'reservas-section', 'profile-section', 'more-section'];
 
     // Hide all sections first
     [...sections, ...specificSections].forEach(sectionId => {
@@ -854,7 +854,7 @@ class MobileApp {
         }
         break;
       case 'more':
-        document.getElementById('more-menu').style.display = 'block';
+        document.getElementById('more-section').style.display = 'block';
         break;
     }
 
@@ -869,6 +869,50 @@ class MobileApp {
     
     this.currentReservasTab = status;
     this.updateReservasUI();
+  }
+
+  handleMoreAction(action) {
+    switch (action) {
+      case 'profile':
+        this.showTab('profile');
+        break;
+      case 'support':
+        this.showToast('Ajuda em desenvolvimento', 'info');
+        break;
+      case 'wallet':
+        this.showToast('Gerenciar seu dinheiro', 'info');
+        break;
+      case 'crypto':
+        this.showToast('Criptomoedas em desenvolvimento', 'info');
+        break;
+      case 'finance':
+        this.showToast('Open Finance em desenvolvimento', 'info');
+        break;
+      case 'cards':
+        this.showToast('Gerenciar cartões', 'info');
+        break;
+      case 'activity':
+        this.showToast('Visualizar atividades', 'info');
+        break;
+      case 'credit':
+        this.showToast('Mercado Crédito em desenvolvimento', 'info');
+        break;
+      case 'pay':
+        this.showToast('Funcionalidade de pagamento', 'info');
+        break;
+      case 'charge':
+        this.showToast('Funcionalidade de cobrança', 'info');
+        break;
+      case 'settings':
+        this.showToast('Configurações em desenvolvimento', 'info');
+        break;
+      case 'logout':
+        this.handleLogout();
+        break;
+      default:
+        this.showToast('Funcionalidade em desenvolvimento', 'info');
+        break;
+    }
   }
 
   async loadCategories() {
