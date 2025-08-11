@@ -488,9 +488,12 @@ class MobileApp {
         document.getElementById('reservas-section').style.display = 'block';
         document.getElementById('fab').style.display = 'none';
         // Load fresh data when accessing bookings tab
+        console.log('Accessing bookings tab. isLoggedIn:', this.isLoggedIn);
+        console.log('Auth token:', localStorage.getItem('authToken'));
         if (this.isLoggedIn) {
           this.loadReservas().then(() => this.renderReservas());
         } else {
+          console.log('User not logged in, showing empty reservas');
           this.renderReservas();
         }
         break;
@@ -780,12 +783,25 @@ class MobileApp {
   }
 
   async loadReservas() {
-    if (!this.isLoggedIn) return;
+    if (!this.isLoggedIn) {
+      console.log('User not logged in, skipping reservas load');
+      return;
+    }
 
     try {
       console.log('Loading client reservas...');
-      this.reservas = await this.apiRequest('/api/service-requests/client');
-      console.log('Reservas loaded:', this.reservas);
+      const response = await this.apiRequest('/api/service-requests/client');
+      console.log('Raw API response:', response);
+      
+      if (Array.isArray(response)) {
+        this.reservas = response;
+      } else {
+        console.warn('API response is not an array:', response);
+        this.reservas = [];
+      }
+      
+      console.log('Reservas loaded successfully:', this.reservas.length, 'items');
+      console.log('First reserva:', this.reservas[0]);
     } catch (error) {
       console.error('Failed to load reservas:', error);
       this.reservas = [];
@@ -808,13 +824,19 @@ class MobileApp {
   }
 
   renderReservas() {
+    console.log('Rendering reservas. Current reservas:', this.reservas);
+    
     const reservasList = document.getElementById('reservas-list');
     const emptyReservas = document.getElementById('empty-reservas');
     
-    if (!reservasList || !emptyReservas) return;
+    if (!reservasList || !emptyReservas) {
+      console.error('Reservas DOM elements not found');
+      return;
+    }
 
     // Initialize reservas array if not exists
     if (!this.reservas) {
+      console.log('Reservas array not initialized, creating empty array');
       this.reservas = [];
     }
 
@@ -841,20 +863,28 @@ class MobileApp {
       });
     }
 
+    console.log('Filtered reservas count:', filteredReservas.length);
+    console.log('Current filter:', currentFilter);
+    
     if (!filteredReservas || filteredReservas.length === 0) {
+      console.log('No reservas to display, showing empty state');
       reservasList.style.display = 'none';
       emptyReservas.style.display = 'flex';
       return;
     }
+    
+    console.log('Displaying', filteredReservas.length, 'reservas');
 
     reservasList.style.display = 'block';
     emptyReservas.style.display = 'none';
 
     reservasList.innerHTML = filteredReservas.map(reserva => {
+      console.log('Processing reserva:', reserva);
+      
       const statusInfo = this.getStatusInfo(reserva.status);
       const providerName = reserva.provider?.user?.name || 'Prestador';
-      const serviceName = reserva.providerService?.name || reserva.providerService?.category?.name || 'Serviço';
-      const totalPrice = parseFloat(reserva.totalPrice || 0);
+      const serviceName = reserva.title || reserva.category?.name || 'Serviço';
+      const totalPrice = parseFloat(reserva.totalAmount || reserva.finalPrice || reserva.estimatedPrice || 0);
       const createdAt = new Date(reserva.createdAt).toLocaleDateString('pt-BR');
 
       return `
@@ -878,10 +908,10 @@ class MobileApp {
               <i class="fas fa-dollar-sign"></i>
               <span>Valor: R$ ${totalPrice.toFixed(2).replace('.', ',')}</span>
             </div>
-            ${reserva.scheduledDate ? `
+            ${reserva.scheduledAt ? `
               <div class="detail-item">
                 <i class="fas fa-clock"></i>
-                <span>Agendado para: ${new Date(reserva.scheduledDate).toLocaleDateString('pt-BR')}</span>
+                <span>Agendado para: ${new Date(reserva.scheduledAt).toLocaleDateString('pt-BR')}</span>
               </div>
             ` : ''}
           </div>
