@@ -302,7 +302,9 @@ class MobileApp {
     if (!this.isLoggedIn) return;
     
     try {
-      this.reservas = await this.apiRequest('/api/service-requests');
+      console.log('Loading client reservas...');
+      this.reservas = await this.apiRequest('/api/service-requests/client');
+      console.log('Reservas loaded:', this.reservas);
       this.updateReservasUI();
     } catch (error) {
       console.error('Failed to load reservas:', error);
@@ -395,49 +397,103 @@ class MobileApp {
   }
 
   updateReservasUI() {
+    console.log('Updating reservas UI. Reservas count:', this.reservas?.length || 0);
+    
     const reservasList = document.getElementById('reservas-list');
     const emptyReservas = document.getElementById('empty-reservas');
     
-    if (!reservasList || !emptyReservas) return;
+    if (!reservasList || !emptyReservas) {
+      console.error('Reservas UI elements not found');
+      return;
+    }
     
-    if (this.reservas.length === 0) {
+    if (!this.reservas || this.reservas.length === 0) {
+      console.log('No reservas found, showing empty state');
       reservasList.style.display = 'none';
-      emptyReservas.style.display = 'block';
+      emptyReservas.style.display = 'flex';
       return;
     }
     
     reservasList.style.display = 'block';
     emptyReservas.style.display = 'none';
     
-    const filteredReservas = this.currentReservasTab === 'todas' 
-      ? this.reservas 
-      : this.reservas.filter(r => r.status === this.currentReservasTab);
+    // Get current filter from active tab
+    const activeTab = document.querySelector('.reservas-tabs .tab-item.active');
+    const currentFilter = activeTab ? activeTab.dataset.status : 'todas';
     
-    reservasList.innerHTML = filteredReservas.map(reserva => `
-      <div class="reserva-card">
-        <div class="reserva-header">
-          <div>
-            <h4 class="reserva-title">${reserva.title}</h4>
-            <p class="reserva-category">${reserva.category?.name || 'Categoria'}</p>
+    // Filter reservas based on status
+    let filteredReservas = this.reservas;
+    if (currentFilter !== 'todas') {
+      filteredReservas = this.reservas.filter(reserva => {
+        switch (currentFilter) {
+          case 'pending':
+            return reserva.status === 'pending';
+          case 'in_progress':
+            return reserva.status === 'accepted' || reserva.status === 'in_progress';
+          case 'completed':
+            return reserva.status === 'completed';
+          case 'cancelled':
+            return reserva.status === 'cancelled';
+          default:
+            return true;
+        }
+      });
+    }
+    
+    console.log(`Rendering ${filteredReservas.length} reservas for filter: ${currentFilter}`);
+    
+    reservasList.innerHTML = filteredReservas.map(reserva => {
+      const providerName = reserva.provider?.user?.name || 'Prestador';
+      const serviceName = reserva.title || reserva.category?.name || 'Serviço';
+      const totalPrice = parseFloat(reserva.totalAmount || reserva.finalPrice || reserva.estimatedPrice || 0);
+      const createdAt = new Date(reserva.createdAt).toLocaleDateString('pt-BR');
+      const statusInfo = this.getStatusInfo(reserva.status);
+      
+      return `
+        <div class="reserva-item" onclick="window.mobileApp?.showReservaDetails && window.mobileApp.showReservaDetails(${reserva.id})">
+          <div class="reserva-header">
+            <div class="reserva-service">
+              <h4>${serviceName}</h4>
+              <p class="provider-name">${providerName}</p>
+            </div>
+            <div class="reserva-status">
+              <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+            </div>
           </div>
-          <span class="reserva-status status-${reserva.status}">${this.getStatusLabel(reserva.status)}</span>
+          
+          <div class="reserva-details">
+            <div class="detail-item">
+              <i class="fas fa-calendar-alt"></i>
+              <span>Solicitado em: ${createdAt}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-dollar-sign"></i>
+              <span>Valor: R$ ${totalPrice.toFixed(2).replace('.', ',')}</span>
+            </div>
+            ${reserva.scheduledAt ? `
+              <div class="detail-item">
+                <i class="fas fa-clock"></i>
+                <span>Agendado para: ${new Date(reserva.scheduledAt).toLocaleDateString('pt-BR')}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="reserva-actions">
+            <button class="btn-secondary small" onclick="event.stopPropagation(); window.mobileApp?.showReservaDetails && window.mobileApp.showReservaDetails(${reserva.id})">
+              Ver Detalhes
+            </button>
+            ${reserva.status === 'pending' ? `
+              <button class="btn-danger small" onclick="event.stopPropagation(); window.mobileApp?.cancelReserva && window.mobileApp.cancelReserva(${reserva.id})">
+                Cancelar
+              </button>
+            ` : ''}
+          </div>
         </div>
-        <div class="reserva-details">
-          <div class="detail-item">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>${reserva.address}, ${reserva.city} - ${reserva.state}</span>
-          </div>
-          <div class="detail-item">
-            <i class="fas fa-calendar"></i>
-            <span>${new Date(reserva.createdAt).toLocaleDateString('pt-BR')}</span>
-          </div>
-          ${reserva.budget ? `<div class="detail-item">
-            <i class="fas fa-dollar-sign"></i>
-            <span>Orçamento: R$ ${parseFloat(reserva.budget).toFixed(2)}</span>
-          </div>` : ''}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+    
+    // Update tab counters
+    this.updateReservaTabCounters();
   }
 
   getUserTypeLabel(userType) {
@@ -457,6 +513,70 @@ class MobileApp {
       'cancelled': 'Cancelada'
     };
     return labels[status] || status;
+  }
+
+  getStatusInfo(status) {
+    const statusMap = {
+      'pending': { label: 'Pendente', class: 'status-pending' },
+      'accepted': { label: 'Aceito', class: 'status-accepted' },
+      'in_progress': { label: 'Em Andamento', class: 'status-in-progress' },
+      'completed': { label: 'Concluído', class: 'status-completed' },
+      'cancelled': { label: 'Cancelado', class: 'status-cancelled' }
+    };
+    return statusMap[status] || { label: 'Desconhecido', class: 'status-unknown' };
+  }
+
+  updateReservaTabCounters() {
+    if (!this.reservas) return;
+
+    const counts = {
+      todas: this.reservas.length,
+      pending: this.reservas.filter(r => r.status === 'pending').length,
+      in_progress: this.reservas.filter(r => r.status === 'accepted' || r.status === 'in_progress').length,
+      completed: this.reservas.filter(r => r.status === 'completed').length,
+      cancelled: this.reservas.filter(r => r.status === 'cancelled').length
+    };
+
+    Object.keys(counts).forEach(status => {
+      const tab = document.querySelector(`[data-status="${status}"]`);
+      if (tab) {
+        const currentText = tab.textContent.split(' (')[0];
+        tab.textContent = counts[status] > 0 ? `${currentText} (${counts[status]})` : currentText;
+      }
+    });
+  }
+
+  showReservaDetails(reservaId) {
+    const reserva = this.reservas.find(r => r.id === reservaId);
+    if (!reserva) {
+      this.showToast('Reserva não encontrada', 'error');
+      return;
+    }
+
+    // For now, show details in a toast - could be expanded to a modal
+    const statusInfo = this.getStatusInfo(reserva.status);
+    const serviceName = reserva.title || 'Serviço';
+    const providerName = reserva.provider?.user?.name || 'Prestador';
+    
+    this.showToast(`${serviceName} - ${providerName} | Status: ${statusInfo.label}`, 'info');
+  }
+
+  async cancelReserva(reservaId) {
+    if (!confirm('Tem certeza que deseja cancelar esta reserva?')) {
+      return;
+    }
+
+    try {
+      await this.apiRequest(`/api/service-requests/${reservaId}/cancel`, {
+        method: 'PATCH'
+      });
+      
+      this.showToast('Reserva cancelada com sucesso', 'success');
+      await this.loadReservas();
+    } catch (error) {
+      console.error('Error cancelling reserva:', error);
+      this.showToast('Erro ao cancelar reserva', 'error');
+    }
   }
 
   handleLogout() {
