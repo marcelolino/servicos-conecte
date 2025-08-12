@@ -822,6 +822,11 @@ export class DatabaseStorage implements IStorage {
     if (request.status !== undefined) cleanRequest.status = request.status;
     if (request.providerId !== undefined) cleanRequest.providerId = request.providerId;
     if (request.notes !== undefined) cleanRequest.notes = request.notes;
+    if (request.address !== undefined) cleanRequest.address = request.address;
+    if (request.cep !== undefined) cleanRequest.cep = request.cep;
+    if (request.city !== undefined) cleanRequest.city = request.city;
+    if (request.state !== undefined) cleanRequest.state = request.state;
+    if (request.totalAmount !== undefined) cleanRequest.totalAmount = request.totalAmount;
     if (request.scheduledAt !== undefined) {
       cleanRequest.scheduledAt = typeof request.scheduledAt === 'string' 
         ? new Date(request.scheduledAt) 
