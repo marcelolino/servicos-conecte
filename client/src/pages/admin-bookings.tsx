@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 import {
   Card,
@@ -16,9 +16,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import {
   Search,
   Download,
@@ -36,10 +55,21 @@ import {
   MoreVertical,
   Plus,
   RefreshCw,
+  X,
+  Check,
+  Clock,
+  XCircle,
+  MapPin,
+  User,
+  Calendar,
+  DollarSign,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface BookingData {
   id: number;
@@ -84,10 +114,96 @@ interface BookingData {
 export default function AdminBookingsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+  const [statusNote, setStatusNote] = useState("");
+  
+  const { toast } = useToast();
 
   const { data: bookings, isLoading, refetch } = useQuery<BookingData[]>({
     queryKey: ["/api/admin/bookings"],
   });
+
+  // Mutation para atualizar status da reserva
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ bookingId, status, note }: { bookingId: number; status: string; note?: string }) => {
+      return apiRequest(`/api/admin/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        body: { status, note }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
+      toast({
+        title: "Status atualizado",
+        description: "O status da reserva foi atualizado com sucesso.",
+      });
+      setIsEditStatusOpen(false);
+      setSelectedBooking(null);
+      setNewStatus("");
+      setStatusNote("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message || "Ocorreu um erro ao atualizar o status da reserva.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para cancelar reserva
+  const cancelBookingMutation = useMutation({
+    mutationFn: async (bookingId: number) => {
+      return apiRequest(`/api/admin/bookings/${bookingId}/cancel`, {
+        method: 'PATCH'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
+      toast({
+        title: "Reserva cancelada",
+        description: "A reserva foi cancelada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cancelar reserva",
+        description: error.message || "Ocorreu um erro ao cancelar a reserva.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Funções para abrir modais
+  const openDetails = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setIsDetailsOpen(true);
+  };
+
+  const openEditStatus = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setNewStatus(booking.status);
+    setIsEditStatusOpen(true);
+  };
+
+  const handleUpdateStatus = () => {
+    if (!selectedBooking || !newStatus) return;
+    
+    updateStatusMutation.mutate({
+      bookingId: selectedBooking.id,
+      status: newStatus,
+      note: statusNote
+    });
+  };
+
+  const handleCancelBooking = (booking: BookingData) => {
+    if (confirm(`Tem certeza que deseja cancelar a reserva #${booking.id.toString().padStart(6, '0')}?`)) {
+      cancelBookingMutation.mutate(booking.id);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -358,20 +474,19 @@ export default function AdminBookingsPage() {
                                 size="sm"
                                 variant="outline"
                                 className="w-8 h-8 p-0"
-                                title="Visualizar"
-                                asChild
+                                title="Ver Detalhes"
+                                onClick={() => openDetails(booking)}
                               >
-                                <Link href={`/admin-bookings/details/${booking.id}`}>
-                                  <Eye className="w-4 h-4" />
-                                </Link>
+                                <Eye className="w-4 h-4" />
                               </Button>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="w-8 h-8 p-0"
-                                title="Editar"
+                                variant="outline" 
+                                className="w-8 h-8 p-0 bg-yellow-50 hover:bg-yellow-100"
+                                title="Editar Status"
+                                onClick={() => openEditStatus(booking)}
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-4 h-4 text-yellow-600" />
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -384,10 +499,23 @@ export default function AdminBookingsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                  <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
-                                  <DropdownMenuItem>Editar Status</DropdownMenuItem>
-                                  <DropdownMenuItem>Histórico</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">
+                                  <DropdownMenuItem onClick={() => openDetails(booking)}>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Ver Detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => openEditStatus(booking)}>
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Editar Status
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Clock className="w-4 h-4 mr-2" />
+                                    Histórico
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="text-red-600"
+                                    onClick={() => handleCancelBooking(booking)}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
                                     Cancelar Reserva
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -403,6 +531,269 @@ export default function AdminBookingsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modal de Detalhes da Reserva */}
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Detalhes da Reserva #{selectedBooking?.id.toString().padStart(6, '0')}
+              </DialogTitle>
+              <DialogDescription>
+                Informações completas sobre a reserva
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedBooking && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Informações Gerais */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Informações Gerais
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">ID da Reserva</Label>
+                      <p className="font-semibold">#{selectedBooking.id.toString().padStart(6, '0')}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Categoria</Label>
+                      <p>{selectedBooking.category.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                      <div className="mt-1">{getStatusBadge(selectedBooking.status)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Data de Criação</Label>
+                      <p>{format(new Date(selectedBooking.createdAt), 'dd/MM/yyyy - HH:mm', { locale: ptBR })}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Data Agendada</Label>
+                      <p className="font-medium text-blue-600">
+                        {format(new Date(selectedBooking.scheduledAt), 'dd/MM/yyyy - HH:mm', { locale: ptBR })}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Informações do Cliente */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      Cliente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Nome</Label>
+                      <p className="font-semibold">{selectedBooking.client.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {selectedBooking.client.email}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Telefone</Label>
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        {selectedBooking.client.phone || 'Não informado'}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Informações do Provedor */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      Provedor
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {selectedBooking.provider ? (
+                      <>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Nome do Negócio</Label>
+                          <p className="font-semibold">{selectedBooking.provider.businessName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Nome do Responsável</Label>
+                          <p>{selectedBooking.provider.user.name}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                          <p className="flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            {selectedBooking.provider.user.email}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Telefone</Label>
+                          <p className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            {selectedBooking.provider.user.phone || 'Não informado'}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Provedor não atribuído</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Localização */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Localização
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Endereço Completo</Label>
+                      <p>{selectedBooking.address}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">CEP</Label>
+                        <p>{selectedBooking.cep}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Cidade</Label>
+                        <p>{selectedBooking.city}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Estado</Label>
+                      <p>{selectedBooking.state}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Informações de Pagamento */}
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      Pagamento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Valor Total</Label>
+                      <p className="text-2xl font-bold text-green-600">
+                        {parseFloat(selectedBooking.totalAmount).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Método de Pagamento</Label>
+                      <p className="capitalize">{selectedBooking.paymentMethod}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Status do Pagamento</Label>
+                      <div className="mt-1">{getPaymentStatusBadge(selectedBooking.paymentStatus)}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Observações */}
+                {selectedBooking.notes && (
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Observações</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">{selectedBooking.notes}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Edição de Status */}
+        <Dialog open={isEditStatusOpen} onOpenChange={setIsEditStatusOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                Editar Status da Reserva
+              </DialogTitle>
+              <DialogDescription>
+                Reserva #{selectedBooking?.id.toString().padStart(6, '0')}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="status">Novo Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="accepted">Aceito</SelectItem>
+                    <SelectItem value="in_progress">Em Andamento</SelectItem>
+                    <SelectItem value="completed">Concluído</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="note">Observação (Opcional)</Label>
+                <Textarea
+                  id="note"
+                  placeholder="Adicione uma observação sobre a mudança de status..."
+                  value={statusNote}
+                  onChange={(e) => setStatusNote(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditStatusOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleUpdateStatus}
+                disabled={updateStatusMutation.isPending || !newStatus}
+              >
+                {updateStatusMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Atualizando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Atualizar Status
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ModernAdminLayout>
   );

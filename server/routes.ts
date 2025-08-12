@@ -1270,6 +1270,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/admin/bookings/:id/status - Atualizar status da reserva
+  app.patch("/api/admin/bookings/:id/status", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const { status, note } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: "Status é obrigatório" });
+      }
+
+      // Validar status permitidos
+      const allowedStatuses = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: "Status inválido" });
+      }
+
+      // Verificar se a reserva existe
+      const booking = await storage.getServiceRequest(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
+
+      // Atualizar o status
+      const updatedBooking = await storage.updateServiceRequest(bookingId, { 
+        status
+      });
+
+      // Log da alteração (se necessário implementar sistema de auditoria)
+      if (note) {
+        console.log(`Admin ${req.user!.id} alterou status da reserva ${bookingId} para ${status}. Observação: ${note}`);
+      }
+
+      res.json({ 
+        message: "Status atualizado com sucesso",
+        booking: updatedBooking 
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status da reserva:', error);
+      res.status(500).json({ message: "Erro ao atualizar status", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // PATCH /api/admin/bookings/:id/cancel - Cancelar reserva
+  app.patch("/api/admin/bookings/:id/cancel", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+
+      // Verificar se a reserva existe
+      const booking = await storage.getServiceRequest(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
+
+      // Verificar se a reserva já não está cancelada
+      if (booking.status === 'cancelled') {
+        return res.status(400).json({ message: "Esta reserva já está cancelada" });
+      }
+
+      // Cancelar a reserva
+      const updatedBooking = await storage.updateServiceRequest(bookingId, { 
+        status: 'cancelled'
+      });
+
+      // Log do cancelamento
+      console.log(`Admin ${req.user!.id} cancelou a reserva ${bookingId}`);
+
+      res.json({ 
+        message: "Reserva cancelada com sucesso",
+        booking: updatedBooking 
+      });
+    } catch (error) {
+      console.error('Erro ao cancelar reserva:', error);
+      res.status(500).json({ message: "Erro ao cancelar reserva", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Banners routes
   app.get("/api/banners", async (req, res) => {
     try {
