@@ -70,6 +70,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getAuthToken } from "@/lib/auth";
 
 interface BookingData {
   id: number;
@@ -156,7 +157,7 @@ export default function AdminBookingsPage() {
       note?: string; 
       providerId?: number;
     }) => {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
@@ -174,7 +175,7 @@ export default function AdminBookingsPage() {
         const error = await response.json();
         if (response.status === 403 && error.message === 'Invalid token') {
           // Token inválido, redirecionar para login
-          localStorage.removeItem('token');
+          localStorage.removeItem('authToken');
           window.location.href = '/login';
           throw new Error('Sessão expirada. Redirecionando para login...');
         }
@@ -207,7 +208,7 @@ export default function AdminBookingsPage() {
   // Mutation para cancelar reserva
   const cancelBookingMutation = useMutation({
     mutationFn: async (bookingId: number) => {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
@@ -223,7 +224,7 @@ export default function AdminBookingsPage() {
       if (!response.ok) {
         const error = await response.json();
         if (response.status === 403 && error.message === 'Invalid token') {
-          localStorage.removeItem('token');
+          localStorage.removeItem('authToken');
           window.location.href = '/login';
           throw new Error('Sessão expirada. Redirecionando para login...');
         }
@@ -262,7 +263,7 @@ export default function AdminBookingsPage() {
         totalAmount: string;
       }
     }) => {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         throw new Error('Token de autenticação não encontrado');
       }
@@ -279,7 +280,7 @@ export default function AdminBookingsPage() {
       if (!response.ok) {
         const error = await response.json();
         if (response.status === 403 && error.message === 'Invalid token') {
-          localStorage.removeItem('token');
+          localStorage.removeItem('authToken');
           window.location.href = '/login';
           throw new Error('Sessão expirada. Redirecionando para login...');
         }
