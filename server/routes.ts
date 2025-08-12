@@ -1274,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/bookings/:id/status", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const bookingId = parseInt(req.params.id);
-      const { status, note } = req.body;
+      const { status, note, providerId } = req.body;
 
       if (!status) {
         return res.status(400).json({ message: "Status é obrigatório" });
@@ -1286,21 +1286,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Status inválido" });
       }
 
+      // Verificar se é necessário um prestador para os status aceito ou em andamento
+      if ((status === 'accepted' || status === 'in_progress') && !providerId) {
+        return res.status(400).json({ message: "Prestador é obrigatório para aceitar ou iniciar a reserva" });
+      }
+
       // Verificar se a reserva existe
       const booking = await storage.getServiceRequest(bookingId);
       if (!booking) {
         return res.status(404).json({ message: "Reserva não encontrada" });
       }
 
-      // Atualizar o status
-      const updatedBooking = await storage.updateServiceRequest(bookingId, { 
-        status
-      });
-
-      // Log da alteração (se necessário implementar sistema de auditoria)
-      if (note) {
-        console.log(`Admin ${req.user!.id} alterou status da reserva ${bookingId} para ${status}. Observação: ${note}`);
+      // Se um prestador foi selecionado, verificar se ele existe e está aprovado
+      if (providerId) {
+        const provider = await storage.getProvider(providerId);
+        if (!provider) {
+          return res.status(404).json({ message: "Prestador não encontrado" });
+        }
+        if (provider.status !== 'approved') {
+          return res.status(400).json({ message: "Prestador não está aprovado" });
+        }
       }
+
+      // Atualizar o status e prestador
+      const updateData: any = { status };
+      if (providerId) {
+        updateData.providerId = providerId;
+      }
+
+      const updatedBooking = await storage.updateServiceRequest(bookingId, updateData);
+
+      // Log da alteração
+      const logMessage = `Admin ${req.user!.id} alterou status da reserva ${bookingId} para ${status}`;
+      const providerLog = providerId ? ` e atribuiu prestador ${providerId}` : '';
+      const noteLog = note ? `. Observação: ${note}` : '';
+      console.log(logMessage + providerLog + noteLog);
 
       res.json({ 
         message: "Status atualizado com sucesso",

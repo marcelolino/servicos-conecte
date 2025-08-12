@@ -119,6 +119,7 @@ export default function AdminBookingsPage() {
   const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusNote, setStatusNote] = useState("");
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("");
   
   const { toast } = useToast();
 
@@ -126,13 +127,40 @@ export default function AdminBookingsPage() {
     queryKey: ["/api/admin/bookings"],
   });
 
+  // Query para buscar prestadores disponíveis
+  const { data: providers } = useQuery<Array<{
+    id: number;
+    businessName: string;
+    user: { name: string; };
+    status: string;
+  }>>({
+    queryKey: ["/api/admin/providers"],
+    enabled: isEditStatusOpen && (newStatus === 'accepted' || newStatus === 'in_progress'),
+  });
+
   // Mutation para atualizar status da reserva
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ bookingId, status, note }: { bookingId: number; status: string; note?: string }) => {
-      return apiRequest(`/api/admin/bookings/${bookingId}/status`, {
+    mutationFn: async ({ bookingId, status, note, providerId }: { 
+      bookingId: number; 
+      status: string; 
+      note?: string; 
+      providerId?: number;
+    }) => {
+      const response = await fetch(`/api/admin/bookings/${bookingId}/status`, {
         method: 'PATCH',
-        body: { status, note }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status, note, providerId })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao atualizar status');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
@@ -144,6 +172,7 @@ export default function AdminBookingsPage() {
       setSelectedBooking(null);
       setNewStatus("");
       setStatusNote("");
+      setSelectedProviderId("");
     },
     onError: (error: any) => {
       toast({
@@ -157,9 +186,20 @@ export default function AdminBookingsPage() {
   // Mutation para cancelar reserva
   const cancelBookingMutation = useMutation({
     mutationFn: async (bookingId: number) => {
-      return apiRequest(`/api/admin/bookings/${bookingId}/cancel`, {
-        method: 'PATCH'
+      const response = await fetch(`/api/admin/bookings/${bookingId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao cancelar reserva');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
@@ -186,16 +226,29 @@ export default function AdminBookingsPage() {
   const openEditStatus = (booking: BookingData) => {
     setSelectedBooking(booking);
     setNewStatus(booking.status);
+    setSelectedProviderId(booking.providerId?.toString() || "");
     setIsEditStatusOpen(true);
   };
 
   const handleUpdateStatus = () => {
     if (!selectedBooking || !newStatus) return;
     
+    // Verificar se é necessário selecionar um prestador
+    const needsProvider = (newStatus === 'accepted' || newStatus === 'in_progress');
+    if (needsProvider && !selectedProviderId) {
+      toast({
+        title: "Prestador obrigatório",
+        description: "Selecione um prestador para aceitar ou iniciar a reserva.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     updateStatusMutation.mutate({
       bookingId: selectedBooking.id,
       status: newStatus,
-      note: statusNote
+      note: statusNote,
+      providerId: selectedProviderId ? parseInt(selectedProviderId) : undefined
     });
   };
 
@@ -755,6 +808,28 @@ export default function AdminBookingsPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Campo de seleção de prestador - apenas para status aceito ou em andamento */}
+              {(newStatus === 'accepted' || newStatus === 'in_progress') && (
+                <div>
+                  <Label htmlFor="provider">Prestador *</Label>
+                  <Select value={selectedProviderId} onValueChange={setSelectedProviderId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um prestador" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {providers?.filter(p => p.status === 'approved').map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id.toString()}>
+                          {provider.businessName} - {provider.user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Obrigatório para aceitar ou iniciar a reserva
+                  </p>
+                </div>
+              )}
               
               <div>
                 <Label htmlFor="note">Observação (Opcional)</Label>
