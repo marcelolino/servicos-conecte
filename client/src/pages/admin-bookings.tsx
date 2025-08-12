@@ -117,9 +117,19 @@ export default function AdminBookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
+  const [isEditBookingOpen, setIsEditBookingOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusNote, setStatusNote] = useState("");
   const [selectedProviderId, setSelectedProviderId] = useState<string>("");
+  const [editBookingData, setEditBookingData] = useState({
+    address: "",
+    cep: "",
+    city: "",
+    state: "",
+    notes: "",
+    scheduledAt: "",
+    totalAmount: ""
+  });
   
   const { toast } = useToast();
 
@@ -146,17 +156,28 @@ export default function AdminBookingsPage() {
       note?: string; 
       providerId?: number;
     }) => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+      
       const response = await fetch(`/api/admin/bookings/${bookingId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status, note, providerId })
       });
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 403 && error.message === 'Invalid token') {
+          // Token inválido, redirecionar para login
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          throw new Error('Sessão expirada. Redirecionando para login...');
+        }
         throw new Error(error.message || 'Erro ao atualizar status');
       }
       
@@ -186,16 +207,26 @@ export default function AdminBookingsPage() {
   // Mutation para cancelar reserva
   const cancelBookingMutation = useMutation({
     mutationFn: async (bookingId: number) => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+      
       const response = await fetch(`/api/admin/bookings/${bookingId}/cancel`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
       if (!response.ok) {
         const error = await response.json();
+        if (response.status === 403 && error.message === 'Invalid token') {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          throw new Error('Sessão expirada. Redirecionando para login...');
+        }
         throw new Error(error.message || 'Erro ao cancelar reserva');
       }
       
@@ -217,6 +248,64 @@ export default function AdminBookingsPage() {
     },
   });
 
+  // Mutation para editar dados completos da reserva
+  const editBookingMutation = useMutation({
+    mutationFn: async ({ bookingId, data }: { 
+      bookingId: number; 
+      data: {
+        address: string;
+        cep: string;
+        city: string;
+        state: string;
+        notes?: string;
+        scheduledAt: string;
+        totalAmount: string;
+      }
+    }) => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+      
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        if (response.status === 403 && error.message === 'Invalid token') {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          throw new Error('Sessão expirada. Redirecionando para login...');
+        }
+        throw new Error(error.message || 'Erro ao editar reserva');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bookings"] });
+      toast({
+        title: "Reserva atualizada",
+        description: "A reserva foi atualizada com sucesso.",
+      });
+      setIsEditBookingOpen(false);
+      setSelectedBooking(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao editar reserva",
+        description: error.message || "Ocorreu um erro ao editar a reserva.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Funções para abrir modais
   const openDetails = (booking: BookingData) => {
     setSelectedBooking(booking);
@@ -228,6 +317,20 @@ export default function AdminBookingsPage() {
     setNewStatus(booking.status);
     setSelectedProviderId(booking.providerId?.toString() || "");
     setIsEditStatusOpen(true);
+  };
+
+  const openEditBooking = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setEditBookingData({
+      address: booking.address,
+      cep: booking.cep,
+      city: booking.city,
+      state: booking.state,
+      notes: booking.notes || "",
+      scheduledAt: booking.scheduledAt.slice(0, 16), // Format for datetime-local input
+      totalAmount: booking.totalAmount
+    });
+    setIsEditBookingOpen(true);
   };
 
   const handleUpdateStatus = () => {
@@ -249,6 +352,26 @@ export default function AdminBookingsPage() {
       status: newStatus,
       note: statusNote,
       providerId: selectedProviderId ? parseInt(selectedProviderId) : undefined
+    });
+  };
+
+  const handleEditBooking = () => {
+    if (!selectedBooking) return;
+    
+    // Validar campos obrigatórios
+    if (!editBookingData.address || !editBookingData.cep || !editBookingData.city || 
+        !editBookingData.state || !editBookingData.scheduledAt || !editBookingData.totalAmount) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    editBookingMutation.mutate({
+      bookingId: selectedBooking.id,
+      data: editBookingData
     });
   };
 
@@ -541,6 +664,15 @@ export default function AdminBookingsPage() {
                               >
                                 <Edit className="w-4 h-4 text-yellow-600" />
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="outline" 
+                                className="w-8 h-8 p-0 bg-blue-50 hover:bg-blue-100"
+                                title="Editar Reserva"
+                                onClick={() => openEditBooking(booking)}
+                              >
+                                <Edit className="w-4 h-4 text-blue-600" />
+                              </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
@@ -559,6 +691,10 @@ export default function AdminBookingsPage() {
                                   <DropdownMenuItem onClick={() => openEditStatus(booking)}>
                                     <Edit className="w-4 h-4 mr-2" />
                                     Editar Status
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => openEditBooking(booking)}>
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Editar Dados
                                   </DropdownMenuItem>
                                   <DropdownMenuItem>
                                     <Clock className="w-4 h-4 mr-2" />
@@ -863,6 +999,162 @@ export default function AdminBookingsPage() {
                   <>
                     <Check className="w-4 h-4 mr-2" />
                     Atualizar Status
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Edição Completa da Reserva */}
+        <Dialog open={isEditBookingOpen} onOpenChange={setIsEditBookingOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                Editar Reserva
+              </DialogTitle>
+              <DialogDescription>
+                Reserva #{selectedBooking?.id.toString().padStart(6, '0')} - Edite todos os dados da reserva
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Endereço e Localização */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Endereço do Serviço
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="address">Endereço Completo *</Label>
+                    <Input
+                      id="address"
+                      value={editBookingData.address}
+                      onChange={(e) => setEditBookingData(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Rua, número, complemento"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="cep">CEP *</Label>
+                      <Input
+                        id="cep"
+                        value={editBookingData.cep}
+                        onChange={(e) => setEditBookingData(prev => ({ ...prev, cep: e.target.value }))}
+                        placeholder="00000-000"
+                        maxLength={9}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="city">Cidade *</Label>
+                      <Input
+                        id="city"
+                        value={editBookingData.city}
+                        onChange={(e) => setEditBookingData(prev => ({ ...prev, city: e.target.value }))}
+                        placeholder="Nome da cidade"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="state">Estado *</Label>
+                      <Input
+                        id="state"
+                        value={editBookingData.state}
+                        onChange={(e) => setEditBookingData(prev => ({ ...prev, state: e.target.value }))}
+                        placeholder="UF"
+                        maxLength={2}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Data e Valor */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Agendamento e Valor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="scheduledAt">Data e Hora Agendada *</Label>
+                      <Input
+                        id="scheduledAt"
+                        type="datetime-local"
+                        value={editBookingData.scheduledAt}
+                        onChange={(e) => setEditBookingData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="totalAmount">Valor Total *</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="totalAmount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editBookingData.totalAmount}
+                          onChange={(e) => setEditBookingData(prev => ({ ...prev, totalAmount: e.target.value }))}
+                          placeholder="0.00"
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Observações */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Observações</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="notes">Observações</Label>
+                    <Textarea
+                      id="notes"
+                      value={editBookingData.notes}
+                      onChange={(e) => setEditBookingData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Observações sobre o serviço (opcional)"
+                      rows={4}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditBookingOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleEditBooking}
+                disabled={editBookingMutation.isPending}
+              >
+                {editBookingMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Salvar Alterações
                   </>
                 )}
               </Button>

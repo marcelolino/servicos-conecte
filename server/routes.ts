@@ -1366,6 +1366,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/admin/bookings/:id - Editar dados completos da reserva
+  app.patch("/api/admin/bookings/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      const { address, cep, city, state, notes, scheduledAt, totalAmount } = req.body;
+
+      // Validar campos obrigatórios
+      if (!address || !cep || !city || !state || !scheduledAt || !totalAmount) {
+        return res.status(400).json({ message: "Todos os campos obrigatórios devem ser preenchidos" });
+      }
+
+      // Validar formato de data
+      const scheduledDate = new Date(scheduledAt);
+      if (isNaN(scheduledDate.getTime())) {
+        return res.status(400).json({ message: "Data/hora agendada inválida" });
+      }
+
+      // Validar valor
+      const amount = parseFloat(totalAmount);
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: "Valor total deve ser um número positivo" });
+      }
+
+      // Verificar se a reserva existe
+      const booking = await storage.getServiceRequest(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Reserva não encontrada" });
+      }
+
+      // Atualizar dados da reserva
+      const updateData = {
+        address: address.trim(),
+        cep: cep.trim(),
+        city: city.trim(),
+        state: state.trim().toUpperCase(),
+        notes: notes?.trim() || null,
+        scheduledAt: scheduledDate,
+        totalAmount: amount.toString()
+      };
+
+      const updatedBooking = await storage.updateServiceRequest(bookingId, updateData);
+
+      // Log da alteração
+      console.log(`Admin ${req.user!.id} editou dados da reserva ${bookingId}`);
+
+      res.json({ 
+        message: "Reserva atualizada com sucesso",
+        booking: updatedBooking 
+      });
+    } catch (error) {
+      console.error('Erro ao editar reserva:', error);
+      res.status(500).json({ message: "Erro ao editar reserva", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Banners routes
   app.get("/api/banners", async (req, res) => {
     try {
