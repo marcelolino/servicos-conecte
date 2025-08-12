@@ -3924,6 +3924,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================================
+  // PAGE CONFIGURATIONS ENDPOINTS
+  // ===========================================
+
+  // Get all page configurations (public endpoint)
+  app.get("/api/page-configurations", async (req, res) => {
+    try {
+      const configs = await storage.getPageConfigurations();
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get page configurations", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get specific page configuration by key (public endpoint)
+  app.get("/api/page-configurations/:pageKey", async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      const config = await storage.getPageConfiguration(pageKey);
+      
+      if (!config) {
+        return res.status(404).json({ message: "Page configuration not found" });
+      }
+      
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get page configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Admin endpoints for page configurations
+  app.get("/api/admin/page-configurations", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getPageConfigurations();
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get page configurations", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/page-configurations", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { pageKey, title, content, isActive = true } = req.body;
+      
+      // Validate required fields
+      if (!pageKey || !title || !content) {
+        return res.status(400).json({ message: "Page key, title and content are required" });
+      }
+
+      const config = await storage.createPageConfiguration({
+        pageKey,
+        title,
+        content,
+        isActive,
+      });
+      
+      res.json(config);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create page configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/page-configurations/:pageKey", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      const { title, content, isActive } = req.body;
+      
+      // Check if configuration exists
+      const existingConfig = await storage.getPageConfiguration(pageKey);
+      if (!existingConfig) {
+        return res.status(404).json({ message: "Page configuration not found" });
+      }
+
+      const updatedConfig = await storage.updatePageConfiguration(pageKey, {
+        title,
+        content,
+        isActive,
+      });
+      
+      res.json(updatedConfig);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update page configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/page-configurations/:pageKey", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      
+      // Check if configuration exists
+      const existingConfig = await storage.getPageConfiguration(pageKey);
+      if (!existingConfig) {
+        return res.status(404).json({ message: "Page configuration not found" });
+      }
+
+      await storage.deletePageConfiguration(pageKey);
+      res.json({ message: "Page configuration deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete page configuration", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Register admin routes
   const adminRoutes = await import('./routes/admin');
   app.use('/api/admin', adminRoutes.default);

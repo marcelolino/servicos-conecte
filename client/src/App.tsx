@@ -48,6 +48,7 @@ import AdminSettings from "@/pages/admin-settings";
 import AdminPaymentMethods from "@/pages/admin-payment-methods";
 import AdminServices from "@/pages/admin/services";
 import AdminProviderServiceRequests from "@/pages/admin/provider-service-requests";
+import AdminPageConfigurations from "@/pages/admin-page-configurations";
 import UploadTest from "@/pages/upload-test";
 import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
@@ -75,6 +76,7 @@ import ProviderServiceSubscriptions from "@/pages/provider-service-subscriptions
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 import LayoutDemo from "@/pages/admin/layout-demo";
+import LegalPages, { AboutUsPage, TermsAndConditionsPage, PrivacyPolicyPage } from "@/pages/legal-pages";
 import AdminReportsTransactions from "@/pages/admin-reports-transactions";
 import AdminReportsBusiness from "@/pages/admin-reports-business";
 import AdminReportsBookings from "@/pages/admin-reports-bookings";
@@ -104,6 +106,7 @@ function Router() {
       <Route path="/admin-users" component={AdminUsersPage} />
       <Route path="/admin-services" component={AdminServices} />
       <Route path="/admin-provider-service-requests" component={AdminProviderServiceRequests} />
+      <Route path="/admin-page-configurations" component={AdminPageConfigurations} />
       <Route path="/admin-categories" component={AdminCategories} />
       <Route path="/admin-media" component={AdminMedia} />
       <Route path="/admin-chat" component={AdminChat} />
@@ -177,6 +180,10 @@ function Router() {
                 <Route path="/order-success/:id" component={OrderSuccess} />
                 <Route path="/test-mercadopago" component={TestMercadoPago} />
                 <Route path="/test-mercadopago-simple" component={TestMercadoPagoSimple} />
+                <Route path="/legal/:pageKey" component={LegalPages} />
+                <Route path="/about-us" component={AboutUsPage} />
+                <Route path="/terms-and-conditions" component={TermsAndConditionsPage} />
+                <Route path="/privacy-policy" component={PrivacyPolicyPage} />
                 <Route component={NotFound} />
               </Switch>
             </main>

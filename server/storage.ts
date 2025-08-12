@@ -80,6 +80,9 @@ import {
   paymentGatewayConfigs,
   type PaymentGatewayConfig,
   type InsertPaymentGatewayConfig,
+  pageConfigurations,
+  type PageConfiguration,
+  type InsertPageConfiguration,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -280,6 +283,13 @@ export interface IStorage {
   markMessageAsRead(messageId: number): Promise<ChatMessage>;
   getUnreadMessageCount(userId: number): Promise<number>;
   canUsersChat(userOneId: number, userTwoId: number): Promise<boolean>;
+
+  // Page configurations
+  getPageConfigurations(): Promise<PageConfiguration[]>;
+  getPageConfiguration(pageKey: string): Promise<PageConfiguration | undefined>;
+  createPageConfiguration(config: InsertPageConfiguration): Promise<PageConfiguration>;
+  updatePageConfiguration(pageKey: string, config: Partial<InsertPageConfiguration>): Promise<PageConfiguration>;
+  deletePageConfiguration(pageKey: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2791,6 +2801,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(providerServiceRequests.id, id))
       .returning();
     return updatedRequest;
+  }
+
+  // Page configurations
+  async getPageConfigurations(): Promise<PageConfiguration[]> {
+    return await db.select().from(pageConfigurations).orderBy(pageConfigurations.pageKey);
+  }
+
+  async getPageConfiguration(pageKey: string): Promise<PageConfiguration | undefined> {
+    const [config] = await db.select().from(pageConfigurations).where(eq(pageConfigurations.pageKey, pageKey));
+    return config || undefined;
+  }
+
+  async createPageConfiguration(config: InsertPageConfiguration): Promise<PageConfiguration> {
+    const [newConfig] = await db
+      .insert(pageConfigurations)
+      .values(config)
+      .returning();
+    return newConfig;
+  }
+
+  async updatePageConfiguration(pageKey: string, config: Partial<InsertPageConfiguration>): Promise<PageConfiguration> {
+    const [updatedConfig] = await db
+      .update(pageConfigurations)
+      .set({ ...config, updatedAt: new Date() })
+      .where(eq(pageConfigurations.pageKey, pageKey))
+      .returning();
+    return updatedConfig;
+  }
+
+  async deletePageConfiguration(pageKey: string): Promise<void> {
+    await db.delete(pageConfigurations).where(eq(pageConfigurations.pageKey, pageKey));
   }
 }
 

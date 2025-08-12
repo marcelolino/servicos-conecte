@@ -83,23 +83,28 @@ export default function Footer() {
             <h4 className="font-semibold mb-4 text-foreground">Empresa</h4>
             <ul className="space-y-2 text-muted-foreground">
               <li>
-                <Link href="/about" className="hover:text-foreground transition-colors">
-                  Sobre nós
+                <Link href="/about-us" className="hover:text-foreground transition-colors">
+                  Quem Somos
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className="hover:text-foreground transition-colors">
-                  Carreiras
+                <Link href="/terms-and-conditions" className="hover:text-foreground transition-colors">
+                  Termos e Condições
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-foreground transition-colors">
-                  Termos de uso
+                <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
+                  Política de Privacidade
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-foreground transition-colors">
-                  Privacidade
+                <Link href="/legal/cancellation_policy" className="hover:text-foreground transition-colors">
+                  Política de Cancelamento
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/refund_policy" className="hover:text-foreground transition-colors">
+                  Política de Reembolso
                 </Link>
               </li>
             </ul>

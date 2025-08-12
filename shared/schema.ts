@@ -458,6 +458,17 @@ export const paymentGatewayConfigs = pgTable("payment_gateway_configs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Page configurations table
+export const pageConfigurations = pgTable("page_configurations", {
+  id: serial("id").primaryKey(),
+  pageKey: varchar("page_key", { length: 100 }).notNull().unique(), // 'about_us', 'privacy_policy', etc.
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -702,6 +713,10 @@ export const paymentGatewayConfigsRelations = relations(paymentGatewayConfigs, (
   // Add relations as needed
 }));
 
+export const pageConfigurationsRelations = relations(pageConfigurations, ({ many }) => ({
+  // Add relations as needed
+}));
+
 export const providerServiceRequestsRelations = relations(providerServiceRequests, ({ one }) => ({
   provider: one(providers, {
     fields: [providerServiceRequests.providerId],
@@ -877,6 +892,12 @@ export const insertPaymentGatewayConfigSchema = createInsertSchema(paymentGatewa
   updatedAt: true,
 });
 
+export const insertPageConfigurationSchema = createInsertSchema(pageConfigurations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -932,3 +953,5 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type PaymentGatewayConfig = typeof paymentGatewayConfigs.$inferSelect;
 export type InsertPaymentGatewayConfig = z.infer<typeof insertPaymentGatewayConfigSchema>;
+export type PageConfiguration = typeof pageConfigurations.$inferSelect;
+export type InsertPageConfiguration = z.infer<typeof insertPageConfigurationSchema>;

@@ -41,6 +41,7 @@ const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
   "/admin-reports-business": { title: "Relatórios de Negócios", parent: "Relatórios" },
   "/admin-reports-bookings": { title: "Relatórios de Reservas", parent: "Relatórios" },
   "/admin-reports-providers": { title: "Relatórios dos Provedores", parent: "Relatórios" },
+  "/admin-page-configurations": { title: "Configuração de Páginas", parent: "Configuração" },
   "/admin-settings": { title: "Configurações" },
 };
 
