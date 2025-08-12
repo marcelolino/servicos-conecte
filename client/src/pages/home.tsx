@@ -34,23 +34,47 @@ interface BannerWithCategory extends PromotionalBanner {
 export default function Home() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address: string | any } | null>(null);
   const [showNearbyProviders, setShowNearbyProviders] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [proximityRadius, setProximityRadius] = useState("10"); // km
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const { data: banners, isLoading: bannersLoading } = useQuery({
+  // Função para formatar endereços de forma segura
+  const formatAddress = (address: string | any): string => {
+    if (!address) return "Localização não definida";
+    
+    if (typeof address === 'string') {
+      return address;
+    }
+    
+    if (typeof address === 'object' && address !== null) {
+      const parts: string[] = [];
+      if (address.street) parts.push(address.street);
+      if (address.number) parts.push(address.number);
+      if (address.neighborhood) parts.push(address.neighborhood);
+      if (address.city) parts.push(address.city);
+      if (address.state) parts.push(address.state);
+      
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+    
+    return String(address);
+  };
+
+  const { data: banners, isLoading: bannersLoading } = useQuery<BannerWithCategory[]>({
     queryKey: ['/api/banners'],
     enabled: true,
   });
 
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
     enabled: true,
   });
 
-  const { data: popularProviders, isLoading: providersLoading } = useQuery({
+  const { data: popularProviders, isLoading: providersLoading } = useQuery<any[]>({
     queryKey: ['/api/providers/popular'],
     enabled: true,
   });
@@ -75,7 +99,7 @@ export default function Home() {
     }
   });
 
-  const filteredCategories = (categories as ServiceCategory[])?.filter((category: ServiceCategory) =>
+  const filteredCategories = categories?.filter((category: ServiceCategory) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -119,13 +143,13 @@ export default function Home() {
         </div>
 
         {/* Promotional Banners */}
-        {!bannersLoading && banners && (banners as BannerWithCategory[]).length > 0 && (
+        {!bannersLoading && banners && banners.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               Ofertas Especiais
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(banners as BannerWithCategory[]).slice(0, 3).map((banner: BannerWithCategory) => (
+              {banners.slice(0, 3).map((banner: BannerWithCategory) => (
                 <Card 
                   key={banner.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
@@ -220,7 +244,7 @@ export default function Home() {
                   Profissionais Próximos
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Encontre prestadores na sua região: {userLocation.address}
+                  Encontre prestadores na sua região: {formatAddress(userLocation.address)}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -269,7 +293,7 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas as categorias</SelectItem>
-                    {(categories as ServiceCategory[])?.map((category) => (
+                    {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
                       </SelectItem>

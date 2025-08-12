@@ -1,0 +1,39 @@
+react-dom.development.js:18704 
+ The above error occurred in the <p> component:
+
+    at p
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Home (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.replit.dev/src/pages/home.tsx:44:20)
+    at Route (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa8beac:323:16)
+    at Switch (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa8beac:379:17)
+    at main
+    at div
+    at Route (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa8beac:323:16)
+    at Switch (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2aa8beac:379:17)
+    at Router (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.replit.dev/src/App.tsx?v=UGXwghQBrVuylYWRC6dvw:101:22)
+    at Provider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…unner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=2aa8beac:38:15)
+    at TooltipProvider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2aa8beac:97:5)
+    at AuthProvider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.replit.dev/src/hooks/use-auth.ts:12:32)
+    at LocationProvider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.replit.dev/src/contexts/LocationContext.tsx:20:36)
+    at ThemeProvider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.replit.dev/src/components/theme-provider.tsx:20:33)
+    at QueryClientProvider (https://718e3240-e8fd-4355-b9e6-84001a961ff1-00-2voxuc56az28j.janeway.repli…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2aa8beac:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+react-dom.development.js:13123 
+ Uncaught Error: Objects are not valid as a React child (found: object with keys {street, number, neighborhood, city, state, cep, country}). If you meant to render a collection of children, use an array instead.
+    at throwOnInvalidObjectType (react-dom.development.js:13123:9)
+    at createChild (react-dom.development.js:13375:7)
+    at reconcileChildrenArray (react-dom.development.js:13640:25)
+    at reconcileChildFibers2 (react-dom.development.js:14057:16)
+    at reconcileChildren (react-dom.development.js:19186:28)
+    at updateHostComponent (react-dom.development.js:19953:3)
+    at beginWork (react-dom.development.js:21657:14)
+    at beginWork$1 (react-dom.development.js:27465:14)
+    at performUnitOfWork (react-dom.development.js:26596:12)
+    at workLoopSync (react-dom.development.js:26505:5)
