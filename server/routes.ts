@@ -1446,6 +1446,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin user management
+  app.patch("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { name, email, phone, userType, isActive } = req.body;
+
+      // Validar campos obrigatórios
+      if (!name || !email) {
+        return res.status(400).json({ message: "Nome e email são obrigatórios" });
+      }
+
+      // Verificar se o usuário existe
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      // Atualizar dados do usuário
+      const updateData = {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone?.trim() || null,
+        userType: userType || user.userType,
+        isActive: isActive !== undefined ? isActive : user.isActive
+      };
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+
+      // Log da alteração
+      console.log(`Admin ${req.user!.id} editou usuário ${userId}`);
+
+      res.json({ 
+        message: "Usuário atualizado com sucesso",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error('Erro ao editar usuário:', error);
+      res.status(500).json({ message: "Erro ao editar usuário", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/toggle", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { isActive } = req.body;
+
+      // Verificar se o usuário existe
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      // Atualizar status do usuário
+      const updatedUser = await storage.updateUser(userId, { isActive });
+
+      // Log da alteração
+      console.log(`Admin ${req.user!.id} ${isActive ? 'ativou' : 'desativou'} usuário ${userId}`);
+
+      res.json({ 
+        message: "Status do usuário alterado com sucesso",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error('Erro ao alterar status do usuário:', error);
+      res.status(500).json({ message: "Erro ao alterar status do usuário", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/admin/users/:id/bookings", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Buscar todas as reservas do usuário
+      const allBookings = await storage.getAllServiceRequests();
+      const userBookings = allBookings.filter(booking => booking.clientId === userId);
+      
+      res.json(userBookings);
+    } catch (error) {
+      console.error('Erro ao buscar histórico de reservas do usuário:', error);
+      res.status(500).json({ message: "Erro ao buscar histórico de reservas", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Admin provider management
+  app.patch("/api/admin/providers/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const { 
+        businessName, 
+        description, 
+        cnpj, 
+        address, 
+        city, 
+        state, 
+        cep, 
+        status,
+        userName,
+        userEmail,
+        userPhone,
+        userIsActive
+      } = req.body;
+
+      // Validar campos obrigatórios
+      if (!businessName || !userName || !userEmail) {
+        return res.status(400).json({ message: "Nome da empresa, nome do responsável e email são obrigatórios" });
+      }
+
+      // Verificar se o prestador existe
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Prestador não encontrado" });
+      }
+
+      // Atualizar dados do prestador
+      const providerUpdateData = {
+        businessName: businessName.trim(),
+        description: description?.trim() || null,
+        cnpj: cnpj?.trim() || null,
+        address: address?.trim() || null,
+        city: city?.trim() || null,
+        state: state?.trim()?.toUpperCase() || null,
+        cep: cep?.trim() || null,
+        status: status || provider.status
+      };
+
+      const updatedProvider = await storage.updateProvider(providerId, providerUpdateData);
+
+      // Atualizar dados do usuário responsável
+      if (provider.userId) {
+        const userUpdateData = {
+          name: userName.trim(),
+          email: userEmail.trim().toLowerCase(),
+          phone: userPhone?.trim() || null,
+          isActive: userIsActive !== undefined ? userIsActive : true
+        };
+
+        await storage.updateUser(provider.userId, userUpdateData);
+      }
+
+      // Log da alteração
+      console.log(`Admin ${req.user!.id} editou prestador ${providerId}`);
+
+      res.json({ 
+        message: "Prestador atualizado com sucesso",
+        provider: updatedProvider 
+      });
+    } catch (error) {
+      console.error('Erro ao editar prestador:', error);
+      res.status(500).json({ message: "Erro ao editar prestador", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.patch("/api/admin/providers/:id/status", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const { status } = req.body;
+
+      // Validar status permitidos
+      const allowedStatuses = ['pending', 'approved', 'rejected', 'suspended'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ message: "Status inválido" });
+      }
+
+      // Verificar se o prestador existe
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Prestador não encontrado" });
+      }
+
+      // Atualizar status do prestador
+      const updatedProvider = await storage.updateProvider(providerId, { status });
+
+      // Log da alteração
+      console.log(`Admin ${req.user!.id} alterou status do prestador ${providerId} para ${status}`);
+
+      res.json({ 
+        message: "Status do prestador alterado com sucesso",
+        provider: updatedProvider 
+      });
+    } catch (error) {
+      console.error('Erro ao alterar status do prestador:', error);
+      res.status(500).json({ message: "Erro ao alterar status do prestador", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/admin/providers/:id/bookings", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      
+      // Buscar todas as reservas do prestador
+      const allBookings = await storage.getAllServiceRequests();
+      const providerBookings = allBookings.filter(booking => booking.providerId === providerId);
+      
+      res.json(providerBookings);
+    } catch (error) {
+      console.error('Erro ao buscar histórico de reservas do prestador:', error);
+      res.status(500).json({ message: "Erro ao buscar histórico de reservas", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Admin banner management
   app.get("/api/admin/banners", authenticateToken, requireAdmin, async (req, res) => {
     try {
