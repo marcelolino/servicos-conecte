@@ -1458,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verificar se o usuário existe
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
@@ -1493,7 +1493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { isActive } = req.body;
 
       // Verificar se o usuário existe
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
@@ -1518,9 +1518,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.id);
       
-      // Buscar todas as reservas do usuário
-      const allBookings = await storage.getAllServiceRequests();
-      const userBookings = allBookings.filter(booking => booking.clientId === userId);
+      // Buscar reservas específicas do usuário usando o método correto
+      const userBookings = await storage.getServiceRequestsByClient(userId);
       
       res.json(userBookings);
     } catch (error) {
@@ -1635,9 +1634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const providerId = parseInt(req.params.id);
       
-      // Buscar todas as reservas do prestador
-      const allBookings = await storage.getAllServiceRequests();
-      const providerBookings = allBookings.filter(booking => booking.providerId === providerId);
+      // Buscar reservas específicas do prestador usando o método correto
+      const providerBookings = await storage.getServiceRequestsByProvider(providerId);
       
       res.json(providerBookings);
     } catch (error) {
