@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMobileMenu } from "@/hooks/use-mobile-menu";
 import { useLocation, Link } from "wouter";
@@ -17,14 +18,34 @@ import {
   MessageCircle,
   Menu,
   X,
-  Folder
+  Folder,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
+interface SubMenuItem {
+  label: string;
+  href: string;
+}
+
+interface MenuItem {
+  icon: any;
+  label: string;
+  href: string;
+  exact?: boolean;
+  subItems?: SubMenuItem[];
+}
+
+interface MenuSection {
+  section: string;
+  items: MenuItem[];
+}
+
+const menuItems: MenuSection[] = [
   {
     section: "PRINCIPAL",
     items: [
@@ -74,10 +95,14 @@ const menuItems = [
   {
     section: "CONFIGURAÇÕES",
     items: [
-      { icon: Settings, label: "Configurações Gerais", href: "/admin-settings" },
-      { icon: Settings, label: "Configuração da Página", href: "/admin-page-settings" },
-      { icon: MessageCircle, label: "Redes Sociais", href: "/admin-social-settings" },
-      { icon: MessageCircle, label: "Notificações", href: "/admin-notification-settings" },
+      { icon: Settings, label: "Configurações", href: "/admin-settings", 
+        subItems: [
+          { label: "Configurações Gerais", href: "/admin-settings" },
+          { label: "Configuração da Página", href: "/admin-page-settings" },
+          { label: "Redes Sociais", href: "/admin-social-settings" },
+          { label: "Notificações", href: "/admin-notification-settings" }
+        ]
+      },
     ]
   },
 ];
@@ -86,6 +111,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const { isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileMenu();
+  const [openSubmenus, setOpenSubmenus] = useState<string[]>([]);
 
   const isActiveLink = (href: string, exact: boolean = false) => {
     if (exact) {
@@ -93,6 +119,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
     return location.startsWith(href);
   };
+
+  const toggleSubmenu = (label: string) => {
+    setOpenSubmenus(prev => 
+      prev.includes(label) 
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  const isSubmenuOpen = (label: string) => openSubmenus.includes(label);
 
   const handleLogout = () => {
     logout();
@@ -135,23 +171,73 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = isActiveLink(item.href, item.exact);
+                  const isActive = isActiveLink(item.href, item.exact || false);
+                  const hasSubItems = item.subItems && item.subItems.length > 0;
+                  const isOpen = isSubmenuOpen(item.label);
                   
                   return (
-                    <Link key={item.href} href={item.href}>
-                      <Button
-                        variant={isActive ? "secondary" : "ghost"}
-                        className={`w-full justify-start gap-3 ${
-                          isActive 
-                            ? "bg-primary/10 text-primary hover:bg-primary/20" 
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                        onClick={() => isMobile && closeMobileMenu()}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-sm">{item.label}</span>
-                      </Button>
-                    </Link>
+                    <div key={item.href}>
+                      {hasSubItems ? (
+                        <Button
+                          variant={isActive ? "secondary" : "ghost"}
+                          className={`w-full justify-between gap-3 ${
+                            isActive 
+                              ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                          onClick={() => toggleSubmenu(item.label)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4" />
+                            <span className="text-sm">{item.label}</span>
+                          </div>
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      ) : (
+                        <Link href={item.href}>
+                          <Button
+                            variant={isActive ? "secondary" : "ghost"}
+                            className={`w-full justify-start gap-3 ${
+                              isActive 
+                                ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                            onClick={() => isMobile && closeMobileMenu()}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="text-sm">{item.label}</span>
+                          </Button>
+                        </Link>
+                      )}
+                      
+                      {hasSubItems && isOpen && item.subItems && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {item.subItems.map((subItem: SubMenuItem) => {
+                            const isSubActive = isActiveLink(subItem.href);
+                            return (
+                              <Link key={subItem.href} href={subItem.href}>
+                                <Button
+                                  variant={isSubActive ? "secondary" : "ghost"}
+                                  size="sm"
+                                  className={`w-full justify-start ${
+                                    isSubActive 
+                                      ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                                      : "text-muted-foreground hover:text-foreground"
+                                  }`}
+                                  onClick={() => isMobile && closeMobileMenu()}
+                                >
+                                  <span className="text-xs">{subItem.label}</span>
+                                </Button>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

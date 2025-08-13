@@ -1,420 +1,305 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { Settings, Save, RefreshCw, FileText, Home, Globe, Image as ImageIcon } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+import { Save, Upload, Eye, BarChart3, Palette } from "lucide-react";
 
-interface PageSetting {
-  id: number;
-  key: string;
-  value: string;
-  type: string;
-  description?: string;
-  isSystem: boolean;
-  updatedAt: string;
+interface PageSettings {
+  siteName: string;
+  siteDescription: string;
+  siteLogo: string;
+  primaryColor: string;
+  secondaryColor: string;
+  footerText: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  analyticsId: string;
+  enableAnalytics: boolean;
 }
 
-export default function AdminPageSettings() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [pageSettings, setPageSettings] = useState({
-    homeTitle: "Qserviços - Sua Plataforma de Serviços",
-    homeDescription: "Encontre os melhores profissionais para seus serviços",
-    homeKeywords: "serviços, profissionais, manutenção, limpeza, beleza",
-    aboutTitle: "Sobre Nós - Qserviços",
-    aboutDescription: "Conheça a história da Qserviços e nossa missão",
-    contactTitle: "Contato - Qserviços", 
-    contactDescription: "Entre em contato conosco através dos nossos canais",
-    privacyTitle: "Política de Privacidade - Qserviços",
-    termsTitle: "Termos de Uso - Qserviços",
-    favicon: "",
-    logo: "",
-    ogImage: "",
-    enableSEO: true,
-    enableAnalytics: false,
-    analyticsId: "",
+export function AdminPageSettings() {
+  const [settings, setSettings] = useState<PageSettings>({
+    siteName: "Qserviços",
+    siteDescription: "Plataforma de marketplace de serviços",
+    siteLogo: "",
+    primaryColor: "#0ea5e9",
+    secondaryColor: "#64748b",
     footerText: "© 2024 Qserviços. Todos os direitos reservados.",
-    footerLinks: {
-      about: "/sobre",
-      contact: "/contato", 
-      privacy: "/privacidade",
-      terms: "/termos"
+    seoTitle: "Qserviços - Marketplace de Serviços",
+    seoDescription: "Conecte-se com prestadores de serviços qualificados em sua região",
+    seoKeywords: "serviços, marketplace, prestadores, profissionais",
+    analyticsId: "",
+    enableAnalytics: false,
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/page-settings");
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar configurações:", error);
     }
-  });
-
-  // Query to fetch page settings
-  const { data: settings = [], isLoading: settingsLoading } = useQuery({
-    queryKey: ['/api/admin/page-settings'],
-    enabled: !!user && user.userType === 'admin'
-  });
-
-  // Mutation to save page settings
-  const savePageSettingMutation = useMutation({
-    mutationFn: async (data: { key: string; value: string; description?: string }) => {
-      const token = localStorage.getItem('authToken');
-      
-      if (!token) {
-        throw new Error('Token de autenticação não encontrado');
-      }
-
-      const response = await fetch('/api/admin/page-settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          key: data.key,
-          value: data.value,
-          type: 'string',
-          description: data.description
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-        throw new Error(errorData.message || 'Failed to save page setting');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/page-settings'] });
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações da página foram atualizadas com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao salvar",
-        description: error?.message || "Ocorreu um erro ao salvar as configurações da página.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleSavePageSettings = () => {
-    // Save all page settings
-    Object.entries(pageSettings).forEach(([key, value]) => {
-      if (typeof value === 'object') {
-        savePageSettingMutation.mutate({
-          key,
-          value: JSON.stringify(value),
-          description: `Configuração de ${key}`
-        });
-      } else {
-        savePageSettingMutation.mutate({
-          key,
-          value: value.toString(),
-          description: `Configuração de ${key}`
-        });
-      }
-    });
   };
 
-  if (!user || user.userType !== 'admin') {
-    window.location.href = '/';
-    return null;
-  }
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/page-settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+      });
 
-  if (settingsLoading) {
-    return (
-      <ModernAdminLayout>
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Carregando configurações...</p>
-          </div>
-        </div>
-      </ModernAdminLayout>
-    );
-  }
+      if (response.ok) {
+        toast({
+          title: "Configurações salvas",
+          description: "As configurações da página foram atualizadas com sucesso.",
+        });
+      } else {
+        throw new Error("Erro ao salvar configurações");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof PageSettings, value: string | boolean) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
 
   return (
-    <ModernAdminLayout>
-      <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Configuração da Página</h1>
-            <p className="text-muted-foreground">Configure as informações das páginas do site</p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Configurações da Página</h1>
+        <p className="text-muted-foreground">
+          Configure informações gerais, SEO, identidade visual e analytics da plataforma.
+        </p>
+      </div>
 
-        <Tabs defaultValue="seo" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="seo">SEO & Meta Tags</TabsTrigger>
-            <TabsTrigger value="branding">Marca & Identidade</TabsTrigger>
-            <TabsTrigger value="footer">Rodapé</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="seo" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Configurações de SEO
-                </CardTitle>
-                <CardDescription>
-                  Configure as meta tags e informações para otimização em mecanismos de busca
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="home-title">Título da Página Inicial</Label>
-                    <Input
-                      id="home-title"
-                      value={pageSettings.homeTitle}
-                      onChange={(e) => setPageSettings({ ...pageSettings, homeTitle: e.target.value })}
-                      placeholder="Qserviços - Sua Plataforma de Serviços"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="home-description">Descrição da Página Inicial</Label>
-                    <Textarea
-                      id="home-description"
-                      value={pageSettings.homeDescription}
-                      onChange={(e) => setPageSettings({ ...pageSettings, homeDescription: e.target.value })}
-                      placeholder="Encontre os melhores profissionais para seus serviços"
-                      rows={2}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="home-keywords">Palavras-chave (separadas por vírgula)</Label>
-                    <Input
-                      id="home-keywords"
-                      value={pageSettings.homeKeywords}
-                      onChange={(e) => setPageSettings({ ...pageSettings, homeKeywords: e.target.value })}
-                      placeholder="serviços, profissionais, manutenção, limpeza, beleza"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="about-title">Título da Página Sobre</Label>
-                    <Input
-                      id="about-title"
-                      value={pageSettings.aboutTitle}
-                      onChange={(e) => setPageSettings({ ...pageSettings, aboutTitle: e.target.value })}
-                      placeholder="Sobre Nós - Qserviços"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-title">Título da Página Contato</Label>
-                    <Input
-                      id="contact-title"
-                      value={pageSettings.contactTitle}
-                      onChange={(e) => setPageSettings({ ...pageSettings, contactTitle: e.target.value })}
-                      placeholder="Contato - Qserviços"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="enable-seo"
-                    checked={pageSettings.enableSEO}
-                    onCheckedChange={(checked) => setPageSettings({ ...pageSettings, enableSEO: checked })}
-                  />
-                  <Label htmlFor="enable-seo">Habilitar otimizações de SEO</Label>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="branding" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Marca e Identidade Visual
-                </CardTitle>
-                <CardDescription>
-                  Configure logo, favicon e imagens da sua plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="logo">URL do Logo</Label>
+      <div className="grid gap-6">
+        {/* Informações Gerais */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Informações Gerais
+            </CardTitle>
+            <CardDescription>
+              Configure as informações básicas que aparecerão no site.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="siteName">Nome do Site</Label>
+                <Input
+                  id="siteName"
+                  value={settings.siteName}
+                  onChange={(e) => handleInputChange("siteName", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="siteLogo">URL do Logo</Label>
+                <div className="flex gap-2">
                   <Input
-                    id="logo"
-                    value={pageSettings.logo}
-                    onChange={(e) => setPageSettings({ ...pageSettings, logo: e.target.value })}
-                    placeholder="/assets/logo.png"
+                    id="siteLogo"
+                    value={settings.siteLogo}
+                    onChange={(e) => handleInputChange("siteLogo", e.target.value)}
+                    placeholder="https://exemplo.com/logo.png"
                   />
+                  <Button variant="outline" size="icon">
+                    <Upload className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="favicon">URL do Favicon</Label>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="siteDescription">Descrição do Site</Label>
+              <Textarea
+                id="siteDescription"
+                value={settings.siteDescription}
+                onChange={(e) => handleInputChange("siteDescription", e.target.value)}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Identidade Visual */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Identidade Visual
+            </CardTitle>
+            <CardDescription>
+              Configure as cores e elementos visuais da plataforma.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="primaryColor">Cor Primária</Label>
+                <div className="flex gap-2">
                   <Input
-                    id="favicon"
-                    value={pageSettings.favicon}
-                    onChange={(e) => setPageSettings({ ...pageSettings, favicon: e.target.value })}
-                    placeholder="/assets/favicon.ico"
+                    id="primaryColor"
+                    type="color"
+                    value={settings.primaryColor}
+                    onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                    className="w-16 h-10"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="og-image">Imagem para Compartilhamento (Open Graph)</Label>
                   <Input
-                    id="og-image"
-                    value={pageSettings.ogImage}
-                    onChange={(e) => setPageSettings({ ...pageSettings, ogImage: e.target.value })}
-                    placeholder="/assets/og-image.png"
+                    value={settings.primaryColor}
+                    onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                    placeholder="#0ea5e9"
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Imagem exibida ao compartilhar links nas redes sociais (recomendado: 1200x630px)
-                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="footer" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="h-5 w-5" />
-                  Configurações do Rodapé
-                </CardTitle>
-                <CardDescription>
-                  Configure o texto e links do rodapé do site
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="footer-text">Texto do Rodapé</Label>
+              </div>
+              <div>
+                <Label htmlFor="secondaryColor">Cor Secundária</Label>
+                <div className="flex gap-2">
                   <Input
-                    id="footer-text"
-                    value={pageSettings.footerText}
-                    onChange={(e) => setPageSettings({ ...pageSettings, footerText: e.target.value })}
-                    placeholder="© 2024 Qserviços. Todos os direitos reservados."
+                    id="secondaryColor"
+                    type="color"
+                    value={settings.secondaryColor}
+                    onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                    className="w-16 h-10"
+                  />
+                  <Input
+                    value={settings.secondaryColor}
+                    onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                    placeholder="#64748b"
                   />
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="about-link">Link da Página Sobre</Label>
-                    <Input
-                      id="about-link"
-                      value={pageSettings.footerLinks.about}
-                      onChange={(e) => setPageSettings({ 
-                        ...pageSettings, 
-                        footerLinks: { ...pageSettings.footerLinks, about: e.target.value }
-                      })}
-                      placeholder="/sobre"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-link">Link da Página Contato</Label>
-                    <Input
-                      id="contact-link"
-                      value={pageSettings.footerLinks.contact}
-                      onChange={(e) => setPageSettings({ 
-                        ...pageSettings, 
-                        footerLinks: { ...pageSettings.footerLinks, contact: e.target.value }
-                      })}
-                      placeholder="/contato"
-                    />
-                  </div>
-                </div>
+        {/* SEO */}
+        <Card>
+          <CardHeader>
+            <CardTitle>SEO e Metadados</CardTitle>
+            <CardDescription>
+              Configure as informações para otimização de mecanismos de busca.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="seoTitle">Título SEO</Label>
+              <Input
+                id="seoTitle"
+                value={settings.seoTitle}
+                onChange={(e) => handleInputChange("seoTitle", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="seoDescription">Descrição SEO</Label>
+              <Textarea
+                id="seoDescription"
+                value={settings.seoDescription}
+                onChange={(e) => handleInputChange("seoDescription", e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="seoKeywords">Palavras-chave (separadas por vírgula)</Label>
+              <Input
+                id="seoKeywords"
+                value={settings.seoKeywords}
+                onChange={(e) => handleInputChange("seoKeywords", e.target.value)}
+                placeholder="serviços, marketplace, profissionais"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="privacy-link">Link Política de Privacidade</Label>
-                    <Input
-                      id="privacy-link"
-                      value={pageSettings.footerLinks.privacy}
-                      onChange={(e) => setPageSettings({ 
-                        ...pageSettings, 
-                        footerLinks: { ...pageSettings.footerLinks, privacy: e.target.value }
-                      })}
-                      placeholder="/privacidade"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="terms-link">Link Termos de Uso</Label>
-                    <Input
-                      id="terms-link"
-                      value={pageSettings.footerLinks.terms}
-                      onChange={(e) => setPageSettings({ 
-                        ...pageSettings, 
-                        footerLinks: { ...pageSettings.footerLinks, terms: e.target.value }
-                      })}
-                      placeholder="/termos"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Analytics e Monitoramento
-                </CardTitle>
-                <CardDescription>
-                  Configure ferramentas de análise e monitoramento
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="enable-analytics"
-                    checked={pageSettings.enableAnalytics}
-                    onCheckedChange={(checked) => setPageSettings({ ...pageSettings, enableAnalytics: checked })}
-                  />
-                  <Label htmlFor="enable-analytics">Habilitar Google Analytics</Label>
-                </div>
-
-                {pageSettings.enableAnalytics && (
-                  <div>
-                    <Label htmlFor="analytics-id">ID do Google Analytics</Label>
-                    <Input
-                      id="analytics-id"
-                      value={pageSettings.analyticsId}
-                      onChange={(e) => setPageSettings({ ...pageSettings, analyticsId: e.target.value })}
-                      placeholder="GA-XXXXXXXXX-X"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleSavePageSettings}
-            disabled={savePageSettingMutation.isPending}
-            className="flex items-center gap-2"
-          >
-            {savePageSettingMutation.isPending ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
+        {/* Analytics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Analytics
+            </CardTitle>
+            <CardDescription>
+              Configure o Google Analytics para acompanhar o desempenho do site.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enableAnalytics"
+                checked={settings.enableAnalytics}
+                onCheckedChange={(checked) => handleInputChange("enableAnalytics", checked)}
+              />
+              <Label htmlFor="enableAnalytics">Habilitar Google Analytics</Label>
+            </div>
+            {settings.enableAnalytics && (
+              <div>
+                <Label htmlFor="analyticsId">ID do Google Analytics</Label>
+                <Input
+                  id="analyticsId"
+                  value={settings.analyticsId}
+                  onChange={(e) => handleInputChange("analyticsId", e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                />
+              </div>
             )}
-            Salvar Configurações da Página
+          </CardContent>
+        </Card>
+
+        {/* Rodapé */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Rodapé</CardTitle>
+            <CardDescription>
+              Configure o texto que aparecerá no rodapé do site.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div>
+              <Label htmlFor="footerText">Texto do Rodapé</Label>
+              <Textarea
+                id="footerText"
+                value={settings.footerText}
+                onChange={(e) => handleInputChange("footerText", e.target.value)}
+                rows={2}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={isLoading}>
+            <Save className="h-4 w-4 mr-2" />
+            {isLoading ? "Salvando..." : "Salvar Configurações"}
           </Button>
         </div>
       </div>
-    </ModernAdminLayout>
+    </div>
   );
 }

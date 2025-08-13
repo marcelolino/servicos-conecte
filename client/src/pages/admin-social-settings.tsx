@@ -1,322 +1,210 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Share2, Save, RefreshCw, Facebook, Twitter, Instagram, Linkedin, Youtube, MessageCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { Switch } from '@/components/ui/switch';
-import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
-import { SiFacebook, SiX, SiInstagram, SiLinkedin, SiYoutube, SiWhatsapp, SiTelegram, SiTiktok } from 'react-icons/si';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Save, Facebook, Instagram, Twitter, Linkedin, Youtube, MessageCircle } from "lucide-react";
 
-interface SocialSetting {
-  id: number;
-  key: string;
-  value: string;
-  type: string;
-  description?: string;
-  isSystem: boolean;
-  updatedAt: string;
+interface SocialSettings {
+  facebook: string;
+  instagram: string;
+  twitter: string;
+  linkedin: string;
+  youtube: string;
+  whatsapp: string;
 }
 
-export default function AdminSocialSettings() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [socialSettings, setSocialSettings] = useState({
+export function AdminSocialSettings() {
+  const [settings, setSettings] = useState<SocialSettings>({
     facebook: "",
-    twitter: "",
     instagram: "",
+    twitter: "",
     linkedin: "",
     youtube: "",
     whatsapp: "",
-    telegram: "",
-    tiktok: "",
-    enableSocialShare: true,
-    showInFooter: true,
-    showInHeader: false,
-    socialMessage: "Siga-nos nas redes sociais",
-    footerMessage: "Conecte-se conosco"
   });
 
-  // Query to fetch social settings
-  const { data: settings = [], isLoading: settingsLoading } = useQuery({
-    queryKey: ['/api/admin/social-settings'],
-    enabled: !!user && user.userType === 'admin'
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  // Mutation to save social settings
-  const saveSocialSettingMutation = useMutation({
-    mutationFn: async (data: { key: string; value: string; description?: string }) => {
-      const token = localStorage.getItem('authToken');
-      
-      if (!token) {
-        throw new Error('Token de autenticação não encontrado');
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/social-settings");
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
       }
-
-      const response = await fetch('/api/admin/social-settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          key: data.key,
-          value: data.value,
-          type: 'string',
-          description: data.description
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-        throw new Error(errorData.message || 'Failed to save social setting');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/social-settings'] });
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações de redes sociais foram atualizadas com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao salvar",
-        description: error?.message || "Ocorreu um erro ao salvar as configurações de redes sociais.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error("Erro ao carregar configurações sociais:", error);
     }
-  });
-
-  const handleSaveSocialSettings = () => {
-    // Save all social settings
-    Object.entries(socialSettings).forEach(([key, value]) => {
-      if (typeof value === 'object') {
-        saveSocialSettingMutation.mutate({
-          key,
-          value: JSON.stringify(value),
-          description: `Configuração de redes sociais: ${key}`
-        });
-      } else {
-        saveSocialSettingMutation.mutate({
-          key,
-          value: value.toString(),
-          description: `Configuração de redes sociais: ${key}`
-        });
-      }
-    });
   };
 
-  const socialPlatforms = [
-    { key: 'facebook', label: 'Facebook', icon: SiFacebook, placeholder: 'https://facebook.com/suaempresa', color: '#1877F2' },
-    { key: 'twitter', label: 'Twitter/X', icon: SiX, placeholder: 'https://twitter.com/suaempresa', color: '#1DA1F2' },
-    { key: 'instagram', label: 'Instagram', icon: SiInstagram, placeholder: 'https://instagram.com/suaempresa', color: '#E4405F' },
-    { key: 'linkedin', label: 'LinkedIn', icon: SiLinkedin, placeholder: 'https://linkedin.com/company/suaempresa', color: '#0077B5' },
-    { key: 'youtube', label: 'YouTube', icon: SiYoutube, placeholder: 'https://youtube.com/suaempresa', color: '#FF0000' },
-    { key: 'whatsapp', label: 'WhatsApp', icon: SiWhatsapp, placeholder: 'https://wa.me/5511999999999', color: '#25D366' },
-    { key: 'telegram', label: 'Telegram', icon: SiTelegram, placeholder: 'https://t.me/suaempresa', color: '#0088CC' },
-    { key: 'tiktok', label: 'TikTok', icon: SiTiktok, placeholder: 'https://tiktok.com/@suaempresa', color: '#000000' }
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/social-settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Configurações salvas",
+          description: "Os links das redes sociais foram atualizados com sucesso.",
+        });
+      } else {
+        throw new Error("Erro ao salvar configurações sociais");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações das redes sociais.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof SocialSettings, value: string) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const socialNetworks = [
+    {
+      key: "facebook" as keyof SocialSettings,
+      label: "Facebook",
+      icon: Facebook,
+      placeholder: "https://facebook.com/suapagina",
+      description: "Link para a página do Facebook da empresa",
+    },
+    {
+      key: "instagram" as keyof SocialSettings,
+      label: "Instagram",
+      icon: Instagram,
+      placeholder: "https://instagram.com/seuinstagram",
+      description: "Link para o perfil do Instagram da empresa",
+    },
+    {
+      key: "twitter" as keyof SocialSettings,
+      label: "Twitter/X",
+      icon: Twitter,
+      placeholder: "https://twitter.com/seutwitter",
+      description: "Link para o perfil do Twitter/X da empresa",
+    },
+    {
+      key: "linkedin" as keyof SocialSettings,
+      label: "LinkedIn",
+      icon: Linkedin,
+      placeholder: "https://linkedin.com/company/suaempresa",
+      description: "Link para a página da empresa no LinkedIn",
+    },
+    {
+      key: "youtube" as keyof SocialSettings,
+      label: "YouTube",
+      icon: Youtube,
+      placeholder: "https://youtube.com/@seucanal",
+      description: "Link para o canal do YouTube da empresa",
+    },
+    {
+      key: "whatsapp" as keyof SocialSettings,
+      label: "WhatsApp",
+      icon: MessageCircle,
+      placeholder: "https://wa.me/5511999999999",
+      description: "Link do WhatsApp Business para contato direto",
+    },
   ];
 
-  if (!user || user.userType !== 'admin') {
-    window.location.href = '/';
-    return null;
-  }
-
-  if (settingsLoading) {
-    return (
-      <ModernAdminLayout>
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Carregando configurações...</p>
-          </div>
-        </div>
-      </ModernAdminLayout>
-    );
-  }
-
   return (
-    <ModernAdminLayout>
-      <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center gap-3">
-          <Share2 className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Configurações de Redes Sociais</h1>
-            <p className="text-muted-foreground">Configure os links das redes sociais para o rodapé e outras áreas do site</p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Configurações de Redes Sociais</h1>
+        <p className="text-muted-foreground">
+          Configure os links das redes sociais que aparecerão no site e rodapé.
+        </p>
+      </div>
 
-        <div className="grid gap-6">
-          {/* Social Media Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                Links das Redes Sociais
-              </CardTitle>
-              <CardDescription>
-                Configure os URLs das suas redes sociais. Deixe em branco para ocultar a rede social.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {socialPlatforms.map((platform) => {
-                  const IconComponent = platform.icon;
+      <Card>
+        <CardHeader>
+          <CardTitle>Links das Redes Sociais</CardTitle>
+          <CardDescription>
+            Adicione os links das redes sociais da sua empresa. Deixe em branco para não exibir.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6">
+            {socialNetworks.map((network) => {
+              const Icon = network.icon;
+              return (
+                <div key={network.key} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor={network.key} className="text-base font-medium">
+                      {network.label}
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {network.description}
+                  </p>
+                  <Input
+                    id={network.key}
+                    type="url"
+                    value={settings[network.key]}
+                    onChange={(e) => handleInputChange(network.key, e.target.value)}
+                    placeholder={network.placeholder}
+                    className="max-w-lg"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pt-4 border-t">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Pré-visualização</h3>
+                <p className="text-sm text-muted-foreground">
+                  Redes sociais configuradas aparecerão como ícones clicáveis no site.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                {socialNetworks.map((network) => {
+                  const Icon = network.icon;
+                  const isActive = settings[network.key].trim() !== "";
                   return (
-                    <div key={platform.key} className="space-y-2">
-                      <Label htmlFor={platform.key} className="flex items-center gap-2">
-                        <IconComponent className="h-4 w-4" style={{ color: platform.color }} />
-                        {platform.label}
-                      </Label>
-                      <Input
-                        id={platform.key}
-                        type="url"
-                        value={socialSettings[platform.key as keyof typeof socialSettings] as string}
-                        onChange={(e) => setSocialSettings({ 
-                          ...socialSettings, 
-                          [platform.key]: e.target.value 
-                        })}
-                        placeholder={platform.placeholder}
-                        className="w-full"
-                      />
+                    <div
+                      key={network.key}
+                      className={`p-2 rounded-full transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                      title={isActive ? `${network.label}: Configurado` : `${network.label}: Não configurado`}
+                    >
+                      <Icon className="h-4 w-4" />
                     </div>
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Display Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Configurações de Exibição
-              </CardTitle>
-              <CardDescription>
-                Configure onde e como as redes sociais serão exibidas no site
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="show-footer"
-                    checked={socialSettings.showInFooter}
-                    onCheckedChange={(checked) => setSocialSettings({ ...socialSettings, showInFooter: checked })}
-                  />
-                  <Label htmlFor="show-footer">Exibir ícones das redes sociais no rodapé</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="show-header"
-                    checked={socialSettings.showInHeader}
-                    onCheckedChange={(checked) => setSocialSettings({ ...socialSettings, showInHeader: checked })}
-                  />
-                  <Label htmlFor="show-header">Exibir ícones das redes sociais no cabeçalho</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="enable-social-share"
-                    checked={socialSettings.enableSocialShare}
-                    onCheckedChange={(checked) => setSocialSettings({ ...socialSettings, enableSocialShare: checked })}
-                  />
-                  <Label htmlFor="enable-social-share">Habilitar botões de compartilhamento social</Label>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="social-message">Mensagem das redes sociais</Label>
-                  <Input
-                    id="social-message"
-                    value={socialSettings.socialMessage}
-                    onChange={(e) => setSocialSettings({ ...socialSettings, socialMessage: e.target.value })}
-                    placeholder="Siga-nos nas redes sociais"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="footer-message">Mensagem do rodapé</Label>
-                  <Input
-                    id="footer-message"
-                    value={socialSettings.footerMessage}
-                    onChange={(e) => setSocialSettings({ ...socialSettings, footerMessage: e.target.value })}
-                    placeholder="Conecte-se conosco"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Prévia do Rodapé</CardTitle>
-              <CardDescription>
-                Veja como os ícones das redes sociais aparecerão no rodapé
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                <div className="text-center space-y-3">
-                  <p className="text-sm text-muted-foreground">{socialSettings.footerMessage}</p>
-                  <div className="flex justify-center gap-3">
-                    {socialPlatforms.map((platform) => {
-                      const IconComponent = platform.icon;
-                      const hasLink = socialSettings[platform.key as keyof typeof socialSettings];
-                      
-                      if (!hasLink) return null;
-                      
-                      return (
-                        <div 
-                          key={platform.key}
-                          className="p-2 rounded-full bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                        >
-                          <IconComponent 
-                            className="h-5 w-5" 
-                            style={{ color: platform.color }} 
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {!socialPlatforms.some(platform => socialSettings[platform.key as keyof typeof socialSettings]) && (
-                    <p className="text-xs text-muted-foreground italic">
-                      Nenhuma rede social configurada
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleSaveSocialSettings}
-            disabled={saveSocialSettingMutation.isPending}
-            className="flex items-center gap-2"
-          >
-            {saveSocialSettingMutation.isPending ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Salvar Configurações de Redes Sociais
-          </Button>
-        </div>
-      </div>
-    </ModernAdminLayout>
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleSave} disabled={isLoading}>
+              <Save className="h-4 w-4 mr-2" />
+              {isLoading ? "Salvando..." : "Salvar Configurações"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
