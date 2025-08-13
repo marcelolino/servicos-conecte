@@ -126,16 +126,15 @@ const menuData: MenuItem[] = [
     ]
   },
   {
-    title: "Configuração",
-    icon: Settings,
-    items: [
-      { title: "Configuração de Páginas", href: "/admin-page-configurations" },
-    ]
-  },
-  {
     title: "Configurações",
     icon: Settings,
-    href: "/admin-settings",
+    items: [
+      { title: "Configurações Gerais", href: "/admin-settings" },
+      { title: "Configurações da Página", href: "/admin-page-settings" },
+      { title: "Redes Sociais", href: "/admin-social-settings" },
+      { title: "Notificações", href: "/admin-notification-settings" },
+      { title: "Configuração de Páginas", href: "/admin-page-configurations" },
+    ]
   },
 ];
 

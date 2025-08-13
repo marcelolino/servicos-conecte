@@ -42,7 +42,10 @@ const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
   "/admin-reports-bookings": { title: "Relatórios de Reservas", parent: "Relatórios" },
   "/admin-reports-providers": { title: "Relatórios dos Provedores", parent: "Relatórios" },
   "/admin-page-configurations": { title: "Configuração de Páginas", parent: "Configuração" },
-  "/admin-settings": { title: "Configurações" },
+  "/admin-settings": { title: "Configurações Gerais", parent: "Configurações" },
+  "/admin-page-settings": { title: "Configurações da Página", parent: "Configurações" },
+  "/admin-social-settings": { title: "Redes Sociais", parent: "Configurações" },
+  "/admin-notification-settings": { title: "Notificações", parent: "Configurações" },
 };
 
 export function ModernAdminLayout({ children }: ModernAdminLayoutProps) {

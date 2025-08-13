@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Save, Upload, Eye, BarChart3, Palette } from "lucide-react";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 
 interface PageSettings {
   siteName: string;
@@ -92,15 +93,16 @@ export function AdminPageSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configurações da Página</h1>
-        <p className="text-muted-foreground">
-          Configure informações gerais, SEO, identidade visual e analytics da plataforma.
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configurações da Página</h1>
+          <p className="text-muted-foreground">
+            Configure informações gerais, SEO, identidade visual e analytics da plataforma.
+          </p>
+        </div>
 
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         {/* Informações Gerais */}
         <Card>
           <CardHeader>
@@ -299,7 +301,8 @@ export function AdminPageSettings() {
             {isLoading ? "Salvando..." : "Salvar Configurações"}
           </Button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModernAdminLayout>
   );
 }

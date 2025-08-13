@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Bell, Mail, MessageSquare, Phone } from "lucide-react";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 
 interface NotificationSettings {
   emailNewBooking: boolean;
@@ -175,15 +176,16 @@ export function AdminNotificationSettings() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configurações de Notificação</h1>
-        <p className="text-muted-foreground">
-          Configure como e quando receber notificações sobre eventos importantes da plataforma.
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configurações de Notificação</h1>
+          <p className="text-muted-foreground">
+            Configure como e quando receber notificações sobre eventos importantes da plataforma.
+          </p>
+        </div>
 
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         {notificationGroups.map((group) => {
           const Icon = group.icon;
           return (
@@ -270,7 +272,8 @@ export function AdminNotificationSettings() {
             {isLoading ? "Salvando..." : "Salvar Configurações"}
           </Button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModernAdminLayout>
   );
 }

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Facebook, Instagram, Twitter, Linkedin, Youtube, MessageCircle } from "lucide-react";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 
 interface SocialSettings {
   facebook: string;
@@ -124,15 +125,16 @@ export function AdminSocialSettings() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configurações de Redes Sociais</h1>
-        <p className="text-muted-foreground">
-          Configure os links das redes sociais que aparecerão no site e rodapé.
-        </p>
-      </div>
+    <ModernAdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configurações de Redes Sociais</h1>
+          <p className="text-muted-foreground">
+            Configure os links das redes sociais que aparecerão no site e rodapé.
+          </p>
+        </div>
 
-      <Card>
+        <Card>
         <CardHeader>
           <CardTitle>Links das Redes Sociais</CardTitle>
           <CardDescription>
@@ -205,6 +207,7 @@ export function AdminSocialSettings() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </ModernAdminLayout>
   );
 }
