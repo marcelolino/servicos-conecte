@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMobileMenu } from "@/hooks/use-mobile-menu";
 import { useLocation, Link } from "wouter";
@@ -113,6 +113,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileMenu();
   const [openSubmenus, setOpenSubmenus] = useState<string[]>([]);
 
+  // Auto-open submenus when a sub-page is active
+  React.useEffect(() => {
+    menuItems.forEach(section => {
+      section.items.forEach(item => {
+        if (item.subItems) {
+          const hasActiveSubItem = item.subItems.some(subItem => isActiveLink(subItem.href));
+          if (hasActiveSubItem && !openSubmenus.includes(item.label)) {
+            setOpenSubmenus(prev => [...prev, item.label]);
+          }
+        }
+      });
+    });
+  }, [location]);
+
   const isActiveLink = (href: string, exact: boolean = false) => {
     if (exact) {
       return location === href;
@@ -171,8 +185,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = isActiveLink(item.href, item.exact || false);
                   const hasSubItems = item.subItems && item.subItems.length > 0;
+                  const isActive = hasSubItems 
+                    ? item.subItems.some(subItem => isActiveLink(subItem.href))
+                    : isActiveLink(item.href, item.exact || false);
                   const isOpen = isSubmenuOpen(item.label);
                   
                   return (
