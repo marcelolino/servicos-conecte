@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { storage } from '../storage';
+import { db } from '../db';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
 import { users, providers, serviceRequests, serviceCategories, providerServices, payments } from '../../shared/schema';
 
@@ -39,26 +40,26 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
     const cityFilter = req.query.city as string;
     
     // Buscar métricas gerais
-    const [totalClientsResult] = await storage.db
+    const [totalClientsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(eq(users.userType, 'client'));
 
-    const [totalProvidersResult] = await storage.db
+    const [totalProvidersResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(providers);
 
-    const [pendingProvidersResult] = await storage.db
+    const [pendingProvidersResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(providers)
       .where(eq(providers.status, 'pending'));
 
-    const [approvedProvidersResult] = await storage.db
+    const [approvedProvidersResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(providers)
       .where(eq(providers.status, 'approved'));
 
-    const [totalServicesResult] = await storage.db
+    const [totalServicesResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(serviceRequests);
 
@@ -67,7 +68,7 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
 
-    let bookingsQuery = storage.db
+    let bookingsQuery = db
       .select({ count: sql<number>`count(*)` })
       .from(serviceRequests)
       .where(gte(serviceRequests.createdAt, currentMonth));
@@ -503,22 +504,8 @@ router.get('/reports/providers', authenticateToken, requireAdmin, async (req, re
 // Page Settings Routes
 router.get('/page-settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Return default values for page settings
-    const defaultSettings = {
-      siteName: "Qserviços",
-      siteDescription: "Plataforma de marketplace de serviços",
-      siteLogo: "",
-      primaryColor: "#0ea5e9",
-      secondaryColor: "#64748b",
-      footerText: "© 2024 Qserviços. Todos os direitos reservados.",
-      seoTitle: "Qserviços - Marketplace de Serviços",
-      seoDescription: "Conecte-se com prestadores de serviços qualificados em sua região",
-      seoKeywords: "serviços, marketplace, prestadores, profissionais",
-      analyticsId: "",
-      enableAnalytics: false,
-    };
-    
-    res.json(defaultSettings);
+    const settings = await storage.getPageSettings();
+    res.json(settings);
   } catch (error) {
     console.error('Erro ao buscar configurações da página:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -530,10 +517,13 @@ router.put('/page-settings', authenticateToken, requireAdmin, async (req, res) =
     const settings = req.body;
     console.log('Salvando configurações da página:', settings);
     
-    // In a real implementation, you would save to database
-    // For now, we just simulate success
+    const updatedSettings = await storage.updatePageSettings(settings);
     
-    res.json({ success: true, message: 'Configurações da página salvas com sucesso' });
+    res.json({ 
+      success: true, 
+      message: 'Configurações da página salvas com sucesso',
+      data: updatedSettings 
+    });
   } catch (error) {
     console.error('Erro ao salvar configurações da página:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });

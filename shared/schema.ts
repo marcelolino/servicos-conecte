@@ -469,6 +469,24 @@ export const pageConfigurations = pgTable("page_configurations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Page settings table for general site configuration
+export const pageSettings = pgTable("page_settings", {
+  id: serial("id").primaryKey(),
+  siteName: varchar("site_name", { length: 255 }).notNull().default("Qserviços"),
+  siteDescription: text("site_description").default("Plataforma de marketplace de serviços"),
+  siteLogo: text("site_logo"),
+  primaryColor: varchar("primary_color", { length: 7 }).default("#0ea5e9"),
+  secondaryColor: varchar("secondary_color", { length: 7 }).default("#64748b"),
+  footerText: text("footer_text").default("© 2024 Qserviços. Todos os direitos reservados."),
+  seoTitle: varchar("seo_title", { length: 255 }).default("Qserviços - Marketplace de Serviços"),
+  seoDescription: text("seo_description").default("Conecte-se com prestadores de serviços qualificados em sua região"),
+  seoKeywords: text("seo_keywords").default("serviços, marketplace, prestadores, profissionais"),
+  analyticsId: varchar("analytics_id", { length: 255 }),
+  enableAnalytics: boolean("enable_analytics").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -898,6 +916,12 @@ export const insertPageConfigurationSchema = createInsertSchema(pageConfiguratio
   updatedAt: true,
 });
 
+export const insertPageSettingsSchema = createInsertSchema(pageSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -955,3 +979,5 @@ export type PaymentGatewayConfig = typeof paymentGatewayConfigs.$inferSelect;
 export type InsertPaymentGatewayConfig = z.infer<typeof insertPaymentGatewayConfigSchema>;
 export type PageConfiguration = typeof pageConfigurations.$inferSelect;
 export type InsertPageConfiguration = z.infer<typeof insertPageConfigurationSchema>;
+export type PageSettings = typeof pageSettings.$inferSelect;
+export type InsertPageSettings = z.infer<typeof insertPageSettingsSchema>;

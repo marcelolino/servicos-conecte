@@ -19,6 +19,7 @@ import {
   userUploadStats,
   orders,
   orderItems,
+  pageSettings,
   type User,
   type InsertUser,
   type Provider,
@@ -59,6 +60,8 @@ import {
   type InsertOrder,
   type OrderItem,
   type InsertOrderItem,
+  type PageSettings,
+  type InsertPageSettings,
   providerEarnings,
   withdrawalRequests,
   providerBankAccounts,
@@ -290,6 +293,10 @@ export interface IStorage {
   createPageConfiguration(config: InsertPageConfiguration): Promise<PageConfiguration>;
   updatePageConfiguration(pageKey: string, config: Partial<InsertPageConfiguration>): Promise<PageConfiguration>;
   deletePageConfiguration(pageKey: string): Promise<void>;
+
+  // Page settings
+  getPageSettings(): Promise<PageSettings | undefined>;
+  updatePageSettings(settings: Partial<InsertPageSettings>): Promise<PageSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2832,6 +2839,56 @@ export class DatabaseStorage implements IStorage {
 
   async deletePageConfiguration(pageKey: string): Promise<void> {
     await db.delete(pageConfigurations).where(eq(pageConfigurations.pageKey, pageKey));
+  }
+
+  // Page settings methods
+  async getPageSettings(): Promise<PageSettings | undefined> {
+    const [settings] = await db.select().from(pageSettings).limit(1);
+    
+    // If no settings exist, create default settings
+    if (!settings) {
+      const [newSettings] = await db
+        .insert(pageSettings)
+        .values({
+          siteName: "Qserviços",
+          siteDescription: "Plataforma de marketplace de serviços",
+          siteLogo: "",
+          primaryColor: "#0ea5e9",
+          secondaryColor: "#64748b",
+          footerText: "© 2024 Qserviços. Todos os direitos reservados.",
+          seoTitle: "Qserviços - Marketplace de Serviços",
+          seoDescription: "Conecte-se com prestadores de serviços qualificados em sua região",
+          seoKeywords: "serviços, marketplace, prestadores, profissionais",
+          analyticsId: "",
+          enableAnalytics: false,
+        })
+        .returning();
+      return newSettings;
+    }
+    
+    return settings;
+  }
+
+  async updatePageSettings(settings: Partial<InsertPageSettings>): Promise<PageSettings> {
+    // Check if settings exist
+    const existing = await this.getPageSettings();
+    
+    if (existing) {
+      // Update existing settings
+      const [updatedSettings] = await db
+        .update(pageSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(pageSettings.id, existing.id))
+        .returning();
+      return updatedSettings;
+    } else {
+      // Create new settings if none exist
+      const [newSettings] = await db
+        .insert(pageSettings)
+        .values({ ...settings })
+        .returning();
+      return newSettings;
+    }
   }
 }
 

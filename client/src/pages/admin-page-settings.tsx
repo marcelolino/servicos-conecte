@@ -48,9 +48,9 @@ export function AdminPageSettings() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch("/api/admin/page-settings");
-      if (response.ok) {
-        const data = await response.json();
+      const { apiRequest } = await import("@/lib/queryClient");
+      const data = await apiRequest("GET", "/api/admin/page-settings");
+      if (data) {
         setSettings(data);
       }
     } catch (error) {
@@ -61,15 +61,10 @@ export function AdminPageSettings() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/page-settings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(settings),
-      });
+      const { apiRequest } = await import("@/lib/queryClient");
+      const response = await apiRequest("PUT", "/api/admin/page-settings", settings);
 
-      if (response.ok) {
+      if (response.success) {
         toast({
           title: "Configurações salvas",
           description: "As configurações da página foram atualizadas com sucesso.",
