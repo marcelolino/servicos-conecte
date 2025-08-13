@@ -62,13 +62,19 @@ export function AdminPageSettings() {
     setIsLoading(true);
     try {
       const { apiRequest } = await import("@/lib/queryClient");
-      const response = await apiRequest("PUT", "/api/admin/page-settings", settings);
+      
+      // Remove campos que não devem ser enviados para o backend
+      const { id, createdAt, updatedAt, ...settingsToSave } = settings as any;
+      
+      const response = await apiRequest("PUT", "/api/admin/page-settings", settingsToSave);
 
       if (response.success) {
         toast({
           title: "Configurações salvas",
           description: "As configurações da página foram atualizadas com sucesso.",
         });
+        // Recarrega as configurações para obter os timestamps atualizados
+        loadSettings();
       } else {
         throw new Error("Erro ao salvar configurações");
       }

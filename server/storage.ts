@@ -2873,11 +2873,14 @@ export class DatabaseStorage implements IStorage {
     // Check if settings exist
     const existing = await this.getPageSettings();
     
+    // Remove timestamp fields that shouldn't be updated directly
+    const { id, createdAt, updatedAt, ...settingsToUpdate } = settings as any;
+    
     if (existing) {
       // Update existing settings
       const [updatedSettings] = await db
         .update(pageSettings)
-        .set({ ...settings, updatedAt: new Date() })
+        .set({ ...settingsToUpdate, updatedAt: new Date() })
         .where(eq(pageSettings.id, existing.id))
         .returning();
       return updatedSettings;
@@ -2885,7 +2888,7 @@ export class DatabaseStorage implements IStorage {
       // Create new settings if none exist
       const [newSettings] = await db
         .insert(pageSettings)
-        .values({ ...settings })
+        .values({ ...settingsToUpdate })
         .returning();
       return newSettings;
     }
