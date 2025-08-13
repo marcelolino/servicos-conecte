@@ -27,6 +27,14 @@ import { LocationCard } from "@/components/location/LocationCard";
 import { ProvidersMap } from "@/components/maps/ProvidersMap";
 import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
 
+interface PageSettings {
+  siteName: string;
+  siteLogo: string;
+  siteDescription: string;
+  primaryColor: string;
+  secondaryColor: string;
+}
+
 interface BannerWithCategory extends PromotionalBanner {
   category?: ServiceCategory;
 }
@@ -71,6 +79,11 @@ export default function Home() {
 
   const { data: categories, isLoading: categoriesLoading } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
+    enabled: true,
+  });
+
+  const { data: pageSettings } = useQuery<PageSettings>({
+    queryKey: ['/api/page-settings'],
     enabled: true,
   });
 
@@ -124,10 +137,10 @@ export default function Home() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Bem-vindo ao <span className="text-blue-600">Qserviços</span>
+            Bem-vindo ao <span className="text-blue-600">{pageSettings?.siteName || "Qserviços"}</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Conecte-se com os melhores profissionais da sua região
+            {pageSettings?.siteDescription || "Conecte-se com os melhores profissionais da sua região"}
           </p>
           
           {/* Search Bar */}

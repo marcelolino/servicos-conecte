@@ -146,6 +146,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for page settings
+  app.get("/api/page-settings", async (req, res) => {
+    try {
+      const settings = await storage.getPageSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Erro ao buscar configurações da página:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {

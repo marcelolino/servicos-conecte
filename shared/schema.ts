@@ -981,3 +981,20 @@ export type PageConfiguration = typeof pageConfigurations.$inferSelect;
 export type InsertPageConfiguration = z.infer<typeof insertPageConfigurationSchema>;
 export type PageSettings = typeof pageSettings.$inferSelect;
 export type InsertPageSettings = z.infer<typeof insertPageSettingsSchema>;
+
+// Social Settings Table
+export const socialSettings = pgTable('social_settings', {
+  id: serial('id').primaryKey(),
+  facebook: text('facebook').default(''),
+  instagram: text('instagram').default(''),
+  twitter: text('twitter').default(''),
+  linkedin: text('linkedin').default(''),
+  youtube: text('youtube').default(''),
+  whatsapp: text('whatsapp').default(''),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertSocialSettingsSchema = createInsertSchema(socialSettings);
+export type SocialSettings = typeof socialSettings.$inferSelect;
+export type InsertSocialSettings = z.infer<typeof insertSocialSettingsSchema>;

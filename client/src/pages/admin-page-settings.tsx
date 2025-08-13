@@ -40,6 +40,7 @@ export function AdminPageSettings() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,6 +94,67 @@ export function AdminPageSettings() {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione uma imagem válida.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "A imagem deve ter no máximo 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const { apiRequest } = await import("@/lib/queryClient");
+      
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      const response = await fetch('/api/admin/upload-logo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSettings(prev => ({ ...prev, siteLogo: data.logoUrl }));
+        toast({
+          title: "Logo enviado",
+          description: "O logo foi enviado com sucesso.",
+        });
+      } else {
+        throw new Error(data.message || "Erro ao enviar logo");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   return (
     <ModernAdminLayout>
       <div className="space-y-6">
@@ -126,17 +188,53 @@ export function AdminPageSettings() {
                 />
               </div>
               <div>
-                <Label htmlFor="siteLogo">URL do Logo</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="siteLogo"
-                    value={settings.siteLogo}
-                    onChange={(e) => handleInputChange("siteLogo", e.target.value)}
-                    placeholder="https://exemplo.com/logo.png"
-                  />
-                  <Button variant="outline" size="icon">
-                    <Upload className="h-4 w-4" />
-                  </Button>
+                <Label htmlFor="siteLogo">Logo do Site</Label>
+                <div className="space-y-2">
+                  {settings.siteLogo && (
+                    <div className="flex items-center gap-2 p-2 border border-border rounded-md">
+                      <img 
+                        src={settings.siteLogo} 
+                        alt="Logo atual" 
+                        className="h-8 w-8 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground truncate">
+                        {settings.siteLogo}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Input
+                      id="siteLogo"
+                      value={settings.siteLogo}
+                      onChange={(e) => handleInputChange("siteLogo", e.target.value)}
+                      placeholder="URL do logo ou use o botão para enviar"
+                    />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="logoUpload"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isUploadingLogo}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        disabled={isUploadingLogo}
+                        type="button"
+                      >
+                        {isUploadingLogo ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

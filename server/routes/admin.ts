@@ -1,5 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
 import { storage } from '../storage';
 import { db } from '../db';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
@@ -7,6 +9,31 @@ import { users, providers, serviceRequests, serviceCategories, providerServices,
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+
+// Configuração do multer para upload de logo
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/logos');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const logoUpload = multer({ 
+  storage: logoStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas!'));
+    }
+  }
+});
 
 // Middleware to verify JWT token
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -530,20 +557,31 @@ router.put('/page-settings', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
+// Upload de logo
+router.post('/upload-logo', authenticateToken, requireAdmin, logoUpload.single('logo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+    }
+
+    const logoUrl = `/uploads/logos/${req.file.filename}`;
+    
+    res.json({ 
+      success: true, 
+      message: 'Logo enviado com sucesso',
+      logoUrl: logoUrl
+    });
+  } catch (error) {
+    console.error('Erro ao enviar logo:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Social Settings Routes
 router.get('/social-settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Return default values for social settings
-    const defaultSettings = {
-      facebook: "",
-      instagram: "",
-      twitter: "",
-      linkedin: "",
-      youtube: "",
-      whatsapp: "",
-    };
-    
-    res.json(defaultSettings);
+    const settings = await storage.getSocialSettings();
+    res.json(settings);
   } catch (error) {
     console.error('Erro ao buscar configurações sociais:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -555,10 +593,13 @@ router.put('/social-settings', authenticateToken, requireAdmin, async (req, res)
     const settings = req.body;
     console.log('Salvando configurações sociais:', settings);
     
-    // In a real implementation, you would save to database
-    // For now, we just simulate success
+    const updatedSettings = await storage.updateSocialSettings(settings);
     
-    res.json({ success: true, message: 'Configurações sociais salvas com sucesso' });
+    res.json({ 
+      success: true, 
+      message: 'Configurações sociais salvas com sucesso',
+      data: updatedSettings 
+    });
   } catch (error) {
     console.error('Erro ao salvar configurações sociais:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });

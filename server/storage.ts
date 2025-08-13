@@ -86,6 +86,9 @@ import {
   pageConfigurations,
   type PageConfiguration,
   type InsertPageConfiguration,
+  socialSettings,
+  type SocialSettings,
+  type InsertSocialSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
@@ -2888,6 +2891,54 @@ export class DatabaseStorage implements IStorage {
       // Create new settings if none exist
       const [newSettings] = await db
         .insert(pageSettings)
+        .values({ ...settingsToUpdate })
+        .returning();
+      return newSettings;
+    }
+  }
+
+  // Social settings methods
+  async getSocialSettings(): Promise<SocialSettings | undefined> {
+    const [settings] = await db.select().from(socialSettings).limit(1);
+    
+    // If no settings exist, create default settings
+    if (!settings) {
+      const [newSettings] = await db
+        .insert(socialSettings)
+        .values({
+          facebook: "",
+          instagram: "",
+          twitter: "",
+          linkedin: "",
+          youtube: "",
+          whatsapp: "",
+        })
+        .returning();
+      return newSettings;
+    }
+    
+    return settings;
+  }
+
+  async updateSocialSettings(settings: Partial<InsertSocialSettings>): Promise<SocialSettings> {
+    // Check if settings exist
+    const existing = await this.getSocialSettings();
+    
+    // Remove timestamp fields that shouldn't be updated directly
+    const { id, createdAt, updatedAt, ...settingsToUpdate } = settings as any;
+    
+    if (existing) {
+      // Update existing settings
+      const [updatedSettings] = await db
+        .update(socialSettings)
+        .set({ ...settingsToUpdate, updatedAt: new Date() })
+        .where(eq(socialSettings.id, existing.id))
+        .returning();
+      return updatedSettings;
+    } else {
+      // Create new settings if none exist
+      const [newSettings] = await db
+        .insert(socialSettings)
         .values({ ...settingsToUpdate })
         .returning();
       return newSettings;
