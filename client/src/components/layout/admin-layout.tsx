@@ -72,9 +72,12 @@ const menuItems = [
     ]
   },
   {
-    section: "AS PONTUAÇÕES",
+    section: "CONFIGURAÇÕES",
     items: [
-      { icon: Settings, label: "Configurações", href: "/admin-settings" },
+      { icon: Settings, label: "Configurações Gerais", href: "/admin-settings" },
+      { icon: Settings, label: "Configuração da Página", href: "/admin-page-settings" },
+      { icon: MessageCircle, label: "Redes Sociais", href: "/admin-social-settings" },
+      { icon: MessageCircle, label: "Notificações", href: "/admin-notification-settings" },
     ]
   },
 ];

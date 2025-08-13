@@ -500,4 +500,137 @@ router.get('/reports/providers', authenticateToken, requireAdmin, async (req, re
   }
 });
 
+// Page Settings Routes
+router.get('/page-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const settings = await storage.getSystemSettings();
+    const pageSettings = settings.filter(s => s.key.startsWith('page_'));
+    res.json(pageSettings);
+  } catch (error) {
+    console.error('Erro ao buscar configurações da página:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+router.post('/page-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { key, value, description } = req.body;
+    const pageKey = key.startsWith('page_') ? key : `page_${key}`;
+    
+    // Check if setting exists and update or create accordingly
+    const existingSetting = await storage.getSystemSetting(pageKey);
+    
+    if (existingSetting) {
+      await storage.updateSystemSetting(pageKey, value);
+    } else {
+      await storage.createSystemSetting({
+        key: pageKey,
+        value,
+        type: 'string',
+        description: description || `Configuração de página: ${key}`,
+        isSystem: false
+      });
+    }
+    
+    res.json({ success: true, message: 'Configuração da página salva com sucesso' });
+  } catch (error) {
+    console.error('Erro ao salvar configuração da página:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Social Settings Routes
+router.get('/social-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const settings = await storage.getSystemSettings();
+    const socialSettings = settings.filter(s => s.key.startsWith('social_'));
+    res.json(socialSettings);
+  } catch (error) {
+    console.error('Erro ao buscar configurações sociais:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+router.post('/social-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { key, value, description } = req.body;
+    const socialKey = key.startsWith('social_') ? key : `social_${key}`;
+    
+    // Check if setting exists and update or create accordingly
+    const existingSetting = await storage.getSystemSetting(socialKey);
+    
+    if (existingSetting) {
+      await storage.updateSystemSetting(socialKey, value);
+    } else {
+      await storage.createSystemSetting({
+        key: socialKey,
+        value,
+        type: 'string',
+        description: description || `Configuração social: ${key}`,
+        isSystem: false
+      });
+    }
+    
+    res.json({ success: true, message: 'Configuração social salva com sucesso' });
+  } catch (error) {
+    console.error('Erro ao salvar configuração social:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Notification Settings Routes
+router.get('/notification-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const settings = await storage.getSystemSettings();
+    const notificationSettings = settings.filter(s => s.key.startsWith('notification_'));
+    res.json(notificationSettings);
+  } catch (error) {
+    console.error('Erro ao buscar configurações de notificação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+router.post('/notification-settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { key, value, description, type } = req.body;
+    const notificationKey = key.startsWith('notification_') ? key : `notification_${key}`;
+    
+    // Check if setting exists and update or create accordingly
+    const existingSetting = await storage.getSystemSetting(notificationKey);
+    
+    if (existingSetting) {
+      await storage.updateSystemSetting(notificationKey, value);
+    } else {
+      await storage.createSystemSetting({
+        key: notificationKey,
+        value,
+        type: type || 'string',
+        description: description || `Configuração de notificação: ${key}`,
+        isSystem: false
+      });
+    }
+    
+    res.json({ success: true, message: 'Configuração de notificação salva com sucesso' });
+  } catch (error) {
+    console.error('Erro ao salvar configuração de notificação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Test notification endpoint
+router.post('/test-notification', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { type } = req.body;
+    
+    // Here you would implement actual notification sending logic
+    // For now, we just simulate success
+    console.log(`Teste de notificação do tipo: ${type}`);
+    
+    res.json({ success: true, message: `Notificação de teste "${type}" enviada com sucesso` });
+  } catch (error) {
+    console.error('Erro ao enviar notificação de teste:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 export default router;

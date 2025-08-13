@@ -45,6 +45,9 @@ import ServiceManagement from "@/pages/service-management";
 import EmployeeManagement from "@/pages/employee-management";
 import MediaManagement from "@/pages/media-management";
 import AdminSettings from "@/pages/admin-settings";
+import AdminPageSettings from "@/pages/admin-page-settings";
+import AdminSocialSettings from "@/pages/admin-social-settings";
+import AdminNotificationSettings from "@/pages/admin-notification-settings";
 import AdminPaymentMethods from "@/pages/admin-payment-methods";
 import AdminServices from "@/pages/admin/services";
 import AdminProviderServiceRequests from "@/pages/admin/provider-service-requests";
@@ -97,6 +100,9 @@ function Router() {
       <Route path="/admin-enhanced" component={AdminDashboardEnhanced} />
       <Route path="/admin-bookings" component={AdminBookings} />
       <Route path="/admin-settings" component={AdminSettings} />
+      <Route path="/admin-page-settings" component={AdminPageSettings} />
+      <Route path="/admin-social-settings" component={AdminSocialSettings} />
+      <Route path="/admin-notification-settings" component={AdminNotificationSettings} />
       <Route path="/admin-payments" component={AdminPayments} />
       <Route path="/admin-cash-payments" component={AdminCashPayments} />
       <Route path="/admin-earnings" component={AdminEarnings} />
