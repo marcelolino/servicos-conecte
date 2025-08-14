@@ -35,7 +35,12 @@ export function AdminSocialSettings() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch("/api/admin/social-settings");
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/admin/social-settings", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -48,10 +53,12 @@ export function AdminSocialSettings() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/admin/social-settings", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(settings),
       });

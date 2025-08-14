@@ -1,15 +1,40 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Wrench, Facebook, Instagram, Twitter } from "lucide-react";
 
+interface PageSettings {
+  siteName: string;
+  siteLogo: string;
+  siteDescription: string;
+  primaryColor: string;
+  secondaryColor: string;
+}
+
 export default function Footer() {
+  // Fetch page settings for dynamic site name and logo
+  const { data: pageSettings } = useQuery<PageSettings>({
+    queryKey: ['/api/page-settings'],
+    enabled: true,
+  });
+
   return (
     <footer className="bg-card border-t">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center mb-4">
-              <Wrench className="h-8 w-8 text-primary mr-2" />
-              <h3 className="text-xl font-bold text-foreground">Qserviços</h3>
+              {pageSettings?.siteLogo ? (
+                <img 
+                  src={pageSettings.siteLogo} 
+                  alt={pageSettings.siteName || "Logo"} 
+                  className="h-8 w-8 mr-2 object-contain"
+                />
+              ) : (
+                <Wrench className="h-8 w-8 text-primary mr-2" />
+              )}
+              <h3 className="text-xl font-bold text-foreground">
+                {pageSettings?.siteName || "Qserviços"}
+              </h3>
             </div>
             <p className="text-muted-foreground mb-4">
               Conectando clientes e prestadores de serviços de forma rápida e segura.

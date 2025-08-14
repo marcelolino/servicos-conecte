@@ -4,6 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
+
+interface PageSettings {
+  siteName: string;
+  siteLogo: string;
+  siteDescription: string;
+  primaryColor: string;
+  secondaryColor: string;
+}
 import { 
   Moon, 
   Sun, 
@@ -41,6 +49,12 @@ export default function Header() {
 
   const cartItemCount = (cart && Array.isArray(cart.items)) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
+  // Fetch page settings for dynamic site name
+  const { data: pageSettings } = useQuery<PageSettings>({
+    queryKey: ['/api/page-settings'],
+    enabled: true,
+  });
+
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
@@ -75,8 +89,18 @@ export default function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <Wrench className="h-8 w-8 text-primary mr-2" />
-              <h1 className="text-2xl font-bold text-foreground">Qserviços</h1>
+              {pageSettings?.siteLogo ? (
+                <img 
+                  src={pageSettings.siteLogo} 
+                  alt={pageSettings.siteName || "Logo"} 
+                  className="h-8 w-8 mr-2 object-contain"
+                />
+              ) : (
+                <Wrench className="h-8 w-8 text-primary mr-2" />
+              )}
+              <h1 className="text-2xl font-bold text-foreground">
+                {pageSettings?.siteName || "Qserviços"}
+              </h1>
             </Link>
           </div>
 
