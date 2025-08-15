@@ -16,6 +16,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 interface Service {
   id: number;
@@ -53,6 +57,30 @@ interface Category {
   name: string;
 }
 
+interface Provider {
+  id: number;
+  userId: number;
+  user: {
+    name: string;
+    email: string;
+  };
+}
+
+const serviceSchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  categoryId: z.number().min(1, "Categoria é obrigatória"),
+  providerId: z.number().min(1, "Prestador é obrigatório"),
+  price: z.string().min(1, "Preço é obrigatório"),
+  minimumPrice: z.string().optional(),
+  estimatedDuration: z.string().optional(),
+  requirements: z.string().optional(),
+  serviceZone: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+type ServiceForm = z.infer<typeof serviceSchema>;
+
 export default function AdminServicesPage() {
   const { data: services, isLoading } = useQuery<Service[]>({
     queryKey: ["/api/admin/services"],
@@ -62,11 +90,18 @@ export default function AdminServicesPage() {
     queryKey: ["/api/categories"],
   });
 
+  const { data: providers } = useQuery<Provider[]>({
+    queryKey: ["/api/admin/providers"],
+  });
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
+  const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const toggleServiceStatusMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
@@ -108,6 +143,51 @@ export default function AdminServicesPage() {
     },
   });
 
+  // Create service mutation
+  const createServiceMutation = useMutation({
+    mutationFn: (data: ServiceForm) => 
+      apiRequest("POST", "/api/admin/services", data),
+    onSuccess: () => {
+      toast({
+        title: "Serviço criado com sucesso!",
+        description: "O novo serviço foi adicionado ao sistema.",
+      });
+      setIsNewServiceOpen(false);
+      serviceForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar serviço",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update service mutation
+  const updateServiceMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ServiceForm }) => 
+      apiRequest("PUT", `/api/admin/services/${id}`, data),
+    onSuccess: () => {
+      toast({
+        title: "Serviço atualizado com sucesso!",
+        description: "As alterações foram salvas.",
+      });
+      setIsEditServiceOpen(false);
+      setEditingService(null);
+      editServiceForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar serviço",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleStatus = (id: number, currentStatus: boolean) => {
     toggleServiceStatusMutation.mutate({ id, isActive: !currentStatus });
   };
@@ -116,6 +196,94 @@ export default function AdminServicesPage() {
     if (window.confirm("Tem certeza que deseja excluir este serviço?")) {
       deleteServiceMutation.mutate(id);
     }
+  };
+
+  // Form setup
+  const serviceForm = useForm<ServiceForm>({
+    resolver: zodResolver(serviceSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      categoryId: 0,
+      providerId: 0,
+      price: "",
+      minimumPrice: "",
+      estimatedDuration: "",
+      requirements: "",
+      serviceZone: "",
+      isActive: true,
+    },
+  });
+
+  const editServiceForm = useForm<ServiceForm>({
+    resolver: zodResolver(serviceSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      categoryId: 0,
+      providerId: 0,
+      price: "",
+      minimumPrice: "",
+      estimatedDuration: "",
+      requirements: "",
+      serviceZone: "",
+      isActive: true,
+    },
+  });
+
+  // Form submit handlers
+  const onServiceSubmit = (data: ServiceForm) => {
+    console.log('onServiceSubmit chamado com:', data);
+    const serviceData = {
+      name: data.name || "",
+      description: data.description || "",
+      categoryId: data.categoryId,
+      providerId: data.providerId,
+      price: data.price || "",
+      minimumPrice: data.minimumPrice || "",
+      estimatedDuration: data.estimatedDuration || "",
+      requirements: data.requirements || "",
+      serviceZone: data.serviceZone || "",
+      isActive: data.isActive,
+    };
+    createServiceMutation.mutate(serviceData);
+  };
+
+  const onEditServiceSubmit = (data: ServiceForm) => {
+    console.log('onEditServiceSubmit chamado com:', data);
+    if (editingService) {
+      const serviceData = {
+        name: data.name || "",
+        description: data.description || "",
+        categoryId: data.categoryId,
+        providerId: data.providerId,
+        price: data.price || "",
+        minimumPrice: data.minimumPrice || "",
+        estimatedDuration: data.estimatedDuration || "",
+        requirements: data.requirements || "",
+        serviceZone: data.serviceZone || "",
+        isActive: data.isActive,
+      };
+      updateServiceMutation.mutate({ id: editingService.id, data: serviceData });
+    }
+  };
+
+  const handleEditService = (service: Service) => {
+    console.log('handleEditService chamado com:', service);
+    setEditingService(service);
+    editServiceForm.reset({
+      name: service.title || "",
+      description: service.description || "",
+      categoryId: service.categoryId || 0,
+      providerId: service.providerId || 0,
+      price: service.basePrice || "",
+      minimumPrice: service.minPrice || "",
+      estimatedDuration: "",
+      requirements: "",
+      serviceZone: service.serviceArea || "",
+      isActive: service.isActive || false,
+    });
+    setIsEditServiceOpen(true);
   };
 
   const getPricingTypeText = (type: string) => {
@@ -209,10 +377,153 @@ export default function AdminServicesPage() {
               Todos os serviços oferecidos pelos prestadores
             </p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Serviço
-          </Button>
+          <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Serviço
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Serviço</DialogTitle>
+                <DialogDescription>
+                  Adicione um novo serviço ao sistema
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...serviceForm}>
+                <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={serviceForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Serviço</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Digite o nome do serviço" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={serviceForm.control}
+                      name="categoryId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Categoria</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories?.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={serviceForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Descreva o serviço..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={serviceForm.control}
+                      name="providerId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prestador</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um prestador" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {providers?.map((provider) => (
+                                <SelectItem key={provider.id} value={provider.id.toString()}>
+                                  {provider.user.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={serviceForm.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço Base</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: 50.00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={serviceForm.control}
+                      name="minimumPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço Mínimo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: 30.00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={serviceForm.control}
+                      name="serviceZone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zona de Atendimento</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Zona Sul" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsNewServiceOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">
+                      Criar Serviço
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Statistics Cards */}
@@ -401,6 +712,7 @@ export default function AdminServicesPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEditService(service)}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -421,6 +733,149 @@ export default function AdminServicesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Service Dialog */}
+        <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Serviço</DialogTitle>
+              <DialogDescription>
+                Edite as informações do serviço
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editServiceForm}>
+              <form onSubmit={editServiceForm.handleSubmit(onEditServiceSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editServiceForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Serviço</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite o nome do serviço" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editServiceForm.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Categoria</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma categoria" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories?.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={editServiceForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Descreva o serviço..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editServiceForm.control}
+                    name="providerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prestador</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um prestador" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {providers?.map((provider) => (
+                              <SelectItem key={provider.id} value={provider.id.toString()}>
+                                {provider.user.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editServiceForm.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço Base</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 50.00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editServiceForm.control}
+                    name="minimumPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço Mínimo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 30.00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editServiceForm.control}
+                    name="serviceZone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zona de Atendimento</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Zona Sul" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsEditServiceOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    Salvar Alterações
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
     </ModernAdminLayout>
   );
