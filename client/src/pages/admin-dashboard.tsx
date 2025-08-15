@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,7 +94,7 @@ type CategoryForm = z.infer<typeof categorySchema>;
 type ServiceForm = z.infer<typeof serviceSchema>;
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading, isLoggingOut } = useAuth();
+  const { user, loading: authLoading, isLoggingOut, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -1690,6 +1690,9 @@ export default function AdminDashboard() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Criar Nova Categoria</DialogTitle>
+              <DialogDescription>
+                Adicione uma nova categoria de serviços ao sistema
+              </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -1790,6 +1793,9 @@ export default function AdminDashboard() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Editar Categoria</DialogTitle>
+              <DialogDescription>
+                Edite as informações da categoria selecionada
+              </DialogDescription>
             </DialogHeader>
             <Form {...editCategoryForm}>
               <form onSubmit={editCategoryForm.handleSubmit((data) => {
@@ -2158,6 +2164,9 @@ export default function AdminDashboard() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Adicionar Novo Serviço</DialogTitle>
+            <DialogDescription>
+              Crie um novo serviço no sistema
+            </DialogDescription>
           </DialogHeader>
           <Form {...serviceForm}>
             <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
@@ -2356,6 +2365,9 @@ export default function AdminDashboard() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Serviço</DialogTitle>
+            <DialogDescription>
+              Edite as informações do serviço selecionado
+            </DialogDescription>
           </DialogHeader>
           <Form {...editServiceForm}>
             <form onSubmit={editServiceForm.handleSubmit(onEditServiceSubmit)} className="space-y-4">
@@ -2866,6 +2878,9 @@ export default function AdminDashboard() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Detalhes da Reserva #{selectedBooking.id}</DialogTitle>
+                <DialogDescription>
+                  Visualize os detalhes completos da reserva
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -4640,6 +4655,9 @@ export default function AdminDashboard() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Detalhes do Prestador</DialogTitle>
+              <DialogDescription>
+                Visualize as informações completas do prestador
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
