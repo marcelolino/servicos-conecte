@@ -856,35 +856,40 @@ export default function AdminDashboard() {
       description: data.description || "",
       categoryId: data.categoryId,
       providerId: data.providerId,
-      price: data.price ? data.price : null,
-      minimumPrice: data.minimumPrice ? data.minimumPrice : null,
-      estimatedDuration: data.estimatedDuration || null,
-      requirements: data.requirements || null,
-      serviceZone: data.serviceZone || null,
+      price: data.price || "",
+      minimumPrice: data.minimumPrice,
+      estimatedDuration: data.estimatedDuration,
+      requirements: data.requirements,
+      serviceZone: data.serviceZone,
       isActive: data.isActive ?? true,
     };
     createServiceMutation.mutate(serviceData);
   };
 
   const onEditServiceSubmit = (data: ServiceForm) => {
+    console.log('onEditServiceSubmit chamado com:', data);
+    console.log('editingService:', editingService);
     if (editingService) {
       const serviceData = {
         name: data.name || "",
         description: data.description || "",
         categoryId: data.categoryId,
         providerId: data.providerId,
-        price: data.price ? data.price : null,
-        minimumPrice: data.minimumPrice ? data.minimumPrice : null,
-        estimatedDuration: data.estimatedDuration || null,
-        requirements: data.requirements || null,
-        serviceZone: data.serviceZone || null,
+        price: data.price || "",
+        minimumPrice: data.minimumPrice,
+        estimatedDuration: data.estimatedDuration,
+        requirements: data.requirements,
+        serviceZone: data.serviceZone,
         isActive: data.isActive ?? true,
       };
+      console.log('Enviando serviceData:', serviceData);
       updateServiceMutation.mutate({ id: editingService.id, data: serviceData });
     }
   };
 
   const handleEditService = (service: any) => {
+    console.log('handleEditService chamado com:', service);
+    console.log('isEditServiceOpen antes:', isEditServiceOpen);
     setEditingService(service);
     editServiceForm.reset({
       name: service.name || "",
@@ -899,6 +904,7 @@ export default function AdminDashboard() {
       isActive: service.isActive ?? true,
     });
     setIsEditServiceOpen(true);
+    console.log('setIsEditServiceOpen(true) executado');
   };
 
   const handleDeleteService = (serviceId: number) => {
@@ -2343,7 +2349,10 @@ export default function AdminDashboard() {
       </Dialog>
 
       {/* Edit Service Dialog */}
-      <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
+      <Dialog open={isEditServiceOpen} onOpenChange={(open) => {
+        console.log('Edit Dialog onOpenChange:', open);
+        setIsEditServiceOpen(open);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Serviço</DialogTitle>
