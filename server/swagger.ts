@@ -228,6 +228,87 @@ const options = {
             city: { type: 'string', example: 'São Paulo' },
             state: { type: 'string', example: 'SP' }
           }
+        },
+        ProviderService: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: 'Instalação de torneira' },
+            description: { type: 'string', example: 'Instalação profissional de torneiras' },
+            categoryId: { type: 'integer', example: 3 },
+            providerId: { type: 'integer', example: 7 },
+            price: { type: 'string', example: '150.00' },
+            minimumPrice: { type: 'string', example: '100.00' },
+            estimatedDuration: { type: 'string', example: '2 horas' },
+            serviceZone: { type: 'string', example: 'Zona Sul' },
+            requirements: { type: 'string', example: 'Material incluso' },
+            images: { type: 'array', items: { type: 'string' } },
+            isActive: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', example: 'Erro na requisição' },
+            error: { type: 'string', example: 'Detalhes do erro' }
+          }
+        }
+      },
+      responses: {
+        Unauthorized: {
+          description: 'Token de acesso requerido',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string', example: 'Access token required' }
+                }
+              }
+            }
+          }
+        },
+        Forbidden: {
+          description: 'Acesso negado - permissões insuficientes',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string', example: 'Admin access required' }
+                }
+              }
+            }
+          }
+        },
+        NotFound: {
+          description: 'Recurso não encontrado',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string', example: 'Resource not found' }
+                }
+              }
+            }
+          }
+        },
+        BadRequest: {
+          description: 'Dados inválidos na requisição',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string', example: 'Invalid data provided' },
+                  error: { type: 'string', example: 'Validation error details' }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -237,7 +318,7 @@ const options = {
       }
     ]
   },
-  apis: ['./server/routes.ts'], // Caminho para os arquivos com documentação
+  apis: ['./server/routes.ts', './server/routes/admin.ts'], // Caminho para os arquivos com documentação
 };
 
 export const specs = swaggerJsdoc(options);

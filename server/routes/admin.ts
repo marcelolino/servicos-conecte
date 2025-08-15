@@ -62,6 +62,44 @@ const requireAdmin = (req: any, res: any, next: any) => {
 };
 
 // GET /api/admin/metrics - Obter métricas do dashboard
+/**
+ * @swagger
+ * /api/admin/metrics:
+ *   get:
+ *     tags: [Admin - Métricas]
+ *     summary: Obter métricas administrativas
+ *     description: Retorna métricas gerais do sistema para o painel administrativo
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Métricas obtidas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUsers:
+ *                   type: integer
+ *                   example: 150
+ *                 totalProviders:
+ *                   type: integer
+ *                   example: 45
+ *                 totalServiceRequests:
+ *                   type: integer
+ *                   example: 320
+ *                 totalRevenue:
+ *                   type: number
+ *                   format: decimal
+ *                   example: 15750.00
+ *                 pendingApprovals:
+ *                   type: integer
+ *                   example: 8
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const cityFilter = req.query.city as string;
@@ -143,6 +181,42 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/admin/cities - Listar cidades disponíveis
+/**
+ * @swagger
+ * /api/admin/cities:
+ *   get:
+ *     tags: [Admin - Cidades]
+ *     summary: Listar cidades
+ *     description: Retorna lista de cidades cadastradas no sistema
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de cidades
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: 'São Paulo'
+ *                   state:
+ *                     type: string
+ *                     example: 'SP'
+ *                   isActive:
+ *                     type: boolean
+ *                     example: true
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.get('/cities', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Get providers and extract unique cities
@@ -167,6 +241,58 @@ router.get('/cities', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/admin/providers/pending - Listar prestadores pendentes
+/**
+ * @swagger
+ * /api/admin/providers/pending:
+ *   get:
+ *     tags: [Admin - Prestadores]
+ *     summary: Listar prestadores pendentes
+ *     description: Retorna lista de prestadores aguardando aprovação
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de prestadores pendentes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   userId:
+ *                     type: integer
+ *                     example: 5
+ *                   status:
+ *                     type: string
+ *                     enum: ['pending', 'approved', 'rejected']
+ *                     example: 'pending'
+ *                   description:
+ *                     type: string
+ *                     example: 'Prestador de serviços eletricista'
+ *                   experience:
+ *                     type: string
+ *                     example: '5 anos de experiência'
+ *                   user:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         example: 'João Silva'
+ *                       email:
+ *                         type: string
+ *                         example: 'joao@email.com'
+ *                       phone:
+ *                         type: string
+ *                         example: '11999999999'
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.get('/providers/pending', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const pendingProviders = await db
@@ -236,6 +362,82 @@ router.patch('/providers/:id/reject', authenticateToken, requireAdmin, async (re
 });
 
 // GET /api/admin/services - Obter todos os serviços
+/**
+ * @swagger
+ * /api/admin/services:
+ *   get:
+ *     tags: [Admin - Serviços]
+ *     summary: Listar todos os serviços
+ *     description: Retorna lista completa de serviços com informações do prestador e categoria
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de serviços obtida com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: 'Instalação de torneira'
+ *                   description:
+ *                     type: string
+ *                     example: 'Instalação profissional de torneiras'
+ *                   categoryId:
+ *                     type: integer
+ *                     example: 3
+ *                   providerId:
+ *                     type: integer
+ *                     example: 7
+ *                   price:
+ *                     type: string
+ *                     example: '150.00'
+ *                   minimumPrice:
+ *                     type: string
+ *                     example: '100.00'
+ *                   estimatedDuration:
+ *                     type: string
+ *                     example: '2 horas'
+ *                   serviceZone:
+ *                     type: string
+ *                     example: 'Zona Sul'
+ *                   requirements:
+ *                     type: string
+ *                     example: 'Material incluso'
+ *                   isActive:
+ *                     type: boolean
+ *                     example: true
+ *                   category:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                   provider:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       user:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const services = await db
@@ -279,6 +481,89 @@ router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/admin/services/:id - Obter serviço específico
+/**
+ * @swagger
+ * /api/admin/services/{id}:
+ *   get:
+ *     tags: [Admin - Serviços]
+ *     summary: Obter serviço específico
+ *     description: Retorna detalhes de um serviço específico
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do serviço
+ *     responses:
+ *       200:
+ *         description: Detalhes do serviço
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 1
+ *                 name:
+ *                   type: string
+ *                   example: 'Instalação de torneira'
+ *                 description:
+ *                   type: string
+ *                   example: 'Instalação profissional de torneiras'
+ *                 categoryId:
+ *                   type: integer
+ *                   example: 3
+ *                 providerId:
+ *                   type: integer
+ *                   example: 7
+ *                 price:
+ *                   type: string
+ *                   example: '150.00'
+ *                 minimumPrice:
+ *                   type: string
+ *                   example: '100.00'
+ *                 estimatedDuration:
+ *                   type: string
+ *                   example: '2 horas'
+ *                 serviceZone:
+ *                   type: string
+ *                   example: 'Zona Sul'
+ *                 requirements:
+ *                   type: string
+ *                   example: 'Material incluso'
+ *                 isActive:
+ *                   type: boolean
+ *                   example: true
+ *                 category:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                 provider:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ *       404:
+ *         description: Serviço não encontrado
+ */
 router.get('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -329,6 +614,74 @@ router.get('/services/:id', authenticateToken, requireAdmin, async (req, res) =>
 });
 
 // POST /api/admin/services - Criar novo serviço
+/**
+ * @swagger
+ * /api/admin/services:
+ *   post:
+ *     tags: [Admin - Serviços]
+ *     summary: Criar novo serviço
+ *     description: Cria um novo serviço no sistema
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - categoryId
+ *               - providerId
+ *               - price
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: 'Instalação de torneira'
+ *               description:
+ *                 type: string
+ *                 example: 'Instalação profissional de torneiras'
+ *               categoryId:
+ *                 type: integer
+ *                 example: 3
+ *               providerId:
+ *                 type: integer
+ *                 example: 7
+ *               price:
+ *                 type: string
+ *                 example: '150.00'
+ *               minimumPrice:
+ *                 type: string
+ *                 example: '100.00'
+ *               estimatedDuration:
+ *                 type: string
+ *                 example: '2 horas'
+ *               serviceZone:
+ *                 type: string
+ *                 example: 'Zona Sul'
+ *               requirements:
+ *                 type: string
+ *                 example: 'Material incluso'
+ *     responses:
+ *       200:
+ *         description: Serviço criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Serviço criado com sucesso'
+ *                 service:
+ *                   type: object
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.post('/services', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { name, description, categoryId, providerId, price, minimumPrice, estimatedDuration, requirements, serviceZone, images } = req.body;
@@ -360,6 +713,78 @@ router.post('/services', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/admin/services/:id - Editar serviço
+/**
+ * @swagger
+ * /api/admin/services/{id}:
+ *   put:
+ *     tags: [Admin - Serviços]
+ *     summary: Atualizar serviço
+ *     description: Atualiza um serviço existente
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do serviço
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: 'Instalação de torneira'
+ *               description:
+ *                 type: string
+ *                 example: 'Instalação profissional de torneiras'
+ *               categoryId:
+ *                 type: integer
+ *                 example: 3
+ *               providerId:
+ *                 type: integer
+ *                 example: 7
+ *               price:
+ *                 type: string
+ *                 example: '150.00'
+ *               minimumPrice:
+ *                 type: string
+ *                 example: '100.00'
+ *               estimatedDuration:
+ *                 type: string
+ *                 example: '2 horas'
+ *               serviceZone:
+ *                 type: string
+ *                 example: 'Zona Sul'
+ *               requirements:
+ *                 type: string
+ *                 example: 'Material incluso'
+ *     responses:
+ *       200:
+ *         description: Serviço atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Serviço atualizado com sucesso'
+ *                 service:
+ *                   type: object
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ *       404:
+ *         description: Serviço não encontrado
+ */
 router.put('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -409,6 +834,40 @@ router.put('/services/:id/status', authenticateToken, requireAdmin, async (req, 
 });
 
 // DELETE /api/admin/services/:id - Excluir serviço
+/**
+ * @swagger
+ * /api/admin/services/{id}:
+ *   delete:
+ *     tags: [Admin - Serviços]
+ *     summary: Excluir serviço
+ *     description: Exclui um serviço do sistema
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do serviço
+ *     responses:
+ *       200:
+ *         description: Serviço excluído com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Serviço removido com sucesso'
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ *       404:
+ *         description: Serviço não encontrado
+ */
 router.delete('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -642,6 +1101,46 @@ router.get('/reports/providers', authenticateToken, requireAdmin, async (req, re
 });
 
 // Page Settings Routes
+/**
+ * @swagger
+ * /api/admin/page-settings:
+ *   get:
+ *     tags: [Admin - Configurações]
+ *     summary: Obter configurações da página
+ *     description: Retorna as configurações gerais da página/site
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Configurações obtidas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 1
+ *                 siteName:
+ *                   type: string
+ *                   example: 'QServiços'
+ *                 siteDesc:
+ *                   type: string
+ *                   example: 'Plataforma de serviços'
+ *                 logo:
+ *                   type: string
+ *                   example: '/uploads/logo.png'
+ *                 primaryColor:
+ *                   type: string
+ *                   example: '#007bff'
+ *                 secondaryColor:
+ *                   type: string
+ *                   example: '#6c757d'
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.get('/page-settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const settings = await storage.getPageSettings();
@@ -652,6 +1151,55 @@ router.get('/page-settings', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/page-settings:
+ *   put:
+ *     tags: [Admin - Configurações]
+ *     summary: Atualizar configurações da página
+ *     description: Atualiza as configurações gerais da página/site
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               siteName:
+ *                 type: string
+ *                 example: 'QServiços'
+ *               siteDesc:
+ *                 type: string
+ *                 example: 'Plataforma de serviços'
+ *               logo:
+ *                 type: string
+ *                 example: '/uploads/logo.png'
+ *               primaryColor:
+ *                 type: string
+ *                 example: '#007bff'
+ *               secondaryColor:
+ *                 type: string
+ *                 example: '#6c757d'
+ *     responses:
+ *       200:
+ *         description: Configurações atualizadas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Configurações atualizadas com sucesso'
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.put('/page-settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const settings = req.body;
@@ -671,6 +1219,50 @@ router.put('/page-settings', authenticateToken, requireAdmin, async (req, res) =
 });
 
 // Upload de logo
+/**
+ * @swagger
+ * /api/admin/upload-logo:
+ *   post:
+ *     tags: [Admin - Upload]
+ *     summary: Upload de logo
+ *     description: Faz upload do logo da empresa/site
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               logo:
+ *                 type: string
+ *                 format: binary
+ *                 description: Arquivo de imagem do logo (PNG, JPG, etc.)
+ *     responses:
+ *       200:
+ *         description: Logo enviado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Logo enviado com sucesso'
+ *                 filename:
+ *                   type: string
+ *                   example: 'logo-1234567890-123456789.png'
+ *                 path:
+ *                   type: string
+ *                   example: '/uploads/logos/logo-1234567890-123456789.png'
+ *       400:
+ *         description: Arquivo inválido
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
 router.post('/upload-logo', authenticateToken, requireAdmin, logoUpload.single('logo'), async (req, res) => {
   try {
     if (!req.file) {
