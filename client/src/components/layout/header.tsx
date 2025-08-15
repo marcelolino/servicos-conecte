@@ -47,7 +47,7 @@ export default function Header() {
     refetchOnWindowFocus: false,
   });
 
-  const cartItemCount = (cart && Array.isArray(cart.items)) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
+  const cartItemCount = (cart && typeof cart === 'object' && 'items' in cart && Array.isArray(cart.items)) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   // Fetch page settings for dynamic site name
   const { data: pageSettings } = useQuery<PageSettings>({
@@ -93,14 +93,16 @@ export default function Header() {
                 <img 
                   src={pageSettings.siteLogo} 
                   alt={pageSettings.siteName || "Logo"} 
-                  className="h-8 w-8 mr-2 object-contain"
+                  className="h-12 w-auto max-w-[200px] object-contain"
                 />
               ) : (
-                <Wrench className="h-8 w-8 text-primary mr-2" />
+                <>
+                  <Wrench className="h-8 w-8 text-primary mr-2" />
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {pageSettings?.siteName || "Qserviços"}
+                  </h1>
+                </>
               )}
-              <h1 className="text-2xl font-bold text-foreground">
-                {pageSettings?.siteName || "Qserviços"}
-              </h1>
             </Link>
           </div>
 

@@ -27,14 +27,16 @@ export default function Footer() {
                 <img 
                   src={pageSettings.siteLogo} 
                   alt={pageSettings.siteName || "Logo"} 
-                  className="h-8 w-8 mr-2 object-contain"
+                  className="h-10 w-auto max-w-[150px] object-contain"
                 />
               ) : (
-                <Wrench className="h-8 w-8 text-primary mr-2" />
+                <>
+                  <Wrench className="h-8 w-8 text-primary mr-2" />
+                  <h3 className="text-xl font-bold text-foreground">
+                    {pageSettings?.siteName || "Qserviços"}
+                  </h3>
+                </>
               )}
-              <h3 className="text-xl font-bold text-foreground">
-                {pageSettings?.siteName || "Qserviços"}
-              </h3>
             </div>
             <p className="text-muted-foreground mb-4">
               Conectando clientes e prestadores de serviços de forma rápida e segura.
