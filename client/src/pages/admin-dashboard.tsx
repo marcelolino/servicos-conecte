@@ -1963,7 +1963,12 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Serviços</h2>
           <p className="text-muted-foreground">Todos os serviços oferecidos pelos prestadores</p>
         </div>
-        <Button onClick={() => setIsNewServiceOpen(true)}>
+        <Button onClick={() => {
+          console.log('Botão Adicionar Serviço clicado!');
+          console.log('isNewServiceOpen antes:', isNewServiceOpen);
+          setIsNewServiceOpen(true);
+          console.log('setIsNewServiceOpen(true) executado');
+        }}>
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Serviço
         </Button>
@@ -2121,7 +2126,10 @@ export default function AdminDashboard() {
       </Card>
 
       {/* New Service Dialog */}
-      <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
+      <Dialog open={isNewServiceOpen} onOpenChange={(open) => {
+        console.log('Dialog onOpenChange:', open);
+        setIsNewServiceOpen(open);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Adicionar Novo Serviço</DialogTitle>
