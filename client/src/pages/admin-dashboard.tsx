@@ -102,7 +102,15 @@ export default function AdminDashboard() {
   // Get section from URL params
   const urlParams = new URLSearchParams(window.location.search);
   const sectionFromUrl = urlParams.get('section');
-  const [activeSection, setActiveSection] = useState(sectionFromUrl || "dashboard");
+  
+  // Check if we're on admin-services route specifically
+  const currentPath = window.location.pathname;
+  const isAdminServicesRoute = currentPath.includes('/admin-services');
+  
+  const [activeSection, setActiveSection] = useState(() => {
+    if (isAdminServicesRoute) return "services";
+    return sectionFromUrl || "dashboard";
+  });
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["transactions"]);
   const [selectedChatConversation, setSelectedChatConversation] = useState<number | null>(null);
 
@@ -118,14 +126,21 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Also monitor initial load
+  // Also monitor initial load and route changes
   React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const newSection = urlParams.get('section') || 'dashboard';
-    if (newSection !== activeSection) {
-      setActiveSection(newSection);
+    const currentPath = window.location.pathname;
+    
+    if (currentPath.includes('/admin-services')) {
+      console.log('Detected admin-services route, setting activeSection to services');
+      setActiveSection('services');
+    } else {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newSection = urlParams.get('section') || 'dashboard';
+      if (newSection !== activeSection) {
+        setActiveSection(newSection);
+      }
     }
-  }, []);
+  }, [window.location.pathname]);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
@@ -1955,14 +1970,18 @@ export default function AdminDashboard() {
     </div>
   );
 
-  const renderServices = () => (
-    <div className="space-y-6">
-      {/* Header and Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Serviços</h2>
-          <p className="text-muted-foreground">Todos os serviços oferecidos pelos prestadores</p>
-        </div>
+  const renderServices = () => {
+    console.log('renderServices() executado! activeSection:', activeSection);
+    console.log('isNewServiceOpen estado atual:', isNewServiceOpen);
+    
+    return (
+      <div className="space-y-6">
+        {/* Header and Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Gerenciamento de Serviços</h2>
+            <p className="text-muted-foreground">Todos os serviços oferecidos pelos prestadores</p>
+          </div>
         <Button onClick={() => {
           console.log('Botão Adicionar Serviço clicado!');
           console.log('isNewServiceOpen antes:', isNewServiceOpen);
@@ -2495,7 +2514,8 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
     </div>
-  );
+    );
+  };
 
   const renderBookings = () => {
     // Functions for filtering bookings by tab
