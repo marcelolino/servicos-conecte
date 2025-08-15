@@ -249,6 +249,8 @@ router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
         minimumPrice: providerServices.minimumPrice,
         estimatedDuration: providerServices.estimatedDuration,
         serviceZone: providerServices.serviceZone,
+        requirements: providerServices.requirements,
+        images: providerServices.images,
         isActive: providerServices.isActive,
         createdAt: providerServices.createdAt,
         category: {
@@ -272,6 +274,118 @@ router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
     res.json(services);
   } catch (error) {
     console.error('Erro ao buscar serviços:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/admin/services/:id - Obter serviço específico
+router.get('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const service = await db
+      .select({
+        id: providerServices.id,
+        name: providerServices.name,
+        description: providerServices.description,
+        categoryId: providerServices.categoryId,
+        providerId: providerServices.providerId,
+        price: providerServices.price,
+        minimumPrice: providerServices.minimumPrice,
+        estimatedDuration: providerServices.estimatedDuration,
+        serviceZone: providerServices.serviceZone,
+        requirements: providerServices.requirements,
+        images: providerServices.images,
+        isActive: providerServices.isActive,
+        createdAt: providerServices.createdAt,
+        category: {
+          id: serviceCategories.id,
+          name: serviceCategories.name,
+        },
+        provider: {
+          id: providers.id,
+          user: {
+            name: users.name,
+            email: users.email,
+          },
+        },
+      })
+      .from(providerServices)
+      .leftJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .leftJoin(providers, eq(providerServices.providerId, providers.id))
+      .leftJoin(users, eq(providers.userId, users.id))
+      .where(eq(providerServices.id, parseInt(id)))
+      .limit(1);
+
+    if (!service.length) {
+      return res.status(404).json({ error: 'Serviço não encontrado' });
+    }
+
+    res.json(service[0]);
+  } catch (error) {
+    console.error('Erro ao buscar serviço:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/admin/services - Criar novo serviço
+router.post('/services', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { name, description, categoryId, providerId, price, minimumPrice, estimatedDuration, requirements, serviceZone, images } = req.body;
+    
+    const newService = await db
+      .insert(providerServices)
+      .values({
+        name,
+        description,
+        categoryId: parseInt(categoryId),
+        providerId: parseInt(providerId),
+        price: price ? price.toString() : null,
+        minimumPrice: minimumPrice ? minimumPrice.toString() : null,
+        estimatedDuration,
+        requirements,
+        serviceZone,
+        images: images || null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    res.json({ message: 'Serviço criado com sucesso', service: newService[0] });
+  } catch (error) {
+    console.error('Erro ao criar serviço:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/admin/services/:id - Editar serviço
+router.put('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, categoryId, providerId, price, minimumPrice, estimatedDuration, requirements, serviceZone, images } = req.body;
+    
+    const updatedService = await db
+      .update(providerServices)
+      .set({
+        name,
+        description,
+        categoryId: categoryId ? parseInt(categoryId) : undefined,
+        providerId: providerId ? parseInt(providerId) : undefined,
+        price: price ? price.toString() : null,
+        minimumPrice: minimumPrice ? minimumPrice.toString() : null,
+        estimatedDuration,
+        requirements,
+        serviceZone,
+        images: images || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(providerServices.id, parseInt(id)))
+      .returning();
+
+    res.json({ message: 'Serviço atualizado com sucesso', service: updatedService[0] });
+  } catch (error) {
+    console.error('Erro ao atualizar serviço:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
