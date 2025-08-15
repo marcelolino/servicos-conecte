@@ -116,7 +116,7 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
     const monthlyRevenue = 15000; // Placeholder
 
     // Contar cidades únicas
-    const citiesResult = await storage.db
+    const citiesResult = await db
       .selectDistinct({
         city: providers.city,
         state: providers.state,
@@ -169,7 +169,7 @@ router.get('/cities', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/admin/providers/pending - Listar prestadores pendentes
 router.get('/providers/pending', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const pendingProviders = await storage.db
+    const pendingProviders = await db
       .select({
         id: providers.id,
         user: {
@@ -206,7 +206,7 @@ router.patch('/providers/:id/approve', authenticateToken, requireAdmin, async (r
   try {
     const providerId = parseInt(req.params.id);
 
-    await storage.db
+    await db
       .update(providers)
       .set({ status: 'approved', updatedAt: new Date() })
       .where(eq(providers.id, providerId));
@@ -223,7 +223,7 @@ router.patch('/providers/:id/reject', authenticateToken, requireAdmin, async (re
   try {
     const providerId = parseInt(req.params.id);
 
-    await storage.db
+    await db
       .update(providers)
       .set({ status: 'rejected', updatedAt: new Date() })
       .where(eq(providers.id, providerId));
@@ -238,18 +238,17 @@ router.patch('/providers/:id/reject', authenticateToken, requireAdmin, async (re
 // GET /api/admin/services - Obter todos os serviços
 router.get('/services', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const services = await storage.db
+    const services = await db
       .select({
         id: providerServices.id,
-        title: providerServices.title,
+        name: providerServices.name,
         description: providerServices.description,
         categoryId: providerServices.categoryId,
         providerId: providerServices.providerId,
-        basePrice: providerServices.basePrice,
-        minPrice: providerServices.minPrice,
-        maxPrice: providerServices.maxPrice,
-        pricingType: providerServices.pricingType,
-        serviceArea: providerServices.serviceArea,
+        price: providerServices.price,
+        minimumPrice: providerServices.minimumPrice,
+        estimatedDuration: providerServices.estimatedDuration,
+        serviceZone: providerServices.serviceZone,
         isActive: providerServices.isActive,
         createdAt: providerServices.createdAt,
         category: {
@@ -283,7 +282,7 @@ router.put('/services/:id/status', authenticateToken, requireAdmin, async (req, 
     const { id } = req.params;
     const { isActive } = req.body;
 
-    await storage.db
+    await db
       .update(providerServices)
       .set({ isActive, updatedAt: new Date() })
       .where(eq(providerServices.id, parseInt(id)));
@@ -300,7 +299,7 @@ router.delete('/services/:id', authenticateToken, requireAdmin, async (req, res)
   try {
     const { id } = req.params;
 
-    await storage.db
+    await db
       .delete(providerServices)
       .where(eq(providerServices.id, parseInt(id)));
 
