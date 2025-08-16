@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
-import { DollarSign, Package, Star, Calendar, TrendingUp, User, MapPin, AlertCircle, CheckCircle, XCircle, Eye } from "lucide-react";
+import { DollarSign, Package, Star, Calendar, TrendingUp, User, MapPin, AlertCircle, CheckCircle, XCircle, Eye, Clock, Shield, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
@@ -289,10 +289,16 @@ export default function ProviderDashboardHome() {
             <CardDescription>Gerencie seu negócio rapidamente</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Link href="/provider-services">
+            <Link href="/meus-servicos">
               <Button className="w-full" variant="outline">
                 <Package className="h-4 w-4 mr-2" />
-                Gerenciar Serviços
+                Meus Serviços
+              </Button>
+            </Link>
+            <Link href="/provider-service-subscriptions">
+              <Button className="w-full" variant="outline">
+                <Zap className="h-4 w-4 mr-2" />
+                Adicionar Serviços
               </Button>
             </Link>
             <Link href="/provider-bookings">

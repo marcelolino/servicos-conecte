@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Search, Filter, ShoppingCart, Plus, Star, MapPin } from "lucide-react";
+import { Loader2, Search, Filter, ShoppingCart, Plus, Star, MapPin, Clock, Shield, DollarSign } from "lucide-react";
 
 interface ServiceCategory {
   id: number;
@@ -35,9 +35,29 @@ interface Provider {
   };
 }
 
+interface Service {
+  id: number;
+  categoryId: number;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  estimatedDuration?: string;
+  durationType?: string;
+  materialsIncluded?: boolean;
+  materialsDescription?: string;
+  defaultChargingType?: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+  suggestedMinPrice?: string;
+  suggestedMaxPrice?: string;
+  tags?: string;
+  requirements?: string;
+  imageUrl?: string;
+  isActive: boolean;
+}
+
 interface ProviderService {
   id: number;
   providerId: number;
+  serviceId: number;
   categoryId: number;
   name?: string;
   description?: string;
@@ -50,6 +70,7 @@ interface ProviderService {
   isActive: boolean;
   category: ServiceCategory;
   provider: Provider;
+  service?: Service;
 }
 
 export default function ServicesPage() {
@@ -149,7 +170,7 @@ export default function ServicesPage() {
     }
   };
 
-  const cartItemCount = (cart?.items || [])?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+  const cartItemCount = Array.isArray(cart?.items) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   if (categoriesLoading || servicesLoading) {
     return (
@@ -197,7 +218,7 @@ export default function ServicesPage() {
             >
               Todas
             </Button>
-            {(categories || [])?.map((category: ServiceCategory) => (
+            {Array.isArray(categories) ? categories.map((category: ServiceCategory) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id.toString() ? "default" : "outline"}
@@ -206,7 +227,7 @@ export default function ServicesPage() {
               >
                 {category.name}
               </Button>
-            ))}
+            )) : null}
           </div>
         </div>
       </div>
@@ -240,7 +261,7 @@ export default function ServicesPage() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices?.map((service: ProviderService) => (
+          {Array.isArray(filteredServices) ? filteredServices.map((service: ProviderService) => (
             <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video relative">
                 <img
@@ -281,16 +302,60 @@ export default function ServicesPage() {
                   <div>
                     <div className="text-sm text-muted-foreground">Por {service.provider.user.name}</div>
                     {service.estimatedDuration && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
                         Duração: {service.estimatedDuration}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                   {service.description || `Serviço de ${service.category.name.toLowerCase()}`}
                 </p>
+
+                {/* Informações adicionais do serviço */}
+                <div className="mb-3 space-y-1">
+                  {/* Materiais incluídos */}
+                  {service.service?.materialsIncluded && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <Shield className="h-3 w-3" />
+                      <span>Materiais incluídos</span>
+                    </div>
+                  )}
+                  
+                  {/* Tipo de cobrança */}
+                  {service.service?.defaultChargingType && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <DollarSign className="h-3 w-3" />
+                      <span>
+                        {service.service.defaultChargingType === 'visit' && 'Por visita'}
+                        {service.service.defaultChargingType === 'hour' && 'Por hora'}
+                        {service.service.defaultChargingType === 'daily' && 'Diária'}
+                        {service.service.defaultChargingType === 'package' && 'Pacote'}
+                        {service.service.defaultChargingType === 'quote' && 'Orçamento'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Tags do serviço */}
+                  {service.service?.tags && (() => {
+                    try {
+                      const tags = JSON.parse(service.service.tags);
+                      return Array.isArray(tags) && tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {tags.slice(0, 3).map((tag: string, index: number) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      );
+                    } catch {
+                      return null;
+                    }
+                  })()}
+                </div>
 
                 <div className="flex items-center justify-between">
                   <div>
@@ -300,6 +365,12 @@ export default function ServicesPage() {
                     {service.minimumPrice && service.minimumPrice !== service.price && (
                       <div className="text-xs text-muted-foreground">
                         Mínimo: R$ {parseFloat(service.minimumPrice).toFixed(2)}
+                      </div>
+                    )}
+                    {/* Faixa de preço sugerida */}
+                    {service.service?.suggestedMinPrice && service.service?.suggestedMaxPrice && (
+                      <div className="text-xs text-muted-foreground">
+                        Faixa: R$ {parseFloat(service.service.suggestedMinPrice).toFixed(2)} - R$ {parseFloat(service.service.suggestedMaxPrice).toFixed(2)}
                       </div>
                     )}
                   </div>
@@ -318,10 +389,10 @@ export default function ServicesPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )) : null}
         </div>
 
-        {filteredServices?.length === 0 && (
+        {Array.isArray(filteredServices) && filteredServices?.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-lg font-semibold mb-2">Nenhum serviço encontrado</h3>

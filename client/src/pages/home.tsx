@@ -390,15 +390,31 @@ export default function Home() {
                               {provider.description || "Profissional experiente e qualificado"}
                             </p>
                             
-                            {/* Services */}
+                            {/* Services com informações detalhadas */}
                             {provider.services && provider.services.length > 0 && (
                               <div className="mb-3">
-                                <div className="text-xs font-medium text-gray-500 mb-1">Serviços:</div>
-                                <div className="flex flex-wrap gap-1">
+                                <div className="text-xs font-medium text-gray-500 mb-1">Serviços especializados:</div>
+                                <div className="space-y-1">
                                   {provider.services.slice(0, 2).map((service: any) => (
-                                    <Badge key={service.id} variant="secondary" className="text-xs">
-                                      {service.category.name}
-                                    </Badge>
+                                    <div key={service.id} className="text-xs">
+                                      <Badge variant="secondary" className="text-xs mb-1">
+                                        {service.category.name}
+                                      </Badge>
+                                      <div className="flex items-center gap-2 text-gray-500">
+                                        {service.service?.estimatedDuration && (
+                                          <span className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            {service.service.estimatedDuration}
+                                          </span>
+                                        )}
+                                        {service.service?.materialsIncluded && (
+                                          <span className="flex items-center gap-1 text-green-600">
+                                            <ShieldCheck className="h-3 w-3" />
+                                            Materiais incl.
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
                                   ))}
                                   {provider.services.length > 2 && (
                                     <Badge variant="outline" className="text-xs">
@@ -475,11 +491,11 @@ export default function Home() {
                       {provider.description || "Profissional experiente e qualificado"}
                     </p>
                     
-                    {/* Preços configurados */}
+                    {/* Serviços e informações detalhadas */}
                     {provider.services && provider.services.length > 0 && (
-                      <div className="mb-3">
-                        <div className="text-xs font-medium text-gray-500 mb-1">Preços a partir de:</div>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="mb-3 space-y-2">
+                        <div className="text-xs font-medium text-gray-500 mb-1">Serviços disponíveis:</div>
+                        <div className="space-y-1">
                           {provider.services
                             .slice(0, 2)
                             .map((service: any) => {
@@ -488,14 +504,35 @@ export default function Home() {
                                 ?.reduce((min: any, ct: any) => 
                                   !min || parseFloat(ct.price) < parseFloat(min.price) ? ct : min, null);
                               
-                              return minPrice ? (
-                                <Badge key={service.id} variant="secondary" className="text-xs">
-                                  {service.category.name}: R$ {minPrice.price}
-                                </Badge>
-                              ) : (
-                                <Badge key={service.id} variant="outline" className="text-xs">
-                                  {service.category.name}: Sob consulta
-                                </Badge>
+                              return (
+                                <div key={service.id} className="text-xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{service.category.name}</span>
+                                    {minPrice ? (
+                                      <Badge variant="secondary" className="text-xs">
+                                        R$ {minPrice.price}
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-xs">
+                                        Sob consulta
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {/* Duração estimada */}
+                                  {service.service?.estimatedDuration && (
+                                    <div className="text-gray-400 flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {service.service.estimatedDuration}
+                                    </div>
+                                  )}
+                                  {/* Materiais incluídos */}
+                                  {service.service?.materialsIncluded && (
+                                    <div className="text-green-600 text-xs flex items-center gap-1">
+                                      <ShieldCheck className="h-3 w-3" />
+                                      Materiais incluídos
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           {provider.services.length > 2 && (
