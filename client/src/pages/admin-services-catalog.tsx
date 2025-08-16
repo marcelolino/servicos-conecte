@@ -88,7 +88,7 @@ export default function AdminServicesCatalog() {
       suggestedMaxPrice: '',
       tags: '',
       requirements: '',
-      imageUrl: '',
+      imageUrl: 'none',
     },
   });
 
@@ -179,7 +179,7 @@ export default function AdminServicesCatalog() {
       suggestedMaxPrice: service.suggestedMaxPrice || '',
       tags: service.tags || '',
       requirements: service.requirements || '',
-      imageUrl: service.imageUrl || '',
+      imageUrl: service.imageUrl || 'none',
     });
     setIsEditDialogOpen(true);
   };
@@ -200,7 +200,7 @@ export default function AdminServicesCatalog() {
       suggestedMaxPrice: '',
       tags: '',
       requirements: '',
-      imageUrl: '',
+      imageUrl: 'none',
     });
     setIsCreateDialogOpen(true);
   };
@@ -410,7 +410,7 @@ export default function AdminServicesCatalog() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Nenhuma imagem</SelectItem>
+                            <SelectItem value="none">Nenhuma imagem</SelectItem>
                             {mediaFiles.map((file: any) => (
                               <SelectItem key={file.id} value={file.url}>
                                 <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export default function AdminServicesCatalog() {
                             ))}
                           </SelectContent>
                         </Select>
-                        {field.value && (
+                        {field.value && field.value !== 'none' && (
                           <div className="mt-2">
                             <img src={field.value} alt="Preview" className="w-20 h-20 object-cover rounded" />
                           </div>
@@ -568,7 +568,7 @@ export default function AdminServicesCatalog() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Nenhuma imagem</SelectItem>
+                            <SelectItem value="none">Nenhuma imagem</SelectItem>
                             {mediaFiles.map((file: any) => (
                               <SelectItem key={file.id} value={file.url}>
                                 <div className="flex items-center gap-2">
@@ -579,7 +579,7 @@ export default function AdminServicesCatalog() {
                             ))}
                           </SelectContent>
                         </Select>
-                        {field.value && (
+                        {field.value && field.value !== 'none' && (
                           <div className="mt-2">
                             <img src={field.value} alt="Preview" className="w-20 h-20 object-cover rounded" />
                           </div>

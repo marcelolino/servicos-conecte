@@ -370,7 +370,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/services-catalog", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      const serviceData = insertServiceSchema.parse(req.body);
+      const requestBody = { ...req.body };
+      // Convert 'none' back to null for imageUrl
+      if (requestBody.imageUrl === 'none') {
+        requestBody.imageUrl = null;
+      }
+      const serviceData = insertServiceSchema.parse(requestBody);
       const service = await storage.createService(serviceData);
       res.json(service);
     } catch (error) {
@@ -381,7 +386,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/services-catalog/:id", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
-      const service = await storage.updateService(serviceId, req.body);
+      const requestBody = { ...req.body };
+      // Convert 'none' back to null for imageUrl
+      if (requestBody.imageUrl === 'none') {
+        requestBody.imageUrl = null;
+      }
+      const service = await storage.updateService(serviceId, requestBody);
       res.json(service);
     } catch (error) {
       res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
