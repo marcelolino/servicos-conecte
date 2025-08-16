@@ -32,7 +32,7 @@ const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
   "/provider-add-ons": { title: "Complementos", parent: "Serviços" },
   "/provider-service-requests": { title: "Solicitações de Serviço", parent: "Serviços" },
   "/provider-service-subscriptions": { title: "Minhas Inscrições", parent: "Serviços" },
-  "/meus-servicos": { title: "Meus Serviços", parent: "Serviços" },
+  "/meus-servicos": { title: "Tipos de Cobrança", parent: "Serviços" },
   "/employee-management": { title: "Funcionários" },
   "/provider-chat": { title: "Mensagens" },
   "/provider-wallet": { title: "Carteira" },

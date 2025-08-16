@@ -48,6 +48,16 @@ interface ProviderService {
     name: string;
     description: string;
   };
+  service?: {
+    id: number;
+    name: string;
+    description?: string;
+    category: {
+      id: number;
+      name: string;
+      description: string;
+    };
+  };
   chargingTypes: ServiceChargingType[];
 }
 
@@ -90,7 +100,7 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg">{service.name}</CardTitle>
+            <CardTitle className="text-lg">{service.name || service.service?.name || 'Nome não definido'}</CardTitle>
             <CardDescription className="text-sm">
               {service.category?.name || 'Categoria não definida'} • {service.description}
             </CardDescription>
@@ -258,7 +268,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
           <div>
             <CardTitle>Gerenciar Tipos de Cobrança</CardTitle>
             <CardDescription>
-              {service.name} • {service.category?.name || 'Categoria não definida'}
+              {service.name || service.service?.name || 'Nome não definido'} • {service.category?.name || 'Categoria não definida'}
             </CardDescription>
           </div>
           <Button variant="outline" onClick={onClose}>
@@ -437,7 +447,7 @@ export default function MeusServicos() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Meus Serviços</h1>
+            <h1 className="text-3xl font-bold text-foreground">Tipos de Cobrança</h1>
             <p className="text-muted-foreground">
               Configure os tipos de cobrança para os serviços em que você se inscreveu
             </p>

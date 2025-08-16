@@ -28,6 +28,12 @@ import type { ServiceCategory, ProviderService } from "@shared/schema";
 
 interface ProviderServiceWithCategory extends ProviderService {
   category: ServiceCategory;
+  service?: {
+    id: number;
+    name: string;
+    description?: string;
+    category: ServiceCategory;
+  };
 }
 
 export default function ProviderServiceSubscriptionsPage() {
@@ -304,10 +310,10 @@ export default function ProviderServiceSubscriptionsPage() {
                       <TableRow key={service.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{service.name}</div>
-                            {service.description && (
-                              <div className="text-sm text-muted-foreground max-w-xs truncate" title={service.description}>
-                                {service.description}
+                            <div className="font-medium">{service.name || service.service?.name || 'Nome não definido'}</div>
+                            {(service.description || service.service?.description) && (
+                              <div className="text-sm text-muted-foreground max-w-xs truncate" title={service.description || service.service?.description}>
+                                {service.description || service.service?.description}
                               </div>
                             )}
                           </div>

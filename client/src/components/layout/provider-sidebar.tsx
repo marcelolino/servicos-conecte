@@ -122,12 +122,11 @@ const menuData = {
           title: "Minhas Inscrições",
           url: "/provider-service-subscriptions",
         },
+        {
+          title: "Tipos de Cobrança",
+          url: "/meus-servicos",
+        },
       ],
-    },
-    {
-      title: "Meus Serviços",
-      url: "/meus-servicos",
-      icon: Wrench,
     },
   ],
   utilizador: [
