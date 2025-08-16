@@ -646,48 +646,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProviderServices(providerId: number): Promise<(ProviderService & { service?: Service & { category: ServiceCategory }; category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]> {
-    // First get all provider services with their direct categories
-    const allProviderServices = await db
+    // Get all provider services with their categories and global service info (if any)
+    const providerServicesList = await db
       .select({
         providerService: providerServices,
         category: serviceCategories,
+        service: services,
       })
       .from(providerServices)
       .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .leftJoin(services, eq(providerServices.serviceId, services.id))
       .where(eq(providerServices.providerId, providerId));
-
-    // Then try to get the global service info for those that have serviceId
-    const providerServicesList = await Promise.all(
-      allProviderServices.map(async (item) => {
-        if (item.providerService.serviceId) {
-          // If has serviceId, get the global service info
-          const globalServiceInfo = await db
-            .select({
-              service: services,
-              serviceCategory: serviceCategories,
-            })
-            .from(services)
-            .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
-            .where(eq(services.id, item.providerService.serviceId))
-            .limit(1);
-
-          return {
-            providerService: item.providerService,
-            service: globalServiceInfo[0]?.service || null,
-            serviceCategory: globalServiceInfo[0]?.serviceCategory || null,
-            category: item.category,
-          };
-        } else {
-          // If no serviceId, just return with the provider service category
-          return {
-            providerService: item.providerService,
-            service: null,
-            serviceCategory: null,
-            category: item.category,
-          };
-        }
-      })
-    );
 
     // Get charging types for each service
     const servicesWithChargingTypes = await Promise.all(
@@ -697,7 +666,7 @@ export class DatabaseStorage implements IStorage {
           ...item.providerService,
           service: item.service ? {
             ...item.service,
-            category: item.serviceCategory,
+            category: item.category,
           } : undefined,
           category: item.category,
           chargingTypes,
@@ -750,11 +719,18 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Você já adotou este serviço do catálogo");
     }
 
+    // Get the catalog service to get its category
+    const catalogService = await this.getService(serviceId);
+    if (!catalogService) {
+      throw new Error("Service not found in catalog");
+    }
+
     const [newProviderService] = await db
       .insert(providerServices)
       .values({
         providerId,
         serviceId,
+        categoryId: catalogService.categoryId, // Set category from catalog service
         ...serviceData,
       })
       .returning();
