@@ -1,0 +1,52 @@
+Uncaught TypeError: Cannot read properties of undefined (reading 'name')
+    at ServiceChargingTypeCard (meus-servicos.tsx:95:33)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=8ec6e0be:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=8ec6e0be:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=8ec6e0be:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=8ec6e0be:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=8ec6e0be:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=8ec6e0be:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=8ec6e0be:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=8ec6e0be:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=8ec6e0be:19137:13)
+2chunk-RPCDYKBN.js?v=8ec6e0be:14032 The above error occurred in the <ServiceChargingTypeCard> component:
+
+    at ServiceChargingTypeCard (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/pages/meus-servicos.tsx:60:36)
+    at div
+    at div
+    at div
+    at main
+    at _c9 (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/components/ui/sidebar.tsx:411:48)
+    at div
+    at Provider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=8ec6e0be:38:15)
+    at TooltipProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=8ec6e0be:97:5)
+    at https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/components/ui/sidebar.tsx:49:7
+    at ModernProviderLayout (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/components/layout/modern-provider-layout.tsx:54:40)
+    at MeusServicos (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/pages/meus-servicos.tsx:695:20)
+    at Route (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8ec6e0be:323:16)
+    at Switch (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8ec6e0be:379:17)
+    at Router (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/App.tsx?v=VyjdnEm6xOmHp09AllkcF:107:22)
+    at Provider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=8ec6e0be:38:15)
+    at TooltipProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=8ec6e0be:97:5)
+    at AuthProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/hooks/use-auth.ts:12:32)
+    at LocationProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/contexts/LocationContext.tsx:20:36)
+    at ThemeProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/src/components/theme-provider.tsx:20:33)
+    at QueryClientProvider (https://60e4b2cf-fdc3-40ec-a078-f017135c0986-00-2h9csqb9irakf.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=8ec6e0be:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=8ec6e0be:14032
+Mostrar mais 1 frame
+Mostrar menos
+chunk-RPCDYKBN.js?v=8ec6e0be:9129 Uncaught TypeError: Cannot read properties of undefined (reading 'name')
+    at ServiceChargingTypeCard (meus-servicos.tsx:95:33)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=8ec6e0be:11548:26)
+    at mountIndeterminateComponent (chunk-RPCDYKBN.js?v=8ec6e0be:14926:21)
+    at beginWork (chunk-RPCDYKBN.js?v=8ec6e0be:15914:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=8ec6e0be:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=8ec6e0be:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=8ec6e0be:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=8ec6e0be:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=8ec6e0be:18736:28)
+    at performSyncWorkOnRoot (chunk-RPCDYKBN.js?v=8ec6e0be:18879:28)
