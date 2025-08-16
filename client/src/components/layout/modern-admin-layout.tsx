@@ -27,6 +27,7 @@ const routeBreadcrumbs: Record<string, { title: string; parent?: string }> = {
   "/admin-services": { title: "Gerenciamento de Serviços", parent: "Serviços" },
   "/admin-provider-service-requests": { title: "Solicitações de Serviço", parent: "Serviços" },
   "/admin-categories": { title: "Categorias de Serviços", parent: "Serviços" },
+  "/admin-charging-types": { title: "Tipos de Cobrança", parent: "Serviços" },
   "/admin-media": { title: "Gerenciamento de Mídia", parent: "Serviços" },
   "/admin-bookings": { title: "Reservas", parent: "Gerenciamento de Reservas" },
   "/admin-chat": { title: "Chat com Usuários", parent: "Comunicação" },

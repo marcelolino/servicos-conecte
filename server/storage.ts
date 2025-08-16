@@ -65,6 +65,9 @@ import {
   type InsertOrderItem,
   type PageSettings,
   type InsertPageSettings,
+  customChargingTypes,
+  type CustomChargingType,
+  type InsertCustomChargingType,
   providerEarnings,
   withdrawalRequests,
   providerBankAccounts,
@@ -149,6 +152,12 @@ export interface IStorage {
   updateServiceChargingType(id: number, chargingType: Partial<InsertServiceChargingType>): Promise<ServiceChargingType>;
   deleteServiceChargingType(id: number): Promise<void>;
   bulkCreateServiceChargingTypes(chargingTypes: InsertServiceChargingType[]): Promise<ServiceChargingType[]>;
+  
+  // Custom charging types
+  getChargingTypes(): Promise<CustomChargingType[]>;
+  createChargingType(chargingType: InsertCustomChargingType): Promise<CustomChargingType>;
+  updateChargingType(id: number, chargingType: Partial<InsertCustomChargingType>): Promise<CustomChargingType>;
+  deleteChargingType(id: number): Promise<void>;
   
   // Provider service requests (for admin approval)
   getProviderServiceRequests(): Promise<(ProviderServiceRequest & { provider: Provider & { user: User }; category: ServiceCategory })[]>;
@@ -774,6 +783,35 @@ export class DatabaseStorage implements IStorage {
       .insert(serviceChargingTypes)
       .values(chargingTypes)
       .returning();
+  }
+
+  // Custom charging types methods
+  async getChargingTypes(): Promise<CustomChargingType[]> {
+    return await db
+      .select()
+      .from(customChargingTypes)
+      .orderBy(customChargingTypes.name);
+  }
+
+  async createChargingType(chargingType: InsertCustomChargingType): Promise<CustomChargingType> {
+    const [newChargingType] = await db
+      .insert(customChargingTypes)
+      .values(chargingType)
+      .returning();
+    return newChargingType;
+  }
+
+  async updateChargingType(id: number, chargingType: Partial<InsertCustomChargingType>): Promise<CustomChargingType> {
+    const [updatedChargingType] = await db
+      .update(customChargingTypes)
+      .set({ ...chargingType, updatedAt: new Date() })
+      .where(eq(customChargingTypes.id, id))
+      .returning();
+    return updatedChargingType;
+  }
+
+  async deleteChargingType(id: number): Promise<void> {
+    await db.delete(customChargingTypes).where(eq(customChargingTypes.id, id));
   }
 
   async getAllProviderServices(): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; provider: Provider & { user: User } })[]> {

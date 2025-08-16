@@ -514,6 +514,17 @@ export const pageSettings = pgTable("page_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Custom charging types table (extends the enum)
+export const customChargingTypes = pgTable("custom_charging_types", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   provider: one(providers, {
@@ -1053,3 +1064,8 @@ export const socialSettings = pgTable('social_settings', {
 export const insertSocialSettingsSchema = createInsertSchema(socialSettings);
 export type SocialSettings = typeof socialSettings.$inferSelect;
 export type InsertSocialSettings = z.infer<typeof insertSocialSettingsSchema>;
+
+// Custom charging types schemas
+export const insertCustomChargingTypeSchema = createInsertSchema(customChargingTypes);
+export type InsertCustomChargingType = z.infer<typeof insertCustomChargingTypeSchema>;
+export type CustomChargingType = typeof customChargingTypes.$inferSelect;

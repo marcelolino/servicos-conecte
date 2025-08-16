@@ -24,7 +24,7 @@ import {
   Clock,
   DollarSign
 } from 'lucide-react';
-import type { Service, ServiceCategory } from '@shared/schema';
+import type { Service, ServiceCategory, CustomChargingType } from '@shared/schema';
 
 const serviceSchema = z.object({
   categoryId: z.number().min(1, "Categoria é obrigatória"),
@@ -59,6 +59,17 @@ export default function AdminServicesCatalog() {
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
+  });
+
+  const { data: chargingTypes = [] } = useQuery<CustomChargingType[]>({
+    queryKey: ['/api/admin/charging-types'],
+  });
+
+  const { data: mediaFiles = [] } = useQuery<any[]>({
+    queryKey: ['/api/admin/media'],
+    select: (data) => data.filter((file: any) => 
+      file.category === 'service' && file.type.startsWith('image/')
+    ),
   });
 
   const form = useForm<ServiceFormData>({
@@ -272,6 +283,11 @@ export default function AdminServicesCatalog() {
                               <SelectItem value="daily">Por Diária</SelectItem>
                               <SelectItem value="package">Pacote</SelectItem>
                               <SelectItem value="quote">Orçamento</SelectItem>
+                              {chargingTypes.map((type) => (
+                                <SelectItem key={type.key} value={type.key}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -383,6 +399,40 @@ export default function AdminServicesCatalog() {
 
                   <FormField
                     control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Imagem do Serviço</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma imagem" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhuma imagem</SelectItem>
+                            {mediaFiles.map((file: any) => (
+                              <SelectItem key={file.id} value={file.url}>
+                                <div className="flex items-center gap-2">
+                                  <img src={file.url} alt={file.name} className="w-8 h-8 object-cover rounded" />
+                                  <span>{file.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <div className="mt-2">
+                            <img src={field.value} alt="Preview" className="w-20 h-20 object-cover rounded" />
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="tags"
                     render={({ field }) => (
                       <FormItem>
@@ -416,6 +466,129 @@ export default function AdminServicesCatalog() {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   {/* Same form fields as create dialog */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="categoryId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Categoria</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="defaultChargingType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Cobrança</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="visit">Por Visita</SelectItem>
+                              <SelectItem value="hour">Por Hora</SelectItem>
+                              <SelectItem value="daily">Por Diária</SelectItem>
+                              <SelectItem value="package">Pacote</SelectItem>
+                              <SelectItem value="quote">Orçamento</SelectItem>
+                              {chargingTypes.map((type) => (
+                                <SelectItem key={type.key} value={type.key}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Serviço</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Limpeza Residencial Completa" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição Completa</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descrição detalhada do que inclui o serviço..." 
+                            className="min-h-[100px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Imagem do Serviço</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione uma imagem" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Nenhuma imagem</SelectItem>
+                            {mediaFiles.map((file: any) => (
+                              <SelectItem key={file.id} value={file.url}>
+                                <div className="flex items-center gap-2">
+                                  <img src={file.url} alt={file.name} className="w-8 h-8 object-cover rounded" />
+                                  <span>{file.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <div className="mt-2">
+                            <img src={field.value} alt="Preview" className="w-20 h-20 object-cover rounded" />
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <Button 
                     type="submit" 
                     className="w-full"

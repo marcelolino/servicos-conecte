@@ -77,6 +77,7 @@ const menuData: MenuItem[] = [
     icon: Package,
     items: [
       { title: "Gerenciamento de Serviços", href: "/admin-services" },
+      { title: "Tipos de Cobrança", href: "/admin-charging-types" },
       { title: "Solicitações de Serviço", href: "/admin-provider-service-requests" },
       { title: "Categorias de Serviços", href: "/admin-categories" },
       { title: "Gerenciamento de Mídia", href: "/admin-media" },

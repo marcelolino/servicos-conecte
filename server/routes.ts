@@ -398,6 +398,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Charging types routes (Admin only)
+  app.get("/api/admin/charging-types", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const chargingTypes = await storage.getChargingTypes();
+      res.json(chargingTypes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get charging types", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/charging-types", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const chargingType = await storage.createChargingType(req.body);
+      res.json(chargingType);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/charging-types/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const chargingTypeId = parseInt(req.params.id);
+      const chargingType = await storage.updateChargingType(chargingTypeId, req.body);
+      res.json(chargingType);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/charging-types/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const chargingTypeId = parseInt(req.params.id);
+      await storage.deleteChargingType(chargingTypeId);
+      res.json({ message: "Charging type deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete charging type", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Services catalog routes (Public/Provider access)
   app.get("/api/services-catalog", async (req, res) => {
     try {
