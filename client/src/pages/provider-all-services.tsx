@@ -76,7 +76,7 @@ export default function ProviderAllServices() {
 
   // Fetch services catalog available for adoption
   const { data: servicesCatalog, isLoading: catalogLoading } = useQuery<Service[]>({
-    queryKey: ["/api/admin/services-catalog"],
+    queryKey: ["/api/services-catalog"],
   });
 
   // Fetch services available for this provider to adopt

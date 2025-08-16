@@ -118,11 +118,18 @@ export const services = pgTable("services", {
 export const providerServices = pgTable("provider_services", {
   id: serial("id").primaryKey(),
   providerId: integer("provider_id").references(() => providers.id).notNull(),
-  serviceId: integer("service_id").references(() => services.id).notNull(), // Reference to global service
-  customName: varchar("custom_name", { length: 255 }), // Provider can customize name
-  customDescription: text("custom_description"), // Provider's custom description
+  categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
+  serviceId: integer("service_id").references(() => services.id), // Reference to global service (optional)
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }),
   minimumPrice: decimal("minimum_price", { precision: 10, scale: 2 }),
+  estimatedDuration: varchar("estimated_duration", { length: 100 }),
+  requirements: text("requirements"),
+  serviceZone: text("service_zone"),
+  images: text("images"), // JSON array of service images
+  customName: varchar("custom_name", { length: 255 }), // Provider can customize name
+  customDescription: text("custom_description"), // Provider's custom description
   serviceRadius: integer("service_radius").default(10), // Service radius in km
   serviceZones: text("service_zones"), // JSON array of specific zones/neighborhoods
   availableHours: text("available_hours"), // JSON with availability schedule
