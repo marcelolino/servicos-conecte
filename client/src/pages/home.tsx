@@ -398,7 +398,7 @@ export default function Home() {
                                   {provider.services.slice(0, 2).map((service: any) => (
                                     <div key={service.id} className="text-xs">
                                       <Badge variant="secondary" className="text-xs mb-1">
-                                        {service.category.name}
+                                        {service.category?.name || 'Categoria não definida'}
                                       </Badge>
                                       <div className="flex items-center gap-2 text-gray-500">
                                         {service.service?.estimatedDuration && (
@@ -507,7 +507,7 @@ export default function Home() {
                               return (
                                 <div key={service.id} className="text-xs">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-medium">{service.category.name}</span>
+                                    <span className="font-medium">{service.category?.name || 'Categoria não definida'}</span>
                                     {minPrice ? (
                                       <Badge variant="secondary" className="text-xs">
                                         R$ {minPrice.price}
