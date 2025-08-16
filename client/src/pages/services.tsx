@@ -54,6 +54,15 @@ interface Service {
   isActive: boolean;
 }
 
+interface ChargingType {
+  id: number;
+  providerServiceId: number;
+  chargingType: string;
+  price: string;
+  description?: string;
+  isActive: boolean;
+}
+
 interface ProviderService {
   id: number;
   providerId: number;
@@ -71,6 +80,7 @@ interface ProviderService {
   category: ServiceCategory;
   provider: Provider;
   service?: Service;
+  chargingTypes: ChargingType[];
 }
 
 export default function ServicesPage() {
@@ -127,6 +137,35 @@ export default function ServicesPage() {
     },
   });
 
+  // Helper function to get price range from charging types
+  const getPriceRange = (service: ProviderService) => {
+    if (!service.chargingTypes || service.chargingTypes.length === 0) {
+      return {
+        min: parseFloat(service.price || "0"),
+        max: parseFloat(service.price || "0"),
+        hasChargingTypes: false
+      };
+    }
+    
+    const prices = service.chargingTypes
+      .filter(ct => ct.price && ct.chargingType !== 'quote')
+      .map(ct => parseFloat(ct.price));
+    
+    if (prices.length === 0) {
+      return {
+        min: parseFloat(service.price || "0"),
+        max: parseFloat(service.price || "0"),
+        hasChargingTypes: false
+      };
+    }
+    
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+      hasChargingTypes: true
+    };
+  };
+
   const filteredServices = (services || [])?.filter((service: ProviderService) => {
     const matchesCategory = selectedCategory === "all" || service.categoryId.toString() === selectedCategory;
     const matchesSearch = !searchTerm || 
@@ -137,7 +176,9 @@ export default function ServicesPage() {
   }).sort((a: ProviderService, b: ProviderService) => {
     switch (sortBy) {
       case "price":
-        return parseFloat(a.price || "0") - parseFloat(b.price || "0");
+        const aPriceRange = getPriceRange(a);
+        const bPriceRange = getPriceRange(b);
+        return aPriceRange.min - bPriceRange.min;
       case "rating":
         return parseFloat(b.provider.rating) - parseFloat(a.provider.rating);
       case "name":
@@ -154,10 +195,13 @@ export default function ServicesPage() {
       return;
     }
 
+    const priceRange = getPriceRange(service);
+    const unitPrice = priceRange.hasChargingTypes ? priceRange.min.toFixed(2) : (service.price || "0.00");
+    
     addToCartMutation.mutate({
       providerServiceId: service.id,
       quantity: 1,
-      unitPrice: service.price || "0.00",
+      unitPrice: unitPrice,
     });
   };
 
@@ -359,20 +403,59 @@ export default function ServicesPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-lg font-bold text-primary">
-                      R$ {parseFloat(service.price || "0").toFixed(2)}
-                    </div>
-                    {service.minimumPrice && service.minimumPrice !== service.price && (
-                      <div className="text-xs text-muted-foreground">
-                        Mínimo: R$ {parseFloat(service.minimumPrice).toFixed(2)}
-                      </div>
-                    )}
-                    {/* Faixa de preço sugerida */}
-                    {service.service?.suggestedMinPrice && service.service?.suggestedMaxPrice && (
-                      <div className="text-xs text-muted-foreground">
-                        Faixa: R$ {parseFloat(service.service.suggestedMinPrice).toFixed(2)} - R$ {parseFloat(service.service.suggestedMaxPrice).toFixed(2)}
-                      </div>
-                    )}
+                    {(() => {
+                      const priceRange = getPriceRange(service);
+                      const hasQuoteOnly = service.chargingTypes?.some(ct => ct.chargingType === 'quote') && 
+                        service.chargingTypes?.filter(ct => ct.price && ct.chargingType !== 'quote').length === 0;
+                      
+                      if (hasQuoteOnly) {
+                        return (
+                          <div className="text-lg font-bold text-primary">
+                            Sob consulta
+                          </div>
+                        );
+                      }
+                      
+                      if (priceRange.hasChargingTypes) {
+                        if (priceRange.min === priceRange.max) {
+                          return (
+                            <div className="text-lg font-bold text-primary">
+                              R$ {priceRange.min.toFixed(2)}
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div>
+                              <div className="text-lg font-bold text-primary">
+                                R$ {priceRange.min.toFixed(2)} - R$ {priceRange.max.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Faixa configurada pelo prestador
+                              </div>
+                            </div>
+                          );
+                        }
+                      } else {
+                        return (
+                          <div>
+                            <div className="text-lg font-bold text-primary">
+                              R$ {parseFloat(service.price || "0").toFixed(2)}
+                            </div>
+                            {service.minimumPrice && service.minimumPrice !== service.price && (
+                              <div className="text-xs text-muted-foreground">
+                                Mínimo: R$ {parseFloat(service.minimumPrice).toFixed(2)}
+                              </div>
+                            )}
+                            {/* Faixa de preço sugerida do catálogo */}
+                            {service.service?.suggestedMinPrice && service.service?.suggestedMaxPrice && (
+                              <div className="text-xs text-muted-foreground">
+                                Faixa sugerida: R$ {parseFloat(service.service.suggestedMinPrice).toFixed(2)} - R$ {parseFloat(service.service.suggestedMaxPrice).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    })()} 
                   </div>
                   <Button
                     onClick={() => handleAddToCart(service)}

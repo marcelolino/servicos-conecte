@@ -845,74 +845,84 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Found ${results.length} provider services`);
 
-      return results.map((result) => ({
-        id: result.providerService.id,
-        providerId: result.providerService.providerId,
-        categoryId: result.providerService.categoryId,
-        serviceId: result.providerService.serviceId,
-        name: result.providerService.name,
-        description: result.providerService.description,
-        price: result.providerService.price,
-        minimumPrice: result.providerService.minimumPrice,
-        estimatedDuration: result.providerService.estimatedDuration,
-        requirements: result.providerService.requirements,
-        serviceZone: result.providerService.serviceZone,
-        images: result.providerService.images,
-        customName: result.providerService.customName,
-        customDescription: result.providerService.customDescription,
-        serviceRadius: result.providerService.serviceRadius,
-        serviceZones: result.providerService.serviceZones,
-        availableHours: result.providerService.availableHours,
-        customRequirements: result.providerService.customRequirements,
-        portfolioImages: result.providerService.portfolioImages,
-        specialNotes: result.providerService.specialNotes,
-        isActive: result.providerService.isActive,
-        createdAt: result.providerService.createdAt,
-        updatedAt: result.providerService.updatedAt,
-        category: {
-          id: result.category.id,
-          name: result.category.name,
-          description: result.category.description,
-          icon: result.category.icon,
-          imageUrl: result.category.imageUrl,
-          color: result.category.color,
-        },
-        service: result.service ? {
-          id: result.service.id,
-          name: result.service.name,
-          description: result.service.description,
-          shortDescription: result.service.shortDescription,
-          estimatedDuration: result.service.estimatedDuration,
-          durationType: result.service.durationType,
-          materialsIncluded: result.service.materialsIncluded,
-          materialsDescription: result.service.materialsDescription,
-          defaultChargingType: result.service.defaultChargingType,
-          suggestedMinPrice: result.service.suggestedMinPrice,
-          suggestedMaxPrice: result.service.suggestedMaxPrice,
-          tags: result.service.tags,
-          requirements: result.service.requirements,
-          imageUrl: result.service.imageUrl,
-        } : null,
-        provider: {
-          id: result.provider.id,
-          status: result.provider.status,
-          rating: result.provider.rating,
-          totalReviews: result.provider.totalReviews,
-          city: result.provider.city,
-          state: result.provider.state,
-          description: result.provider.description,
-          user: {
-            id: result.user.id,
-            name: result.user.name,
-            email: result.user.email,
-            phone: result.user.phone,
-            city: result.user.city,
-            state: result.user.state,
-            latitude: result.user.latitude,
-            longitude: result.user.longitude,
-          }
-        }
-      }));
+      // Get charging types for each service
+      const servicesWithChargingTypes = await Promise.all(
+        results.map(async (result) => {
+          const chargingTypes = await this.getServiceChargingTypes(result.providerService.id);
+          return {
+            id: result.providerService.id,
+            providerId: result.providerService.providerId,
+            categoryId: result.providerService.categoryId,
+            serviceId: result.providerService.serviceId,
+            name: result.providerService.name,
+            description: result.providerService.description,
+            price: result.providerService.price,
+            minimumPrice: result.providerService.minimumPrice,
+            estimatedDuration: result.providerService.estimatedDuration,
+            requirements: result.providerService.requirements,
+            serviceZone: result.providerService.serviceZone,
+            images: result.providerService.images,
+            customName: result.providerService.customName,
+            customDescription: result.providerService.customDescription,
+            serviceRadius: result.providerService.serviceRadius,
+            serviceZones: result.providerService.serviceZones,
+            availableHours: result.providerService.availableHours,
+            customRequirements: result.providerService.customRequirements,
+            portfolioImages: result.providerService.portfolioImages,
+            specialNotes: result.providerService.specialNotes,
+            isActive: result.providerService.isActive,
+            createdAt: result.providerService.createdAt,
+            updatedAt: result.providerService.updatedAt,
+            chargingTypes, // Add charging types here
+            category: {
+              id: result.category.id,
+              name: result.category.name,
+              description: result.category.description,
+              icon: result.category.icon,
+              imageUrl: result.category.imageUrl,
+              color: result.category.color,
+            },
+            service: result.service ? {
+              id: result.service.id,
+              name: result.service.name,
+              description: result.service.description,
+              shortDescription: result.service.shortDescription,
+              estimatedDuration: result.service.estimatedDuration,
+              durationType: result.service.durationType,
+              materialsIncluded: result.service.materialsIncluded,
+              materialsDescription: result.service.materialsDescription,
+              defaultChargingType: result.service.defaultChargingType,
+              suggestedMinPrice: result.service.suggestedMinPrice,
+              suggestedMaxPrice: result.service.suggestedMaxPrice,
+              tags: result.service.tags,
+              requirements: result.service.requirements,
+              imageUrl: result.service.imageUrl,
+              category: result.category,
+            } : null,
+            provider: {
+              id: result.provider.id,
+              status: result.provider.status,
+              rating: result.provider.rating,
+              totalReviews: result.provider.totalReviews,
+              city: result.provider.city,
+              state: result.provider.state,
+              description: result.provider.description,
+              user: {
+                id: result.user.id,
+                name: result.user.name,
+                email: result.user.email,
+                phone: result.user.phone,
+                city: result.user.city,
+                state: result.user.state,
+                latitude: result.user.latitude,
+                longitude: result.user.longitude,
+              }
+            }
+          };
+        })
+      );
+
+      return servicesWithChargingTypes;
     } catch (error) {
       console.error('Error in getAllProviderServices:', error);
       return []; // Return empty array instead of throwing
