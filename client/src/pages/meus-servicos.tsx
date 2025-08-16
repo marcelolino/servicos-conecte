@@ -92,7 +92,7 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
           <div className="space-y-1">
             <CardTitle className="text-lg">{service.name}</CardTitle>
             <CardDescription className="text-sm">
-              {service.category.name} • {service.description}
+              {service.category?.name || 'Categoria não definida'} • {service.description}
             </CardDescription>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <DollarSign className="h-4 w-4" />
@@ -258,7 +258,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
           <div>
             <CardTitle>Gerenciar Tipos de Cobrança</CardTitle>
             <CardDescription>
-              {service.name} • {service.category.name}
+              {service.name} • {service.category?.name || 'Categoria não definida'}
             </CardDescription>
           </div>
           <Button variant="outline" onClick={onClose}>

@@ -324,19 +324,19 @@ export default function ProviderServiceSubscriptionsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(service.isActive)}
+                          {getStatusBadge(service.isActive ?? false)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="flex items-center space-x-2">
                               <Switch
                                 id={`status-${service.id}`}
-                                checked={service.isActive}
-                                onCheckedChange={() => handleToggleStatus(service.id, service.isActive)}
+                                checked={service.isActive ?? false}
+                                onCheckedChange={() => handleToggleStatus(service.id, service.isActive ?? false)}
                                 disabled={toggleServiceStatusMutation.isPending}
                               />
                               <Label htmlFor={`status-${service.id}`} className="text-sm">
-                                {service.isActive ? "Ativo" : "Inativo"}
+                                {(service.isActive ?? false) ? "Ativo" : "Inativo"}
                               </Label>
                             </div>
                           </div>
