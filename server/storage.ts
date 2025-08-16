@@ -2,6 +2,7 @@ import {
   users,
   providers,
   serviceCategories,
+  services,
   providerServices,
   serviceChargingTypes,
   serviceRequests,
@@ -26,6 +27,8 @@ import {
   type InsertProvider,
   type ServiceCategory,
   type InsertServiceCategory,
+  type Service,
+  type InsertService,
   type ProviderService,
   type InsertProviderService,
   type ServiceChargingType,
@@ -120,13 +123,25 @@ export interface IStorage {
   createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory>;
   updateServiceCategory(id: number, category: Partial<InsertServiceCategory>): Promise<ServiceCategory>;
   
-  // Provider services
-  getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]>;
+  // Global services catalog
+  getServices(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]>;
+  getService(id: number): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory }) | undefined>;
+  getServicesByCategory(categoryId: number): Promise<(Service & { category: ServiceCategory })[]>;
+  createService(service: InsertService): Promise<Service>;
+  updateService(id: number, service: Partial<InsertService>): Promise<Service>;
+  deleteService(id: number): Promise<void>;
+  
+  // Provider services (providers adopting services from catalog)
+  getProviderServices(providerId: number): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; chargingTypes: ServiceChargingType[] })[]>;
   getProviderServiceById(serviceId: number): Promise<any | null>;
-  getAllProviderServices(): Promise<any[]>;
+  getAllProviderServices(): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; provider: Provider & { user: User } })[]>;
   createProviderService(service: InsertProviderService): Promise<ProviderService>;
   updateProviderService(id: number, service: Partial<InsertProviderService>): Promise<ProviderService>;
   deleteProviderService(id: number): Promise<void>;
+  
+  // Provider adopts service from catalog
+  adoptServiceFromCatalog(providerId: number, serviceId: number, serviceData: Partial<InsertProviderService>): Promise<ProviderService>;
+  getAvailableServicesForProvider(providerId: number): Promise<Service[]>; // Services not yet adopted by this provider
   
   // Service charging types
   getServiceChargingTypes(providerServiceId: number): Promise<ServiceChargingType[]>;
@@ -463,9 +478,10 @@ export class DatabaseStorage implements IStorage {
       .from(providers)
       .innerJoin(users, eq(providers.userId, users.id))
       .innerJoin(providerServices, eq(providers.id, providerServices.providerId))
+      .innerJoin(services, eq(providerServices.serviceId, services.id))
       .where(
         and(
-          eq(providerServices.categoryId, categoryId),
+          eq(services.categoryId, categoryId),
           eq(providers.status, "approved"),
           eq(providerServices.isActive, true)
         )
@@ -541,20 +557,107 @@ export class DatabaseStorage implements IStorage {
     return updatedCategory;
   }
 
-  async getProviderServices(providerId: number): Promise<(ProviderService & { category: ServiceCategory; chargingTypes: ServiceChargingType[] })[]> {
-    const services = await db
-      .select()
+  // Global services catalog
+  async getServices(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]> {
+    const result = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(eq(services.isActive, true));
+
+    return result.map(r => ({
+      ...r.service,
+      category: r.category,
+      subcategory: undefined, // TODO: implement subcategory join
+    }));
+  }
+
+  async getService(id: number): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory }) | undefined> {
+    const [result] = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(eq(services.id, id));
+
+    if (!result) return undefined;
+
+    return {
+      ...result.service,
+      category: result.category,
+      subcategory: undefined, // TODO: implement subcategory join
+    };
+  }
+
+  async getServicesByCategory(categoryId: number): Promise<(Service & { category: ServiceCategory })[]> {
+    const result = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(and(
+        eq(services.categoryId, categoryId),
+        eq(services.isActive, true)
+      ));
+
+    return result.map(r => ({
+      ...r.service,
+      category: r.category,
+    }));
+  }
+
+  async createService(service: InsertService): Promise<Service> {
+    const [newService] = await db
+      .insert(services)
+      .values(service)
+      .returning();
+    return newService;
+  }
+
+  async updateService(id: number, service: Partial<InsertService>): Promise<Service> {
+    const [updatedService] = await db
+      .update(services)
+      .set({ ...service, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    return updatedService;
+  }
+
+  async deleteService(id: number): Promise<void> {
+    await db.update(services)
+      .set({ isActive: false })
+      .where(eq(services.id, id));
+  }
+
+  async getProviderServices(providerId: number): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; chargingTypes: ServiceChargingType[] })[]> {
+    const providerServicesList = await db
+      .select({
+        providerService: providerServices,
+        service: services,
+        category: serviceCategories,
+      })
       .from(providerServices)
-      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .innerJoin(services, eq(providerServices.serviceId, services.id))
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
       .where(eq(providerServices.providerId, providerId));
 
     // Get charging types for each service
     const servicesWithChargingTypes = await Promise.all(
-      services.map(async (service) => {
-        const chargingTypes = await this.getServiceChargingTypes(service.provider_services.id);
+      providerServicesList.map(async (item) => {
+        const chargingTypes = await this.getServiceChargingTypes(item.providerService.id);
         return {
-          ...service.provider_services,
-          category: service.service_categories,
+          ...item.providerService,
+          service: {
+            ...item.service,
+            category: item.category,
+          },
           chargingTypes,
         };
       })
@@ -585,6 +688,52 @@ export class DatabaseStorage implements IStorage {
     await db.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
     // Then delete the service
     await db.delete(providerServices).where(eq(providerServices.id, id));
+  }
+
+  // Provider adopts service from catalog
+  async adoptServiceFromCatalog(providerId: number, serviceId: number, serviceData: Partial<InsertProviderService>): Promise<ProviderService> {
+    // Check if provider already adopted this service
+    const existingService = await db
+      .select()
+      .from(providerServices)
+      .where(
+        and(
+          eq(providerServices.providerId, providerId),
+          eq(providerServices.serviceId, serviceId)
+        )
+      )
+      .limit(1);
+
+    if (existingService.length > 0) {
+      throw new Error("Você já adotou este serviço do catálogo");
+    }
+
+    const [newProviderService] = await db
+      .insert(providerServices)
+      .values({
+        providerId,
+        serviceId,
+        ...serviceData,
+      })
+      .returning();
+
+    return newProviderService;
+  }
+
+  async getAvailableServicesForProvider(providerId: number): Promise<Service[]> {
+    // Get all services from catalog
+    const allServices = await this.getServices();
+    
+    // Get services already adopted by this provider
+    const adoptedServices = await db
+      .select({ serviceId: providerServices.serviceId })
+      .from(providerServices)
+      .where(eq(providerServices.providerId, providerId));
+    
+    const adoptedServiceIds = adoptedServices.map(ps => ps.serviceId);
+    
+    // Filter out already adopted services
+    return allServices.filter(service => !adoptedServiceIds.includes(service.id));
   }
 
   // Service charging types methods
@@ -627,25 +776,33 @@ export class DatabaseStorage implements IStorage {
       .returning();
   }
 
-  async getAllProviderServices(): Promise<any[]> {
+  async getAllProviderServices(): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; provider: Provider & { user: User } })[]> {
     try {
-      // First, let's try a simpler query without the complex nesting
       const results = await db
-        .select()
+        .select({
+          providerService: providerServices,
+          service: services,
+          category: serviceCategories,
+          provider: providers,
+          user: users,
+        })
         .from(providerServices)
-        .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+        .innerJoin(services, eq(providerServices.serviceId, services.id))
+        .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
         .innerJoin(providers, eq(providerServices.providerId, providers.id))
         .innerJoin(users, eq(providers.userId, users.id))
         .where(eq(providerServices.isActive, true))
-        .orderBy(asc(serviceCategories.name), asc(providerServices.name));
+        .orderBy(asc(serviceCategories.name), asc(services.name));
 
-      // Transform the results to match the expected structure
       return results.map(row => ({
-        ...row.provider_services,
-        category: row.service_categories,
+        ...row.providerService,
+        service: {
+          ...row.service,
+          category: row.category,
+        },
         provider: {
-          ...row.providers,
-          user: row.users
+          ...row.provider,
+          user: row.user
         }
       }));
     } catch (error) {
@@ -657,9 +814,16 @@ export class DatabaseStorage implements IStorage {
   async getProviderServiceById(serviceId: number): Promise<any | null> {
     try {
       const results = await db
-        .select()
+        .select({
+          providerService: providerServices,
+          service: services,
+          category: serviceCategories,
+          provider: providers,
+          user: users,
+        })
         .from(providerServices)
-        .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+        .innerJoin(services, eq(providerServices.serviceId, services.id))
+        .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
         .innerJoin(providers, eq(providerServices.providerId, providers.id))
         .innerJoin(users, eq(providers.userId, users.id))
         .where(eq(providerServices.id, serviceId))
@@ -671,11 +835,14 @@ export class DatabaseStorage implements IStorage {
 
       const row = results[0];
       return {
-        ...row.provider_services,
-        category: row.service_categories,
+        ...row.providerService,
+        service: {
+          ...row.service,
+          category: row.category,
+        },
         provider: {
-          ...row.providers,
-          user: row.users
+          ...row.provider,
+          user: row.user
         }
       };
     } catch (error) {
@@ -766,10 +933,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
-    // Get provider's service categories
+    // Get provider's service categories through services table
     const providerServicesList = await db
-      .select({ categoryId: providerServices.categoryId })
+      .select({ categoryId: services.categoryId })
       .from(providerServices)
+      .innerJoin(services, eq(providerServices.serviceId, services.id))
       .where(eq(providerServices.providerId, providerId));
     
     const categoryIds = providerServicesList.map(ps => ps.categoryId);
@@ -1055,46 +1223,33 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getAllServicesForAdmin(): Promise<(ProviderService & { category: ServiceCategory; provider: Provider & { user: User } })[]> {
-    return await db
+  async getAllServicesForAdmin(): Promise<(ProviderService & { service: Service & { category: ServiceCategory }; provider: Provider & { user: User } })[]> {
+    const results = await db
       .select({
-        id: providerServices.id,
-        providerId: providerServices.providerId,
-        categoryId: providerServices.categoryId,
-        name: providerServices.name,
-        description: providerServices.description,
-        price: providerServices.price,
-        estimatedDuration: providerServices.estimatedDuration,
-        requirements: providerServices.requirements,
-        serviceZone: providerServices.serviceZone,
-        isActive: providerServices.isActive,
-        createdAt: providerServices.createdAt,
-        updatedAt: providerServices.updatedAt,
+        providerService: providerServices,
+        service: services,
         category: serviceCategories,
-        provider: {
-          id: providers.id,
-          userId: providers.userId,
-          status: providers.status,
-          serviceRadius: providers.serviceRadius,
-          basePrice: providers.basePrice,
-          description: providers.description,
-          experience: providers.experience,
-          documents: providers.documents,
-          rating: providers.rating,
-          totalReviews: providers.totalReviews,
-          totalServices: providers.totalServices,
-          isTrialActive: providers.isTrialActive,
-          trialEndsAt: providers.trialEndsAt,
-          createdAt: providers.createdAt,
-          updatedAt: providers.updatedAt,
-          user: users,
-        },
+        provider: providers,
+        user: users,
       })
       .from(providerServices)
-      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+      .innerJoin(services, eq(providerServices.serviceId, services.id))
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
       .innerJoin(providers, eq(providerServices.providerId, providers.id))
       .innerJoin(users, eq(providers.userId, users.id))
       .orderBy(desc(providerServices.createdAt));
+
+    return results.map(row => ({
+      ...row.providerService,
+      service: {
+        ...row.service,
+        category: row.category,
+      },
+      provider: {
+        ...row.provider,
+        user: row.user,
+      },
+    }));
   }
 
   async getAllBookingsForAdmin(): Promise<(ServiceRequest & { client: User; provider?: Provider & { user: User }; category: ServiceCategory })[]> {

@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
-import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema, insertProviderServiceRequestSchema } from "@shared/schema";
+import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema, insertProviderServiceRequestSchema, insertServiceSchema, insertServiceCategorySchema } from "@shared/schema";
 import { 
   upload, 
   uploadDocument,
@@ -358,6 +358,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global services catalog routes (Admin)
+  app.get("/api/admin/services-catalog", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get services catalog", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/admin/services-catalog", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceData = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(serviceData);
+      res.json(service);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/admin/services-catalog/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const service = await storage.updateService(serviceId, req.body);
+      res.json(service);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/admin/services-catalog/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      await storage.deleteService(serviceId);
+      res.json({ message: "Service deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Services catalog routes (Public/Provider access)
+  app.get("/api/services-catalog", async (req, res) => {
+    try {
+      const { categoryId } = req.query;
+      let services;
+      
+      if (categoryId) {
+        services = await storage.getServicesByCategory(parseInt(categoryId as string));
+      } else {
+        services = await storage.getServices();
+      }
+      
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get services catalog", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/services-catalog/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const service = await storage.getService(serviceId);
+      
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Provider routes
   app.post("/api/providers", authenticateToken, async (req, res) => {
     try {
@@ -584,6 +657,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Service unsubscribed successfully" });
     } catch (error) {
       res.status(400).json({ message: "Failed to unsubscribe from service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Provider services catalog routes
+  app.get("/api/provider/available-services", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      const availableServices = await storage.getAvailableServicesForProvider(provider.id);
+      res.json(availableServices);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get available services", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/provider/adopt-service", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const { serviceId, ...serviceData } = req.body;
+      
+      // Verify the service exists in the catalog
+      const catalogService = await storage.getService(serviceId);
+      if (!catalogService) {
+        return res.status(404).json({ message: "Service not found in catalog" });
+      }
+
+      // Adopt the service
+      const adoptedService = await storage.adoptServiceFromCatalog(
+        provider.id,
+        serviceId,
+        serviceData
+      );
+
+      res.json(adoptedService);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to adopt service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

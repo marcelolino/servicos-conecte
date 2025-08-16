@@ -23,15 +23,42 @@ interface ServiceCategory {
   isActive: boolean;
 }
 
+interface Service {
+  id: number;
+  categoryId: number;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  estimatedDuration?: string;
+  durationType?: string;
+  materialsIncluded: boolean;
+  materialsDescription?: string;
+  defaultChargingType: string;
+  suggestedMinPrice?: string;
+  suggestedMaxPrice?: string;
+  tags?: string;
+  requirements?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  category: ServiceCategory;
+}
+
 interface ProviderService {
   id: number;
   providerId: number;
-  categoryId: number;
-  name?: string;
-  description?: string;
+  serviceId: number;
+  customName?: string;
+  customDescription?: string;
   price?: string;
+  minimumPrice?: string;
+  serviceRadius: number;
+  serviceZones?: string;
+  availableHours?: string;
+  customRequirements?: string;
+  portfolioImages?: string;
+  specialNotes?: string;
   isActive: boolean;
-  category: ServiceCategory;
+  service: Service;
 }
 
 export default function ProviderAllServices() {
@@ -41,15 +68,21 @@ export default function ProviderAllServices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Fetch all admin-created services that providers can subscribe to
-  const { data: adminServices, isLoading: adminServicesLoading } = useQuery({
-    queryKey: ["/api/admin/services/available"],
-  });
-
-  // Fetch provider data
+  // Fetch provider data first
   const { data: provider, isLoading: providerLoading } = useQuery({
     queryKey: ["/api/providers/me"],
     enabled: user?.userType === "provider",
+  });
+
+  // Fetch services catalog available for adoption
+  const { data: servicesCatalog, isLoading: catalogLoading } = useQuery<Service[]>({
+    queryKey: ["/api/admin/services-catalog"],
+  });
+
+  // Fetch services available for this provider to adopt
+  const { data: availableServices, isLoading: availableLoading } = useQuery<Service[]>({
+    queryKey: ["/api/provider/available-services"],
+    enabled: !!provider,
   });
 
   // Fetch current provider's services
@@ -63,34 +96,32 @@ export default function ProviderAllServices() {
     queryKey: ["/api/categories"],
   });
 
-  // Subscribe to admin service mutation
-  const subscribeToServiceMutation = useMutation({
+  // Adopt service from catalog mutation
+  const adoptServiceMutation = useMutation({
     mutationFn: (serviceData: { 
-      adminServiceId: number; 
-      name: string; 
-      description: string; 
-      categoryId: number; 
+      serviceId: number; 
+      customName?: string; 
+      customDescription?: string; 
       price: string;
-      serviceZone: string;
+      minimumPrice?: string;
+      serviceRadius: number;
+      serviceZones?: string;
+      availableHours?: string;
+      customRequirements?: string;
+      specialNotes?: string;
     }) =>
-      apiRequest("POST", "/api/provider-services", {
-        categoryId: serviceData.categoryId,
-        name: serviceData.name,
-        description: serviceData.description,
-        price: serviceData.price,
-        serviceZone: serviceData.serviceZone,
-        isActive: true,
-      }),
+      apiRequest("POST", "/api/provider/adopt-service", serviceData),
     onSuccess: () => {
       toast({
-        title: "Inscrição realizada!",
-        description: "Você foi inscrito no serviço com sucesso.",
+        title: "Serviço adotado!",
+        description: "Serviço do catálogo adotado com sucesso.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/provider/available-services"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao se inscrever",
+        title: "Erro ao adotar serviço",
         description: error.message,
         variant: "destructive",
       });
@@ -133,23 +164,25 @@ export default function ProviderAllServices() {
     },
   });
 
-  // Combine admin services with provider subscription status
-  const servicesData = (adminServices as any[])?.map((adminService: any) => {
+  // Combine services catalog with provider adoption status
+  const servicesData = (servicesCatalog as any[])?.map((catalogService: any) => {
     const providerService = (providerServices as any[])?.find((ps: any) => 
-      ps.name === adminService.name && ps.categoryId === adminService.categoryId
+      ps.serviceId === catalogService.id
     );
     return {
-      id: adminService.id,
-      name: adminService.name,
-      description: adminService.description,
-      category: adminService.category?.name || "Sem Categoria",
-      categoryId: adminService.categoryId,
-      price: adminService.price,
-      serviceZone: adminService.serviceZone || "Não especificado",
-      provider: adminService.provider?.user?.name || "Admin",
-      isSubscribed: !!providerService,
+      id: catalogService.id,
+      name: catalogService.name,
+      description: catalogService.description,
+      category: catalogService.category?.name || "Sem Categoria",
+      categoryId: catalogService.categoryId,
+      suggestedMinPrice: catalogService.suggestedMinPrice,
+      suggestedMaxPrice: catalogService.suggestedMaxPrice,
+      defaultChargingType: catalogService.defaultChargingType,
+      isAdopted: !!providerService,
       isActive: providerService?.isActive ?? false,
       providerServiceId: providerService?.id,
+      customPrice: providerService?.price,
+      serviceRadius: providerService?.serviceRadius,
     };
   }) || [];
 
@@ -163,14 +196,16 @@ export default function ProviderAllServices() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSubscribe = (service: any) => {
-    subscribeToServiceMutation.mutate({
-      adminServiceId: service.id,
-      name: service.name,
-      description: service.description,
-      categoryId: service.categoryId,
-      price: service.price,
-      serviceZone: service.serviceZone,
+  const handleAdoptService = (service: any) => {
+    // Use suggested minimum price as default
+    const defaultPrice = service.suggestedMinPrice || "50.00";
+    const defaultRadius = 10; // 10km default radius
+    
+    adoptServiceMutation.mutate({
+      serviceId: service.id,
+      price: defaultPrice,
+      serviceRadius: defaultRadius,
+      customName: service.name, // Use catalog name as default
     });
   };
 
@@ -213,7 +248,7 @@ export default function ProviderAllServices() {
     );
   }
 
-  if (adminServicesLoading || providerLoading || servicesLoading || categoriesLoading) {
+  if (catalogLoading || providerLoading || servicesLoading || categoriesLoading) {
     return (
       <ModernProviderLayout>
         <div className="flex items-center justify-center min-h-96">
@@ -232,8 +267,8 @@ export default function ProviderAllServices() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Gerenciar Serviços</h1>
-            <p className="text-muted-foreground">Inscreva-se nos serviços disponíveis do painel administrativo</p>
+            <h1 className="text-2xl font-bold text-foreground">Catálogo de Serviços</h1>
+            <p className="text-muted-foreground">Adote serviços do catálogo global e ofereça aos seus clientes</p>
           </div>
         </div>
 
@@ -312,10 +347,16 @@ export default function ProviderAllServices() {
                           <Badge variant="outline">{service.category}</Badge>
                         </TableCell>
                         <TableCell className="font-medium text-green-600">
-                          R$ {parseFloat(service.price).toFixed(2)}
+                          {service.isAdopted && service.customPrice ? (
+                            <span>R$ {parseFloat(service.customPrice).toFixed(2)}</span>
+                          ) : service.suggestedMinPrice ? (
+                            <span className="text-muted-foreground">R$ {service.suggestedMinPrice}+</span>
+                          ) : (
+                            <span className="text-muted-foreground">A definir</span>
+                          )}
                         </TableCell>
                         <TableCell>
-                          {service.isSubscribed ? (
+                          {service.isAdopted ? (
                             <div className="flex items-center gap-2">
                               <Badge variant={service.isActive ? "default" : "secondary"}>
                                 {service.isActive ? "Ativo" : "Inativo"}
@@ -328,11 +369,11 @@ export default function ProviderAllServices() {
                               />
                             </div>
                           ) : (
-                            <Badge variant="outline">Não inscrito</Badge>
+                            <Badge variant="outline">Não adotado</Badge>
                           )}
                         </TableCell>
                         <TableCell>
-                          {service.isSubscribed ? (
+                          {service.isAdopted ? (
                             <Button
                               variant="outline"
                               size="sm"
@@ -345,21 +386,21 @@ export default function ProviderAllServices() {
                               ) : (
                                 <UserMinus className="h-4 w-4 mr-2" />
                               )}
-                              Desinscrever
+                              Remover
                             </Button>
                           ) : (
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleSubscribe(service)}
-                              disabled={subscribeToServiceMutation.isPending}
+                              onClick={() => handleAdoptService(service)}
+                              disabled={adoptServiceMutation.isPending}
                             >
-                              {subscribeToServiceMutation.isPending ? (
+                              {adoptServiceMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                               ) : (
                                 <UserPlus className="h-4 w-4 mr-2" />
                               )}
-                              Inscrever
+                              Adotar
                             </Button>
                           )}
                         </TableCell>

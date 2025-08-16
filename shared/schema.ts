@@ -38,7 +38,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Service categories table
+// Service categories table with subcategories support
 export const serviceCategories = pgTable("service_categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -46,6 +46,8 @@ export const serviceCategories = pgTable("service_categories", {
   icon: varchar("icon", { length: 50 }),
   imageUrl: text("image_url"), // Category image
   color: varchar("color", { length: 20 }),
+  parentId: integer("parent_id").references(() => serviceCategories.id), // For subcategories
+  level: integer("level").default(0), // 0 = main category, 1 = subcategory
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -89,19 +91,44 @@ export const providers = pgTable("providers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Provider services (many-to-many relationship)
+// Global services catalog - independent of providers
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
+  subcategoryId: integer("subcategory_id").references(() => serviceCategories.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  shortDescription: varchar("short_description", { length: 500 }),
+  estimatedDuration: varchar("estimated_duration", { length: 100 }), // e.g., "1h", "2h", "1 dia"
+  durationType: varchar("duration_type", { length: 20 }).default("hours"), // "hours", "days", "visits"
+  materialsIncluded: boolean("materials_included").default(false),
+  materialsDescription: text("materials_description"), // What materials are included
+  defaultChargingType: chargingTypeEnum("default_charging_type").default("visit"),
+  suggestedMinPrice: decimal("suggested_min_price", { precision: 10, scale: 2 }),
+  suggestedMaxPrice: decimal("suggested_max_price", { precision: 10, scale: 2 }),
+  tags: text("tags"), // JSON array of tags for better search
+  requirements: text("requirements"), // What the service requires
+  imageUrl: text("image_url"), // Representative service image
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Provider services - providers adopt services from catalog with their own conditions
 export const providerServices = pgTable("provider_services", {
   id: serial("id").primaryKey(),
   providerId: integer("provider_id").references(() => providers.id).notNull(),
-  categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
-  name: varchar("name", { length: 255 }),
-  description: text("description"),
+  serviceId: integer("service_id").references(() => services.id).notNull(), // Reference to global service
+  customName: varchar("custom_name", { length: 255 }), // Provider can customize name
+  customDescription: text("custom_description"), // Provider's custom description
   price: decimal("price", { precision: 10, scale: 2 }),
   minimumPrice: decimal("minimum_price", { precision: 10, scale: 2 }),
-  estimatedDuration: varchar("estimated_duration", { length: 100 }),
-  requirements: text("requirements"),
-  serviceZone: text("service_zone"),
-  images: text("images"), // JSON array of service image URLs
+  serviceRadius: integer("service_radius").default(10), // Service radius in km
+  serviceZones: text("service_zones"), // JSON array of specific zones/neighborhoods
+  availableHours: text("available_hours"), // JSON with availability schedule
+  customRequirements: text("custom_requirements"), // Additional provider requirements
+  portfolioImages: text("portfolio_images"), // JSON array of provider's work examples
+  specialNotes: text("special_notes"), // Provider's special notes or differentials
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -513,9 +540,29 @@ export const providersRelations = relations(providers, ({ one, many }) => ({
   pixKeys: many(providerPixKeys),
 }));
 
-export const serviceCategoriesRelations = relations(serviceCategories, ({ many }) => ({
+export const serviceCategoriesRelations = relations(serviceCategories, ({ one, many }) => ({
+  parent: one(serviceCategories, {
+    fields: [serviceCategories.parentId],
+    references: [serviceCategories.id],
+  }),
+  subcategories: many(serviceCategories, {
+    relationName: "subcategories"
+  }),
+  services: many(services),
   providerServices: many(providerServices),
   serviceRequests: many(serviceRequests),
+}));
+
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  category: one(serviceCategories, {
+    fields: [services.categoryId],
+    references: [serviceCategories.id],
+  }),
+  subcategory: one(serviceCategories, {
+    fields: [services.subcategoryId],
+    references: [serviceCategories.id],
+  }),
+  providerServices: many(providerServices),
 }));
 
 export const providerServicesRelations = relations(providerServices, ({ one, many }) => ({
@@ -523,9 +570,9 @@ export const providerServicesRelations = relations(providerServices, ({ one, man
     fields: [providerServices.providerId],
     references: [providers.id],
   }),
-  category: one(serviceCategories, {
-    fields: [providerServices.categoryId],
-    references: [serviceCategories.id],
+  service: one(services, {
+    fields: [providerServices.serviceId],
+    references: [services.id],
   }),
   chargingTypes: many(serviceChargingTypes),
 }));
@@ -764,6 +811,12 @@ export const insertServiceCategorySchema = createInsertSchema(serviceCategories)
   createdAt: true,
 });
 
+export const insertServiceSchema = createInsertSchema(services).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertProviderServiceSchema = createInsertSchema(providerServices).omit({
   id: true,
   createdAt: true,
@@ -929,6 +982,8 @@ export type Provider = typeof providers.$inferSelect;
 export type InsertProvider = z.infer<typeof insertProviderSchema>;
 export type ServiceCategory = typeof serviceCategories.$inferSelect;
 export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
 export type ProviderService = typeof providerServices.$inferSelect;
 export type InsertProviderService = z.infer<typeof insertProviderServiceSchema>;
 export type ServiceChargingType = typeof serviceChargingTypes.$inferSelect;
