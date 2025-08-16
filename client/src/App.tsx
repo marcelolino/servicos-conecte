@@ -50,7 +50,6 @@ import { AdminPageSettings } from "@/pages/admin-page-settings";
 import { AdminSocialSettings } from "@/pages/admin-social-settings";
 import { AdminNotificationSettings } from "@/pages/admin-notification-settings";
 import AdminPaymentMethods from "@/pages/admin-payment-methods";
-import AdminServices from "@/pages/admin/services";
 import AdminProviderServiceRequests from "@/pages/admin/provider-service-requests";
 import AdminPageConfigurations from "@/pages/admin-page-configurations";
 import UploadTest from "@/pages/upload-test";
@@ -111,11 +110,10 @@ function Router() {
       <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
       <Route path="/admin-providers" component={AdminProvidersPage} />
       <Route path="/admin-users" component={AdminUsersPage} />
-      <Route path="/admin-services" component={AdminServices} />
+      <Route path="/admin-services" component={AdminServicesCatalog} />
       <Route path="/admin-provider-service-requests" component={AdminProviderServiceRequests} />
       <Route path="/admin-page-configurations" component={AdminPageConfigurations} />
       <Route path="/admin-categories" component={AdminCategories} />
-      <Route path="/admin-services-catalog" component={AdminServicesCatalog} />
       <Route path="/admin-media" component={AdminMedia} />
       <Route path="/admin-chat" component={AdminChat} />
       <Route path="/admin-reports-transactions" component={AdminReportsTransactions} />
