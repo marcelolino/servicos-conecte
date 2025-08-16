@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useState } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 import { 
   Plus, 
@@ -33,8 +34,11 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 export default function AdminCategories() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
   });
 
@@ -49,13 +53,11 @@ export default function AdminCategories() {
 
   const createCategoryMutation = useMutation({
     mutationFn: (data: CategoryFormData) =>
-      apiRequest('/api/categories', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiRequest('POST', '/api/categories', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       form.reset();
+      setIsCreateDialogOpen(false);
       toast({
         title: 'Sucesso',
         description: 'Categoria criada com sucesso',
@@ -70,11 +72,31 @@ export default function AdminCategories() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CategoryFormData }) =>
+      apiRequest('PUT', `/api/categories/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      form.reset();
+      setIsEditDialogOpen(false);
+      setEditingCategory(null);
+      toast({
+        title: 'Sucesso',
+        description: 'Categoria atualizada com sucesso',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar categoria',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteCategoryMutation = useMutation({
     mutationFn: (categoryId: number) =>
-      apiRequest(`/api/categories/${categoryId}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/categories/${categoryId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
@@ -92,7 +114,31 @@ export default function AdminCategories() {
   });
 
   const onSubmit = (data: CategoryFormData) => {
-    createCategoryMutation.mutate(data);
+    if (editingCategory) {
+      updateCategoryMutation.mutate({ id: editingCategory.id, data });
+    } else {
+      createCategoryMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (category: ServiceCategory) => {
+    setEditingCategory(category);
+    form.reset({
+      name: category.name,
+      description: category.description || '',
+      icon: category.icon || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCreateNew = () => {
+    setEditingCategory(null);
+    form.reset({
+      name: '',
+      description: '',
+      icon: '',
+    });
+    setIsCreateDialogOpen(true);
   };
 
   if (isLoading) {
@@ -116,9 +162,9 @@ export default function AdminCategories() {
             </p>
           </div>
           
-          <Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={handleCreateNew}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Categoria
               </Button>
@@ -182,6 +228,68 @@ export default function AdminCategories() {
               </Form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Categoria</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome da categoria" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Descrição da categoria" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ícone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome do ícone (opcional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={updateCategoryMutation.isPending}
+                  >
+                    {updateCategoryMutation.isPending ? 'Atualizando...' : 'Atualizar Categoria'}
+                  </Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -205,7 +313,7 @@ export default function AdminCategories() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {categories.reduce((total: number, cat: ServiceCategory) => total + (cat.services?.length || 0), 0)}
+                {categories.reduce((total: number, cat: ServiceCategory) => total + 0, 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Total de serviços
@@ -245,7 +353,7 @@ export default function AdminCategories() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {category.services?.length || 0} serviços
+                          0 serviços
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -253,7 +361,11 @@ export default function AdminCategories() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEdit(category)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
