@@ -161,6 +161,7 @@ export default function AdminDashboard() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [categoryImage, setCategoryImage] = useState<string>("");
   const [serviceImages, setServiceImages] = useState<string[]>([]);
+  const [editServiceImages, setEditServiceImages] = useState<string[]>([]);
   
   // Chat states
   const [chatSearchTerm, setChatSearchTerm] = useState("");
@@ -497,7 +498,10 @@ export default function AdminDashboard() {
   // Update service mutation
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: ServiceForm }) => 
-      apiRequest("PUT", `/api/admin/services/${id}`, data),
+      apiRequest("PUT", `/api/admin/services/${id}`, {
+        ...data,
+        images: JSON.stringify(editServiceImages),
+      }),
     onSuccess: () => {
       toast({
         title: "Serviço atualizado com sucesso!",
@@ -506,6 +510,7 @@ export default function AdminDashboard() {
       setIsEditServiceOpen(false);
       setEditingService(null);
       editServiceForm.reset();
+      setEditServiceImages([]);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
     },
     onError: (error: any) => {
@@ -739,6 +744,15 @@ export default function AdminDashboard() {
     setServiceImages(prev => prev.filter(img => img !== imageUrl));
   };
 
+  // Edit service image handling functions
+  const handleEditServiceImageUpload = (imageUrl: string) => {
+    setEditServiceImages(prev => [...prev, imageUrl]);
+  };
+
+  const handleEditServiceImageRemove = (imageUrl: string) => {
+    setEditServiceImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
   const getProviderStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -891,6 +905,11 @@ export default function AdminDashboard() {
     console.log('handleEditService chamado com:', service);
     console.log('isEditServiceOpen antes:', isEditServiceOpen);
     setEditingService(service);
+    
+    // Load existing images
+    const existingImages = service.images ? JSON.parse(service.images) : [];
+    setEditServiceImages(existingImages);
+    
     editServiceForm.reset({
       name: service.name || "",
       description: service.description || "",
@@ -2521,6 +2540,29 @@ export default function AdminDashboard() {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <Label>Imagens do Serviço (Opcional)</Label>
+                <ImageUpload
+                  category="service"
+                  onUpload={handleEditServiceImageUpload}
+                  onRemove={handleEditServiceImageRemove}
+                  currentImages={editServiceImages.map((url, index) => ({ 
+                    id: url, 
+                    url, 
+                    name: `Serviço ${index + 1}` 
+                  }))}
+                  multiple={true}
+                  maxFiles={5}
+                  accept="image/*"
+                  maxSize={5}
+                  disabled={updateServiceMutation.isPending}
+                  showPreview={true}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Adicione até 5 imagens para ilustrar o serviço.
+                </p>
+              </div>
 
               <div className="flex items-center justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsEditServiceOpen(false)}>
