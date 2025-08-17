@@ -149,7 +149,7 @@ export const processAndSaveAdvancedImage = async (
   file: Express.Multer.File,
   userId: number,
   userType: string,
-  category: 'banners' | 'services' | 'categories' | 'providers' | 'avatars',
+  category: 'banners' | 'services' | 'categories' | 'providers' | 'avatars' | 'general' | 'portfolio' | 'logos' | 'documents',
   options: {
     width?: number;
     height?: number;
@@ -260,7 +260,7 @@ export const processAndSaveAdvancedImage = async (
 };
 
 // Advanced upload handler with all features
-export const advancedUploadHandler = (category: 'banners' | 'services' | 'categories' | 'providers' | 'avatars') => {
+export const advancedUploadHandler = (category: 'banners' | 'services' | 'categories' | 'providers' | 'avatars' | 'general' | 'portfolio' | 'logos' | 'documents') => {
   return async (req: Request, res: Response) => {
     try {
       const user = req.user;

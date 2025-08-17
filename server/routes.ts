@@ -2732,15 +2732,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Advanced upload routes with limits, virus scanning, and caching
   app.post("/api/upload/advanced/banner", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('banners'));
+  app.post("/api/upload/advanced/banners", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('banners'));
   app.post("/api/upload/advanced/service", authenticateToken, upload.single('image'), advancedUploadHandler('services'));
+  app.post("/api/upload/advanced/services", authenticateToken, upload.single('image'), advancedUploadHandler('services'));
   app.post("/api/upload/advanced/category", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('categories'));
+  app.post("/api/upload/advanced/categories", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('categories'));
   app.post("/api/upload/advanced/provider", authenticateToken, requireProvider, upload.single('image'), advancedUploadHandler('providers'));
+  app.post("/api/upload/advanced/providers", authenticateToken, requireProvider, upload.single('image'), advancedUploadHandler('providers'));
   app.post("/api/upload/advanced/avatar", authenticateToken, upload.single('image'), advancedUploadHandler('avatars'));
+  app.post("/api/upload/advanced/avatars", authenticateToken, upload.single('image'), advancedUploadHandler('avatars'));
+  app.post("/api/upload/advanced/general", authenticateToken, upload.single('image'), advancedUploadHandler('general'));
+  app.post("/api/upload/advanced/portfolio", authenticateToken, upload.single('image'), advancedUploadHandler('portfolio'));
+  app.post("/api/upload/advanced/logos", authenticateToken, requireAdmin, upload.single('image'), advancedUploadHandler('logos'));
+  app.post("/api/upload/advanced/documents", authenticateToken, uploadDocument.single('image'), advancedUploadHandler('documents'));
   
   // Upload management routes
   app.get("/api/upload/stats", authenticateToken, getUserUploadStats);
   app.get("/api/upload/history", authenticateToken, getFileUploadHistory);
   app.delete("/api/upload/file/:id", authenticateToken, deleteUploadedFile);
+  
+  // Media file deletion routes
+  app.delete("/api/media/files/:category/:filename", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      const { category, filename } = req.params;
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Usuário não autenticado' });
+      }
+
+      // Admin can delete any files, others only their own uploads  
+      if (user.userType !== 'admin') {
+        return res.status(403).json({ message: 'Acesso negado - Admin requerido para deletar arquivos' });
+      }
+
+      const filePath = path.join(process.cwd(), 'uploads', category, filename);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'Arquivo não encontrado' });
+      }
+
+      // Delete the file
+      fs.unlinkSync(filePath);
+      
+      res.json({ 
+        success: true,
+        message: 'Arquivo deletado com sucesso' 
+      });
+    } catch (error) {
+      console.error('Erro ao deletar arquivo:', error);
+      res.status(500).json({ 
+        message: 'Erro ao deletar arquivo',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
   
   // Image management routes
   app.delete("/api/upload/image", authenticateToken, deleteImage);
