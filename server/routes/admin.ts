@@ -788,7 +788,23 @@ router.post('/services', authenticateToken, requireAdmin, async (req, res) => {
 router.put('/services/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, categoryId, providerId, price, minimumPrice, estimatedDuration, requirements, serviceZone, images } = req.body;
+    const { 
+      name, 
+      description, 
+      categoryId, 
+      providerId, 
+      price, 
+      minimumPrice, 
+      estimatedDuration, 
+      durationType,
+      suggestedMinPrice,
+      suggestedMaxPrice,
+      tags,
+      chargingType,
+      requirements, 
+      serviceZone, 
+      images 
+    } = req.body;
     
     const updatedService = await db
       .update(providerServices)
@@ -800,6 +816,11 @@ router.put('/services/:id', authenticateToken, requireAdmin, async (req, res) =>
         price: price ? price.toString() : null,
         minimumPrice: minimumPrice ? minimumPrice.toString() : null,
         estimatedDuration,
+        durationType: durationType || 'hours',
+        suggestedMinPrice: suggestedMinPrice ? suggestedMinPrice.toString() : null,
+        suggestedMaxPrice: suggestedMaxPrice ? suggestedMaxPrice.toString() : null,
+        tags: tags || null,
+        chargingType: chargingType || 'visit',
         requirements,
         serviceZone,
         images: images || null,

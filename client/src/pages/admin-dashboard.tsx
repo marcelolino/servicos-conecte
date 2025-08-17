@@ -85,6 +85,11 @@ const serviceSchema = z.object({
   price: z.string().min(1, "Preço é obrigatório"),
   minimumPrice: z.string().optional(),
   estimatedDuration: z.string().optional(),
+  durationType: z.enum(['hours', 'days', 'visits']).default('hours'),
+  suggestedMinPrice: z.string().optional(),
+  suggestedMaxPrice: z.string().optional(),
+  tags: z.string().optional(),
+  chargingType: z.enum(['visit', 'hour', 'daily', 'package', 'quote']).default('visit'),
   requirements: z.string().optional(),
   serviceZone: z.string().optional(),
   isActive: z.boolean().default(true),
@@ -258,6 +263,11 @@ export default function AdminDashboard() {
       price: "",
       minimumPrice: "",
       estimatedDuration: "",
+      durationType: 'hours',
+      suggestedMinPrice: "",
+      suggestedMaxPrice: "",
+      tags: "",
+      chargingType: 'visit',
       requirements: "",
       serviceZone: "",
       isActive: true,
@@ -274,6 +284,11 @@ export default function AdminDashboard() {
       price: "",
       minimumPrice: "",
       estimatedDuration: "",
+      durationType: 'hours',
+      suggestedMinPrice: "",
+      suggestedMaxPrice: "",
+      tags: "",
+      chargingType: 'visit',
       requirements: "",
       serviceZone: "",
       isActive: true,
@@ -305,6 +320,12 @@ export default function AdminDashboard() {
   // Fetch providers (this would need to be implemented in the backend)
   const { data: providers, isLoading: providersLoading } = useQuery({
     queryKey: ["/api/admin/providers"],
+    enabled: user?.userType === "admin",
+  });
+
+  // Fetch charging types
+  const { data: chargingTypes = [] } = useQuery({
+    queryKey: ["/api/admin/charging-types"],
     enabled: user?.userType === "admin",
   });
 
@@ -918,6 +939,11 @@ export default function AdminDashboard() {
       price: service.price || "",
       minimumPrice: service.minimumPrice || "",
       estimatedDuration: service.estimatedDuration || "",
+      durationType: service.durationType || 'hours',
+      suggestedMinPrice: service.suggestedMinPrice || "",
+      suggestedMaxPrice: service.suggestedMaxPrice || "",
+      tags: service.tags || "",
+      chargingType: service.chargingType || 'visit',
       requirements: service.requirements || "",
       serviceZone: service.serviceZone || "",
       isActive: service.isActive ?? true,
@@ -2506,12 +2532,66 @@ export default function AdminDashboard() {
                     <FormItem>
                       <FormLabel>Duração Estimada</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: 2 horas" {...field} />
+                        <Input placeholder="Ex: 2-3" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={editServiceForm.control}
+                  name="durationType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Duração</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="hours">Horas</SelectItem>
+                          <SelectItem value="days">Dias</SelectItem>
+                          <SelectItem value="visits">Visitas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={editServiceForm.control}
+                  name="suggestedMinPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Mínimo Sugerido</FormLabel>
+                      <FormControl>
+                        <Input placeholder="50.00" type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editServiceForm.control}
+                  name="suggestedMaxPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Máximo Sugerido</FormLabel>
+                      <FormControl>
+                        <Input placeholder="150.00" type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={editServiceForm.control}
                   name="serviceZone"
@@ -2521,6 +2601,35 @@ export default function AdminDashboard() {
                       <FormControl>
                         <Input placeholder="Ex: Zona Sul" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editServiceForm.control}
+                  name="chargingType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Cobrança</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="visit">Por Visita</SelectItem>
+                          <SelectItem value="hour">Por Hora</SelectItem>
+                          <SelectItem value="daily">Por Diária</SelectItem>
+                          <SelectItem value="package">Pacote</SelectItem>
+                          <SelectItem value="quote">Orçamento</SelectItem>
+                          {chargingTypes?.map((type: any) => (
+                            <SelectItem key={type.key} value={type.key}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -2535,6 +2644,20 @@ export default function AdminDashboard() {
                     <FormLabel>Requisitos</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Requisitos especiais para o serviço..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editServiceForm.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags/Palavras-chave</FormLabel>
+                    <FormControl>
+                      <Input placeholder="limpeza, residencial, completa (separadas por vírgula)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

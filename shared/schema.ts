@@ -125,6 +125,11 @@ export const providerServices = pgTable("provider_services", {
   price: decimal("price", { precision: 10, scale: 2 }),
   minimumPrice: decimal("minimum_price", { precision: 10, scale: 2 }),
   estimatedDuration: varchar("estimated_duration", { length: 100 }),
+  durationType: varchar("duration_type", { length: 20 }).default("hours"), // "hours", "days", "visits"
+  suggestedMinPrice: decimal("suggested_min_price", { precision: 10, scale: 2 }),
+  suggestedMaxPrice: decimal("suggested_max_price", { precision: 10, scale: 2 }),
+  tags: text("tags"), // JSON array of tags for better search
+  chargingType: chargingTypeEnum("charging_type").default("visit"),
   requirements: text("requirements"),
   serviceZone: text("service_zone"),
   images: text("images"), // JSON array of service images
