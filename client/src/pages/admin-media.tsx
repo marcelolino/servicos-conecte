@@ -19,7 +19,9 @@ import {
   HardDrive,
   Folder,
   ArrowLeft,
-  Plus
+  Plus,
+  Search,
+  Filter
 } from 'lucide-react';
 
 interface MediaFile {
@@ -46,28 +48,57 @@ export default function AdminMedia() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>('general');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: mediaFiles = [], isLoading } = useQuery({
     queryKey: ['/api/admin/media'],
   });
 
   const categories: CategoryFolder[] = [
-    { name: 'avatars', displayName: 'Avatars', icon: '👤', count: 0, color: 'bg-blue-100' },
-    { name: 'banners', displayName: 'Banners', icon: '🎨', count: 0, color: 'bg-green-100' },
-    { name: 'categories', displayName: 'Categories', icon: '📂', count: 0, color: 'bg-purple-100' },
-    { name: 'documents', displayName: 'Documents', icon: '📄', count: 0, color: 'bg-gray-100' },
-    { name: 'general', displayName: 'General', icon: '📁', count: 0, color: 'bg-yellow-100' },
-    { name: 'logos', displayName: 'Logos', icon: '🔧', count: 0, color: 'bg-orange-100' },
-    { name: 'portfolio', displayName: 'Portfolio', icon: '🖼️', count: 0, color: 'bg-pink-100' },
-    { name: 'providers', displayName: 'Providers', icon: '👥', count: 0, color: 'bg-indigo-100' },
-    { name: 'services', displayName: 'Services', icon: '⚙️', count: 0, color: 'bg-teal-100' },
+    { name: 'avatars', displayName: 'Avatars', icon: '👤', count: 0, color: 'bg-blue-100 dark:bg-blue-900' },
+    { name: 'banners', displayName: 'Banners', icon: '🎨', count: 0, color: 'bg-green-100 dark:bg-green-900' },
+    { name: 'categories', displayName: 'Categories', icon: '📂', count: 0, color: 'bg-purple-100 dark:bg-purple-900' },
+    { name: 'documents', displayName: 'Documents', icon: '📄', count: 0, color: 'bg-gray-100 dark:bg-gray-800' },
+    { name: 'general', displayName: 'General', icon: '📁', count: 0, color: 'bg-yellow-100 dark:bg-yellow-900' },
+    { name: 'logos', displayName: 'Logos', icon: '🔧', count: 0, color: 'bg-orange-100 dark:bg-orange-900' },
+    { name: 'portfolio', displayName: 'Portfolio', icon: '🖼️', count: 0, color: 'bg-pink-100 dark:bg-pink-900' },
+    { name: 'providers', displayName: 'Providers', icon: '👥', count: 0, color: 'bg-indigo-100 dark:bg-indigo-900' },
+    { name: 'services', displayName: 'Services', icon: '⚙️', count: 0, color: 'bg-teal-100 dark:bg-teal-900' },
   ];
 
-  // Calculate counts for each category
-  const categoriesWithCounts = categories.map(cat => ({
-    ...cat,
-    count: mediaFiles.filter((file: MediaFile) => file.category === cat.name || (cat.name === 'avatars' && file.category === 'avatar')).length
-  }));
+  // Calculate counts for each category - improved matching logic
+  const categoriesWithCounts = categories.map(cat => {
+    let count = 0;
+    
+    if (cat.name === 'avatars') {
+      // Count both 'avatar' and 'avatars' categories
+      count = mediaFiles.filter((file: MediaFile) => 
+        file.category === 'avatar' || file.category === 'avatars'
+      ).length;
+    } else if (cat.name === 'categories') {
+      // Count both 'category' and 'categories' categories  
+      count = mediaFiles.filter((file: MediaFile) => 
+        file.category === 'category' || file.category === 'categories'
+      ).length;
+    } else if (cat.name === 'providers') {
+      // Count both 'provider' and 'providers' categories
+      count = mediaFiles.filter((file: MediaFile) => 
+        file.category === 'provider' || file.category === 'providers'
+      ).length;
+    } else if (cat.name === 'services') {
+      // Count both 'service' and 'services' categories
+      count = mediaFiles.filter((file: MediaFile) => 
+        file.category === 'service' || file.category === 'services'
+      ).length;
+    } else {
+      // For other categories, direct match
+      count = mediaFiles.filter((file: MediaFile) => 
+        file.category === cat.name
+      ).length;
+    }
+    
+    return { ...cat, count };
+  });
 
   const deleteMediaMutation = useMutation({
     mutationFn: (fileId: string) => {
@@ -133,14 +164,25 @@ export default function AdminMedia() {
   };
 
   const filterByCategory = (category: string) => {
-    if (category === 'avatars') {
-      return mediaFiles.filter((file: MediaFile) => file.category === 'avatar' || file.category === 'avatars');
-    }
-    return mediaFiles.filter((file: MediaFile) => file.category === category);
+    return mediaFiles.filter((file: MediaFile) => {
+      if (category === 'avatars') {
+        return file.category === 'avatar' || file.category === 'avatars';
+      } else if (category === 'categories') {
+        return file.category === 'category' || file.category === 'categories';
+      } else if (category === 'providers') {
+        return file.category === 'provider' || file.category === 'providers';
+      } else if (category === 'services') {
+        return file.category === 'service' || file.category === 'services';
+      } else if (category === 'banners') {
+        return file.category === 'banner' || file.category === 'banners';
+      } else {
+        return file.category === category;
+      }
+    });
   };
 
   const renderFoldersView = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
         <div className="flex items-center gap-2">
           <HardDrive className="h-5 w-5 text-primary" />
@@ -149,24 +191,104 @@ export default function AdminMedia() {
         <Badge variant="secondary">{mediaFiles.length} items</Badge>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 p-4">
-        {categoriesWithCounts.map((category) => (
-          <div
-            key={category.name}
-            className="flex flex-col items-center p-4 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
-            onClick={() => setSelectedCategory(category.name)}
-          >
-            <div className={`w-16 h-16 ${category.color} rounded-lg flex items-center justify-center mb-2 group-hover:scale-105 transition-transform`}>
-              <Folder className="h-8 w-8 text-yellow-600" />
+      {/* Files List */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border">
+        <div className="p-4 border-b bg-muted/20">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Folder className="h-4 w-4" />
+              Files
+            </h3>
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar arquivos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 text-sm border border-input bg-background rounded-md w-64"
+              />
             </div>
-            <span className="text-sm font-medium text-center truncate w-full">
-              {category.displayName}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {category.count} items
-            </span>
           </div>
-        ))}
+        </div>
+        <div className="divide-y divide-border">
+          {categoriesWithCounts
+            .filter(category => 
+              searchTerm === '' || 
+              category.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .map((category) => (
+            <div
+              key={category.name}
+              className="flex items-center justify-between p-3 hover:bg-muted/30 cursor-pointer transition-colors group"
+              onClick={() => setSelectedCategory(category.name)}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 ${category.color} rounded flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                  <Folder className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-foreground">
+                    {category.displayName.toLowerCase()}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-medium">
+                  {category.count} items
+                </span>
+                <Eye className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {categoriesWithCounts.find(c => c.name === 'avatars')?.count || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Avatars</div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {categoriesWithCounts.find(c => c.name === 'categories')?.count || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Categories</div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                {categoriesWithCounts.find(c => c.name === 'services')?.count || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Services</div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {categoriesWithCounts.find(c => c.name === 'general')?.count || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">General</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -223,16 +345,17 @@ export default function AdminMedia() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 p-4">
           {files.map((file: MediaFile) => (
             <div key={file.id} className="group">
-              <Card className="overflow-hidden hover:shadow-md transition-shadow">
+              <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                 <div className="aspect-square bg-muted flex items-center justify-center relative">
                   {file.type.startsWith('image/') ? (
                     <img 
                       src={file.url} 
                       alt={file.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -242,26 +365,47 @@ export default function AdminMedia() {
                       </span>
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-6 w-6 p-0"
-                      onClick={() => deleteMediaMutation.mutate(file.id)}
-                      disabled={deleteMediaMutation.isPending}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(file.url, '_blank');
+                        }}
+                      >
+                        <Eye className="h-3 w-3 text-gray-700" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMediaMutation.mutate(file.id);
+                        }}
+                        disabled={deleteMediaMutation.isPending}
+                      >
+                        <Trash2 className="h-3 w-3 text-white" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <CardContent className="p-2">
                   <div className="space-y-1">
                     <h3 className="text-xs font-medium truncate" title={file.name}>
-                      {file.name}
+                      {file.name.length > 20 ? `${file.name.substring(0, 17)}...` : file.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(file.createdAt), 'dd/MM')}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
