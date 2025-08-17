@@ -278,11 +278,6 @@ export default function AdminServicesCatalog() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="visit">Por Visita</SelectItem>
-                              <SelectItem value="hour">Por Hora</SelectItem>
-                              <SelectItem value="daily">Por Diária</SelectItem>
-                              <SelectItem value="package">Pacote</SelectItem>
-                              <SelectItem value="quote">Orçamento</SelectItem>
                               {chargingTypes.map((type) => (
                                 <SelectItem key={type.key} value={type.key}>
                                   {type.name}
@@ -505,11 +500,6 @@ export default function AdminServicesCatalog() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="visit">Por Visita</SelectItem>
-                              <SelectItem value="hour">Por Hora</SelectItem>
-                              <SelectItem value="daily">Por Diária</SelectItem>
-                              <SelectItem value="package">Pacote</SelectItem>
-                              <SelectItem value="quote">Orçamento</SelectItem>
                               {chargingTypes.map((type) => (
                                 <SelectItem key={type.key} value={type.key}>
                                   {type.name}
@@ -555,6 +545,75 @@ export default function AdminServicesCatalog() {
                     )}
                   />
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="estimatedDuration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duração Estimada</FormLabel>
+                          <FormControl>
+                            <Input placeholder="2-3" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="durationType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Duração</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="hours">Horas</SelectItem>
+                              <SelectItem value="days">Dias</SelectItem>
+                              <SelectItem value="visits">Visitas</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="suggestedMinPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço Mínimo Sugerido</FormLabel>
+                          <FormControl>
+                            <Input placeholder="50.00" type="number" step="0.01" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="suggestedMaxPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço Máximo Sugerido</FormLabel>
+                          <FormControl>
+                            <Input placeholder="150.00" type="number" step="0.01" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
                     name="imageUrl"
@@ -584,6 +643,20 @@ export default function AdminServicesCatalog() {
                             <img src={field.value} alt="Preview" className="w-20 h-20 object-cover rounded" />
                           </div>
                         )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tags/Palavras-chave</FormLabel>
+                        <FormControl>
+                          <Input placeholder="limpeza, residencial, completa (separadas por vírgula)" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
