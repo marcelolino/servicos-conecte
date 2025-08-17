@@ -16,8 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // Define the charging type schema
 const chargingTypeSchema = z.object({
-  chargingType: z.enum(["per_visit", "hourly", "daily", "package", "custom_quote"]),
-  price: z.string().min(1, "Preço é obrigatório"),
+  chargingType: z.string().min(1, "Tipo de cobrança é obrigatório"),
+  price: z.string().optional(),
   description: z.string().optional(),
   minimumQuantity: z.coerce.number().min(1).default(1),
   maximumQuantity: z.coerce.number().optional(),
@@ -25,11 +25,19 @@ const chargingTypeSchema = z.object({
 
 type ChargingTypeFormData = z.infer<typeof chargingTypeSchema>;
 
+interface CustomChargingType {
+  id: number;
+  name: string;
+  key: string;
+  description?: string;
+  isActive: boolean;
+}
+
 interface ServiceChargingType {
   id: number;
   providerServiceId: number;
-  chargingType: "per_visit" | "hourly" | "daily" | "package" | "custom_quote";
-  price: string;
+  chargingType: string;
+  price?: string;
   description?: string;
   minimumQuantity?: number;
   maximumQuantity?: number;
@@ -43,22 +51,6 @@ interface ServiceChargingTypesProps {
   serviceName: string;
 }
 
-const chargingTypeLabels = {
-  per_visit: "Por Visita",
-  hourly: "Por Hora",
-  daily: "Por Dia",
-  package: "Pacote",
-  custom_quote: "Orçamento Personalizado"
-};
-
-const chargingTypeDescriptions = {
-  per_visit: "Cobrança única por visita/atendimento",
-  hourly: "Cobrança por hora trabalhada",
-  daily: "Cobrança por dia de trabalho",
-  package: "Pacote com quantidade específica de serviços",
-  custom_quote: "Preço a ser definido individualmente com cada cliente"
-};
-
 export function ServiceChargingTypes({ serviceId, serviceName }: ServiceChargingTypesProps) {
   const [editingType, setEditingType] = useState<ServiceChargingType | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -68,11 +60,16 @@ export function ServiceChargingTypes({ serviceId, serviceName }: ServiceCharging
   const form = useForm<ChargingTypeFormData>({
     resolver: zodResolver(chargingTypeSchema),
     defaultValues: {
-      chargingType: "per_visit",
+      chargingType: "",
       price: "",
       description: "",
       minimumQuantity: 1,
     },
+  });
+
+  // Get dynamic charging types from admin panel
+  const { data: availableChargingTypes = [], isLoading: chargingTypesLoading } = useQuery<CustomChargingType[]>({
+    queryKey: ["/api/admin/charging-types"],
   });
 
   // Get charging types for this service
@@ -206,14 +203,15 @@ export function ServiceChargingTypes({ serviceId, serviceName }: ServiceCharging
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {chargingTypeLabels[type.chargingType]}
+                      {availableChargingTypes.find(ct => ct.key === type.chargingType)?.name || type.chargingType}
                     </Badge>
-                    <span className="font-semibold">{formatPrice(type.price)}</span>
+                    {type.price && <span className="font-semibold">{formatPrice(type.price)}</span>}
+                    {!type.price && <span className="text-sm text-muted-foreground">Sob consulta</span>}
                   </div>
                   {type.description && (
                     <p className="text-sm text-muted-foreground">{type.description}</p>
                   )}
-                  {type.chargingType === "package" && (
+                  {(type.chargingType === "package" || type.chargingType.includes("package")) && (
                     <p className="text-xs text-muted-foreground">
                       Quantidade: {type.minimumQuantity}
                       {type.maximumQuantity && ` - ${type.maximumQuantity}`}
@@ -274,39 +272,43 @@ export function ServiceChargingTypes({ serviceId, serviceName }: ServiceCharging
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(chargingTypeLabels).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
+                            {availableChargingTypes
+                              .filter(ct => ct.isActive)
+                              .map((chargingType) => (
+                              <SelectItem key={chargingType.key} value={chargingType.key}>
+                                {chargingType.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          {chargingTypeDescriptions[form.watch("chargingType")]}
+                          {availableChargingTypes.find(ct => ct.key === form.watch("chargingType"))?.description}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Preço (R$)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0,00"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {form.watch("chargingType") !== "quote" && (
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço (R$)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0,00"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
@@ -325,7 +327,7 @@ export function ServiceChargingTypes({ serviceId, serviceName }: ServiceCharging
                     )}
                   />
 
-                  {form.watch("chargingType") === "package" && (
+                  {(form.watch("chargingType") === "package" || availableChargingTypes.find(ct => ct.key === form.watch("chargingType"))?.key.includes("package")) && (
                     <>
                       <FormField
                         control={form.control}

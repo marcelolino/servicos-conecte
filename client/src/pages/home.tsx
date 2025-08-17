@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { LocationCard } from "@/components/location/LocationCard";
 import { ProvidersMap } from "@/components/maps/ProvidersMap";
-import type { ServiceCategory, PromotionalBanner } from "@shared/schema";
+import type { ServiceCategory, PromotionalBanner, CustomChargingType } from "@shared/schema";
 
 interface PageSettings {
   siteName: string;
@@ -89,6 +89,11 @@ export default function Home() {
 
   const { data: popularProviders, isLoading: providersLoading } = useQuery<any[]>({
     queryKey: ['/api/providers/popular'],
+    enabled: true,
+  });
+
+  const { data: chargingTypes } = useQuery<CustomChargingType[]>({
+    queryKey: ['/api/charging-types'],
     enabled: true,
   });
 
@@ -499,22 +504,47 @@ export default function Home() {
                           {provider.services
                             .slice(0, 2)
                             .map((service: any) => {
-                              const minPrice = service.chargingTypes
-                                ?.filter((ct: any) => ct.price)
-                                ?.reduce((min: any, ct: any) => 
-                                  !min || parseFloat(ct.price) < parseFloat(min.price) ? ct : min, null);
+                              const chargingTypesWithPrice = service.chargingTypes?.filter((ct: any) => ct.price) || [];
+                              const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
                               
                               return (
                                 <div key={service.id} className="text-xs">
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex items-center justify-between mb-1">
                                     <span className="font-medium">{service.category?.name || 'Categoria não definida'}</span>
-                                    {minPrice ? (
-                                      <Badge variant="secondary" className="text-xs">
-                                        R$ {minPrice.price}
+                                  </div>
+                                  
+                                  {/* Display multiple charging types */}
+                                  <div className="flex flex-wrap gap-1 mb-1">
+                                    {chargingTypesWithPrice.length > 0 ? (
+                                      chargingTypesWithPrice.slice(0, 3).map((ct: any, index: number) => {
+                                        const chargingTypeInfo = chargingTypes?.find(type => type.key === ct.chargingType);
+                                        const typeName = chargingTypeInfo?.name || ct.chargingType;
+                                        
+                                        return (
+                                          <Badge key={index} variant="secondary" className="text-xs">
+                                            {typeName}: R$ {ct.price}
+                                            {ct.chargingType === 'hourly' || ct.chargingType.includes('hour') ? '/h' : ''}
+                                            {(ct.chargingType === 'package' || ct.chargingType.includes('package')) && ct.minimumQuantity ? 
+                                              ` (min: ${ct.minimumQuantity})` : ''}
+                                          </Badge>
+                                        );
+                                      })
+                                    ) : hasQuoteOnly ? (
+                                      <Badge variant="outline" className="text-xs">
+                                        Sob consulta
+                                      </Badge>
+                                    ) : service.service?.suggestedMinPrice ? (
+                                      <Badge variant="outline" className="text-xs">
+                                        A partir de R$ {service.service.suggestedMinPrice}
                                       </Badge>
                                     ) : (
                                       <Badge variant="outline" className="text-xs">
-                                        Sob consulta
+                                        Preço não definido
+                                      </Badge>
+                                    )}
+                                    {chargingTypesWithPrice.length > 3 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        +{chargingTypesWithPrice.length - 3} mais
                                       </Badge>
                                     )}
                                   </div>

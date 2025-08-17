@@ -1597,6 +1597,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public charging types endpoint
+  app.get("/api/charging-types", async (req, res) => {
+    try {
+      const chargingTypes = await storage.getChargingTypes();
+      const activeChargingTypes = chargingTypes.filter(ct => ct.isActive);
+      res.json(activeChargingTypes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get charging types", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Banners routes
   app.get("/api/banners", async (req, res) => {
     try {

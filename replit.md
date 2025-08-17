@@ -1,7 +1,7 @@
 # Qserviços - Service Marketplace Platform
 
 ## Overview
-Qserviços is a comprehensive service marketplace platform designed to connect service providers with clients. It offers a user-friendly, intelligent, and secure ecosystem for service discovery, booking, and payment. Key capabilities include geolocation services for proximity-based searches, integrated payment solutions (Stripe, MercadoPago), and real-time communication features. The project aims to provide a seamless experience for both service providers and clients, facilitating efficient service transactions.
+Qserviços is a comprehensive service marketplace platform designed to connect service providers with clients. It offers a user-friendly, intelligent, and secure ecosystem for service discovery, booking, and payment. Key capabilities include geolocation services for proximity-based searches, integrated payment solutions (Stripe, MercadoPago), and real-time communication features. The platform features a dynamic charging types system where admins can configure service pricing models, and providers can set multiple pricing options that are displayed on service cards with suggested price fallbacks. The project aims to provide a seamless experience for both service providers and clients, facilitating efficient service transactions.
 
 ## User Preferences
 - Language: Portuguese (Brazilian)
@@ -27,3 +27,38 @@ The platform is built with a modern tech stack to ensure scalability, performanc
 - **File Uploads**: `multer` (Node.js middleware for handling multipart/form-data)
 - **Charting**: Recharts (for data visualization in admin reports)
 - **UI Components**: shadcn/ui
+
+## Recent Changes (2025-01-17)
+
+### Dynamic Charging Types System Integration
+**Status**: ✅ Completed
+
+**Changes Made**:
+1. **Provider Service Configuration** - Updated `ServiceChargingTypesComponent` to dynamically load charging types from admin panel instead of hardcoded enums
+   - Fetches charging types from `/api/admin/charging-types` endpoint
+   - Uses dynamic form rendering with proper validation
+   - Supports conditional price fields (hidden for quote types)
+   - Enhanced package quantity fields with dynamic type detection
+
+2. **Home Page Service Cards Enhancement** - Enhanced service cards to display multiple charging types instead of just minimum price
+   - Shows up to 3 charging types with proper labels fetched from admin panel
+   - Displays pricing format per type (hourly, fixed, package with quantities)
+   - Added suggested price fallback when providers haven't set prices
+   - Created public `/api/charging-types` endpoint for dynamic type labels
+
+3. **Suggested Price Fallback Logic** - Services without provider prices now show admin suggested prices
+   - Falls back to `service.suggestedMinPrice` when no provider prices set
+   - Clear visual distinction between provider prices and suggested prices
+   - Proper handling of quote-only services
+
+**Files Modified**:
+- `client/src/components/service-charging-types.tsx` - Dynamic charging types integration
+- `client/src/pages/home.tsx` - Enhanced service cards with multiple pricing display
+- `server/routes.ts` - Added public charging types endpoint
+- `replit.md` - Updated project documentation
+
+**Technical Implementation**:
+- Dynamic form rendering based on admin-configured charging types
+- Enhanced service cards showing multiple pricing options
+- Proper TypeScript integration with CustomChargingType schema
+- Public API endpoint for charging type metadata without authentication
