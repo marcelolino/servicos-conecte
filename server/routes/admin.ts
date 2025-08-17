@@ -1389,4 +1389,93 @@ router.post('/test-notification', authenticateToken, requireAdmin, async (req, r
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/media:
+ *   get:
+ *     tags: [Admin - Mídia]
+ *     summary: Listar arquivos de mídia
+ *     description: Lista todos os arquivos de mídia disponíveis no sistema
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de arquivos de mídia
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     example: "services_image1.jpg"
+ *                   url:
+ *                     type: string
+ *                     example: "/uploads/services/image1.jpg"
+ *                   name:
+ *                     type: string
+ *                     example: "image1.jpg"
+ *                   size:
+ *                     type: number
+ *                     example: 1024000
+ *                   type:
+ *                     type: string
+ *                     example: "image/jpeg"
+ *                   category:
+ *                     type: string
+ *                     example: "service"
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.get('/media', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    const uploadsDir = path.default.join(process.cwd(), 'uploads');
+    const categories = ['banners', 'services', 'categories', 'providers', 'avatars', 'general', 'portfolio'];
+    const mediaFiles: any[] = [];
+    
+    for (const category of categories) {
+      const categoryDir = path.default.join(uploadsDir, category);
+      if (fs.default.existsSync(categoryDir)) {
+        const files = fs.default.readdirSync(categoryDir);
+        for (const file of files) {
+          const filePath = path.default.join(categoryDir, file);
+          const stats = fs.default.statSync(filePath);
+          
+          if (stats.isFile() && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)) {
+            mediaFiles.push({
+              id: `${category}_${file}`,
+              url: `/uploads/${category}/${file}`,
+              name: file,
+              size: stats.size,
+              type: `image/${path.default.extname(file).slice(1).toLowerCase()}`,
+              category: category === 'categories' ? 'category' : 
+                       category === 'banners' ? 'banner' :
+                       category === 'services' ? 'service' :
+                       category === 'providers' ? 'provider' :
+                       category === 'avatars' ? 'avatar' :
+                       category === 'general' ? 'general' : 'portfolio',
+              createdAt: stats.birthtime
+            });
+          }
+        }
+      }
+    }
+    
+    // Sort by creation date (newest first)
+    mediaFiles.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    res.json(mediaFiles);
+  } catch (error) {
+    console.error('Erro ao buscar arquivos de mídia:', error);
+    res.status(500).json({ message: "Erro ao buscar arquivos de mídia", error: error instanceof Error ? error.message : "Erro desconhecido" });
+  }
+});
+
 export default router;
