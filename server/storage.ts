@@ -763,28 +763,77 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
-      // Start transaction
-      await db.transaction(async (tx) => {
-        // Delete associated charging types
-        if (dependencies.chargingTypesCount > 0) {
-          await tx.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
-        }
+      if (force && (dependencies.hasOrderItems || dependencies.hasActiveOrders)) {
+        // For forced deletion with order dependencies, migrate to preserve history
+        await db.transaction(async (tx) => {
+          // Get the current service data
+          const [currentService] = await tx.select().from(providerServices).where(eq(providerServices.id, id));
+          if (!currentService) {
+            throw new Error('Serviço não encontrado');
+          }
 
-        // If forcing deletion and there are completed order items, 
-        // we keep them but the service reference will be maintained for historical purposes
-        // Only delete the provider service entry
-        await tx.delete(providerServices).where(eq(providerServices.id, id));
-      });
+          // Create an archived version first
+          const [archivedService] = await tx.insert(providerServices).values({
+            providerId: currentService.providerId,
+            categoryId: currentService.categoryId,
+            name: `[MIGRADO] ${currentService.name || 'Serviço Antigo'}`,
+            description: `Serviço migrado do sistema antigo. ID original: ${id}. ${currentService.description || ''}`,
+            price: currentService.price,
+            minimumPrice: currentService.minimumPrice,
+            estimatedDuration: currentService.estimatedDuration,
+            requirements: currentService.requirements,
+            serviceZone: currentService.serviceZone,
+            images: currentService.images,
+            isActive: false, // Mark as inactive
+            createdAt: currentService.createdAt,
+            updatedAt: new Date(),
+          }).returning();
 
-      return {
-        success: true,
-        message: 'Serviço excluído com sucesso',
-        warnings: dependencies.warnings,
-      };
+          // Update all order items to point to the archived service
+          await tx.update(orderItems)
+            .set({ providerServiceId: archivedService.id })
+            .where(eq(orderItems.providerServiceId, id));
+
+          // Note: Service requests and provider earnings tables don't have providerServiceId
+          // They are handled differently in the schema
+
+          // Delete associated charging types
+          if (dependencies.chargingTypesCount > 0) {
+            await tx.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
+          }
+
+          // Now safely delete the original service
+          await tx.delete(providerServices).where(eq(providerServices.id, id));
+        });
+
+        return {
+          success: true,
+          message: 'Serviço antigo migrado e removido com sucesso. Histórico preservado em versão arquivada.',
+          warnings: [...(dependencies.warnings || []), 'Dados históricos migrados para preservar integridade'],
+        };
+      } else {
+        // Normal deletion for services without dependencies
+        await db.transaction(async (tx) => {
+          // Delete associated charging types
+          if (dependencies.chargingTypesCount > 0) {
+            await tx.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
+          }
+
+          // Delete the provider service
+          await tx.delete(providerServices).where(eq(providerServices.id, id));
+        });
+
+        return {
+          success: true,
+          message: 'Serviço excluído com sucesso',
+          warnings: dependencies.warnings,
+        };
+      }
     } catch (error) {
       return {
         success: false,
         message: `Erro ao excluir serviço: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        warnings: dependencies.warnings,
       };
     }
   }
