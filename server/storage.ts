@@ -130,6 +130,7 @@ export interface IStorage {
   getServices(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]>;
   getService(id: number): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory }) | undefined>;
   getServicesByCategory(categoryId: number): Promise<(Service & { category: ServiceCategory })[]>;
+  getServicesVisibleOnHome(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]>;
   createService(service: InsertService): Promise<Service>;
   updateService(id: number, service: Partial<InsertService>): Promise<Service>;
   deleteService(id: number): Promise<void>;
@@ -169,6 +170,7 @@ export interface IStorage {
   getServiceRequest(id: number): Promise<(ServiceRequest & { client: User; provider?: Provider; category: ServiceCategory }) | undefined>;
   getServiceRequestsByClient(clientId: number): Promise<(ServiceRequest & { provider?: Provider; category: ServiceCategory })[]>;
   getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]>;
+  getServiceRequestsByCategories(categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]>;
   createServiceRequest(request: InsertServiceRequest): Promise<ServiceRequest>;
   updateServiceRequest(id: number, request: Partial<InsertServiceRequest>): Promise<ServiceRequest>;
   
@@ -619,6 +621,26 @@ export class DatabaseStorage implements IStorage {
     return result.map(r => ({
       ...r.service,
       category: r.category,
+    }));
+  }
+
+  async getServicesVisibleOnHome(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]> {
+    const result = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(and(
+        eq(services.isActive, true),
+        eq(services.visibleOnHome, true)
+      ));
+
+    return result.map(r => ({
+      ...r.service,
+      category: r.category,
+      subcategory: undefined, // TODO: implement subcategory join
     }));
   }
 
@@ -1250,6 +1272,52 @@ export class DatabaseStorage implements IStorage {
           ),
           // Show all requests assigned to this provider
           eq(serviceRequests.providerId, providerId)
+        )
+      )
+      .orderBy(desc(serviceRequests.createdAt));
+  }
+
+  async getServiceRequestsByCategories(categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
+    if (categoryIds.length === 0) {
+      return [];
+    }
+    
+    // Get all pending requests in specified categories without assigned provider
+    return await db
+      .select({
+        id: serviceRequests.id,
+        clientId: serviceRequests.clientId,
+        categoryId: serviceRequests.categoryId,
+        providerId: serviceRequests.providerId,
+        title: serviceRequests.title,
+        description: serviceRequests.description,
+        address: serviceRequests.address,
+        cep: serviceRequests.cep,
+        city: serviceRequests.city,
+        state: serviceRequests.state,
+        latitude: serviceRequests.latitude,
+        longitude: serviceRequests.longitude,
+        estimatedPrice: serviceRequests.estimatedPrice,
+        finalPrice: serviceRequests.finalPrice,
+        totalAmount: serviceRequests.totalAmount,
+        paymentMethod: serviceRequests.paymentMethod,
+        paymentStatus: serviceRequests.paymentStatus,
+        status: serviceRequests.status,
+        scheduledAt: serviceRequests.scheduledAt,
+        completedAt: serviceRequests.completedAt,
+        createdAt: serviceRequests.createdAt,
+        updatedAt: serviceRequests.updatedAt,
+        client: users,
+        category: serviceCategories,
+      })
+      .from(serviceRequests)
+      .innerJoin(users, eq(serviceRequests.clientId, users.id))
+      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+      .where(
+        and(
+          inArray(serviceRequests.categoryId, categoryIds),
+          eq(serviceRequests.status, "pending"),
+          isNull(serviceRequests.providerId)
         )
       )
       .orderBy(desc(serviceRequests.createdAt));

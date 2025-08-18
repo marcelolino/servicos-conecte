@@ -110,6 +110,7 @@ export const services = pgTable("services", {
   requirements: text("requirements"), // What the service requires
   imageUrl: text("image_url"), // Representative service image
   isActive: boolean("is_active").default(true),
+  visibleOnHome: boolean("visible_on_home").default(false), // If the service should be visible on home page
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

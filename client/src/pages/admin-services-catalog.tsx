@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
@@ -39,6 +40,7 @@ const serviceSchema = z.object({
   durationType: z.enum(['hours', 'days', 'visits']).default('hours'),
   materialsIncluded: z.boolean().default(false),
   materialsDescription: z.string().optional(),
+  visibleOnHome: z.boolean().default(false),
   defaultChargingType: z.enum(['visit', 'hour', 'daily', 'package', 'quote']).default('visit'),
   suggestedMinPrice: z.string().optional(),
   suggestedMaxPrice: z.string().optional(),
@@ -92,6 +94,7 @@ export default function AdminServicesCatalog() {
       durationType: 'hours',
       materialsIncluded: false,
       materialsDescription: '',
+      visibleOnHome: false,
       defaultChargingType: 'visit',
       suggestedMinPrice: '',
       suggestedMaxPrice: '',
@@ -183,6 +186,7 @@ export default function AdminServicesCatalog() {
       durationType: (service.durationType as 'hours' | 'days' | 'visits') || 'hours',
       materialsIncluded: service.materialsIncluded || false,
       materialsDescription: service.materialsDescription || '',
+      visibleOnHome: (service as any).visibleOnHome || false,
       defaultChargingType: (service.defaultChargingType as any) || 'visit',
       suggestedMinPrice: service.suggestedMinPrice || '',
       suggestedMaxPrice: service.suggestedMaxPrice || '',
@@ -204,6 +208,7 @@ export default function AdminServicesCatalog() {
       durationType: 'hours',
       materialsIncluded: false,
       materialsDescription: '',
+      visibleOnHome: false,
       defaultChargingType: 'visit',
       suggestedMinPrice: '',
       suggestedMaxPrice: '',
@@ -475,6 +480,29 @@ export default function AdminServicesCatalog() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="visibleOnHome"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Visível na Página Inicial
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Quando ativado, este serviço ficará visível na home para que clientes possam solicitar mesmo sem prestadores específicos.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -697,6 +725,29 @@ export default function AdminServicesCatalog() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="visibleOnHome"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Visível na Página Inicial
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Quando ativado, este serviço ficará visível na home para que clientes possam solicitar mesmo sem prestadores específicos.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -869,6 +920,7 @@ export default function AdminServicesCatalog() {
                     <TableHead>Duração</TableHead>
                     <TableHead>Preço Sugerido</TableHead>
                     <TableHead>Tipo</TableHead>
+                    <TableHead>Home</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -911,6 +963,11 @@ export default function AdminServicesCatalog() {
                       <TableCell>
                         <Badge variant="secondary">
                           {chargingTypes.find(type => type.key === service.defaultChargingType)?.name || service.defaultChargingType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={(service as any).visibleOnHome ? "default" : "outline"}>
+                          {(service as any).visibleOnHome ? "Visível" : "Oculto"}
                         </Badge>
                       </TableCell>
                       <TableCell>

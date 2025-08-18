@@ -368,6 +368,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public route to get services visible on home page
+  app.get("/api/services-catalog/home", async (req, res) => {
+    try {
+      const services = await storage.getServicesVisibleOnHome();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get services visible on home", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Route for providers to get service requests from catalog they can accept based on category
+  app.get("/api/provider/available-catalog-requests", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Get all service requests for services visible on home that match provider's categories
+      const providerServices = await storage.getProviderServices(provider.id);
+      const providerCategories = [...new Set(providerServices.map(ps => ps.categoryId))];
+      
+      // Get requests for catalog services that are visible on home and match provider categories
+      const catalogRequests = await storage.getServiceRequestsByCategories(providerCategories);
+      
+      res.json(catalogRequests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get available catalog requests", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.post("/api/admin/services-catalog", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const requestBody = { ...req.body };
