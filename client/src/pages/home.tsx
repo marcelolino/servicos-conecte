@@ -97,6 +97,13 @@ export default function Home() {
     enabled: true,
   });
 
+  // Query for home visible services (from catalog)
+  const { data: homeVisibleServices, isLoading: homeServicesLoading } = useQuery<any[]>({
+    queryKey: ['/api/services-catalog/home'],
+    enabled: true,
+  });
+
+  // Query for all provider services (for category filtering)
   const { data: allServices, isLoading: servicesLoading } = useQuery<any[]>({
     queryKey: ['/api/services/all'],
     enabled: true,
@@ -125,6 +132,31 @@ export default function Home() {
   const filteredCategories = categories?.filter((category: ServiceCategory) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  // Function to get the services to display based on current filters
+  const getServicesToDisplay = () => {
+    // If there's a search term, show filtered provider services
+    if (searchTerm.trim()) {
+      return allServices?.filter((service: any) => 
+        service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) || [];
+    }
+
+    // If a specific category is selected, show provider services from that category
+    if (selectedCategory && selectedCategory !== "all") {
+      return allServices?.filter((service: any) => 
+        service.categoryId === parseInt(selectedCategory)
+      ) || [];
+    }
+
+    // Default: show catalog services marked as visible on home
+    return homeVisibleServices || [];
+  };
+
+  const servicesToDisplay = getServicesToDisplay();
+  const isLoadingServices = searchTerm.trim() || (selectedCategory && selectedCategory !== "all") ? servicesLoading : homeServicesLoading;
 
   const handleBannerClick = (banner: BannerWithCategory) => {
     // Increment banner click count
@@ -167,28 +199,70 @@ export default function Home() {
 
         {/* Featured Services */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Serviços Disponíveis
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Serviços Disponíveis
+            </h2>
+            
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filtrar por categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os serviços</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedCategory !== "all" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedCategory("all")}
+                  className="flex items-center gap-1"
+                >
+                  <X className="h-3 w-3" />
+                  Limpar
+                </Button>
+              )}
+            </div>
+          </div>
           
-          {servicesLoading ? (
+          {isLoadingServices ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (
                 <Skeleton key={i} className="h-80 w-full rounded-lg" />
               ))}
             </div>
-          ) : allServices && allServices.length > 0 ? (
+          ) : servicesToDisplay && servicesToDisplay.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {allServices.slice(0, 12).map((service: any) => {
-                // Parse images from JSON string
+              {servicesToDisplay.slice(0, 12).map((service: any) => {
+                // Determine if this is a catalog service or provider service
+                const isCatalogService = !service.provider;
+                
+                // Handle images differently for catalog vs provider services
                 let serviceImages: string[] = [];
-                try {
-                  serviceImages = service.images ? JSON.parse(service.images) : [];
-                } catch (e) {
-                  serviceImages = [];
+                let firstImage = '/uploads/services/limpeza_residencial.png';
+                
+                if (isCatalogService) {
+                  // For catalog services, use imageUrl directly
+                  firstImage = service.imageUrl || '/uploads/services/limpeza_residencial.png';
+                } else {
+                  // For provider services, parse images JSON
+                  try {
+                    serviceImages = service.images ? JSON.parse(service.images) : [];
+                  } catch (e) {
+                    serviceImages = [];
+                  }
+                  firstImage = serviceImages[0] || service.service?.imageUrl || '/uploads/services/limpeza_residencial.png';
                 }
                 
-                const firstImage = serviceImages[0] || service.service?.imageUrl || '/uploads/services/limpeza_residencial.png';
                 const chargingTypesWithPrice = service.chargingTypes?.filter((ct: any) => ct.price) || [];
                 const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
                 
@@ -209,7 +283,7 @@ export default function Home() {
                             {service.category?.name}
                           </Badge>
                         </div>
-                        {serviceImages.length > 1 && (
+                        {!isCatalogService && serviceImages.length > 1 && (
                           <div className="absolute bottom-2 right-2">
                             <Badge variant="outline" className="text-xs bg-white/80">
                               +{serviceImages.length - 1} fotos
@@ -228,16 +302,18 @@ export default function Home() {
                       </CardHeader>
                       
                       <CardContent className="space-y-3">
-                        {/* Provider Info */}
-                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                          <Users className="h-4 w-4" />
-                          <span>{service.provider?.user?.name}</span>
-                        </div>
+                        {/* Provider Info - only show for provider services */}
+                        {!isCatalogService && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                            <Users className="h-4 w-4" />
+                            <span>{service.provider?.user?.name}</span>
+                          </div>
+                        )}
                         
                         {/* Location */}
                         <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                           <MapPin className="h-4 w-4" />
-                          <span>{service.provider?.user?.city || "Região"}</span>
+                          <span>{isCatalogService ? "Disponível na região" : (service.provider?.user?.city || "Região")}</span>
                         </div>
                         
                         {/* Pricing */}
@@ -265,6 +341,12 @@ export default function Home() {
                             <Badge variant="outline" className="text-xs">
                               Sob consulta
                             </Badge>
+                          ) : isCatalogService && service.suggestedMinPrice ? (
+                            <div className="flex flex-wrap gap-1">
+                              <Badge variant="outline" className="text-xs">
+                                A partir de R$ {service.suggestedMinPrice}
+                              </Badge>
+                            </div>
                           ) : service.service?.suggestedMinPrice ? (
                             <Badge variant="outline" className="text-xs">
                               A partir de R$ {service.service.suggestedMinPrice}
