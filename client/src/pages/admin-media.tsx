@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { getAuthToken } from '@/lib/auth';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { 
@@ -130,11 +131,26 @@ export default function AdminMedia() {
       const formData = new FormData();
       formData.append('image', file);
       
-      // Use apiRequest which handles authentication properly
-      return apiRequest(`/api/upload/advanced/${category}`, {
+      // Get token for authentication
+      const token = getAuthToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/upload/advanced/${category}`, {
         method: 'POST',
+        headers,
         body: formData,
+        credentials: 'include',
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/media'] });
