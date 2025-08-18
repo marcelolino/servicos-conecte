@@ -207,10 +207,22 @@ export default function ServicesPage() {
 
   const getServiceImage = (service: ProviderService) => {
     try {
+      // Try to parse images JSON array first
       const images = JSON.parse(service.images || "[]");
-      return images[0] || "/api/placeholder/300/200";
+      if (images.length > 0) {
+        return images[0];
+      }
+      
+      // Fallback to service imageUrl if available
+      if (service.service?.imageUrl) {
+        return service.service.imageUrl;
+      }
+      
+      // Fallback to default service image
+      return "/uploads/services/limpeza_residencial.png";
     } catch {
-      return "/api/placeholder/300/200";
+      // Fallback to service imageUrl or default
+      return service.service?.imageUrl || "/uploads/services/limpeza_residencial.png";
     }
   };
 
@@ -312,6 +324,9 @@ export default function ServicesPage() {
                   src={getServiceImage(service)}
                   alt={service.name || service.category.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
+                  }}
                 />
                 <div className="absolute top-2 left-2">
                   <Badge variant="secondary">{service.category.name}</Badge>

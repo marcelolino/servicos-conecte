@@ -135,29 +135,42 @@ export default function Home() {
 
   // Function to get the services to display based on current filters
   const getServicesToDisplay = () => {
-    // If there's a search term, show filtered provider services
+    // If there's a search term, show filtered provider services + filtered catalog services
     if (searchTerm.trim()) {
-      return allServices?.filter((service: any) => 
+      const filteredProviderServices = allServices?.filter((service: any) => 
         service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
       ) || [];
+      
+      const filteredCatalogServices = homeVisibleServices?.filter((service: any) => 
+        service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) || [];
+      
+      return [...filteredProviderServices, ...filteredCatalogServices];
     }
 
-    // If a specific category is selected, show provider services from that category
+    // If a specific category is selected, show provider services + catalog services from that category
     if (selectedCategory && selectedCategory !== "all") {
-      return allServices?.filter((service: any) => 
+      const categoryProviderServices = allServices?.filter((service: any) => 
         service.categoryId === parseInt(selectedCategory)
       ) || [];
+      
+      const categoryCatalogServices = homeVisibleServices?.filter((service: any) => 
+        service.categoryId === parseInt(selectedCategory)
+      ) || [];
+      
+      return [...categoryProviderServices, ...categoryCatalogServices];
     }
 
-    // Default: show ALL provider services (not catalog services)
-    // The catalog services are only for reference and service requests
-    return allServices || [];
+    // Default: show ALL provider services + catalog services marked as visible on home
+    return [...(allServices || []), ...(homeVisibleServices || [])];
   };
 
   const servicesToDisplay = getServicesToDisplay();
-  const isLoadingServices = servicesLoading;
+  const isLoadingServices = servicesLoading || homeServicesLoading;
 
   const handleBannerClick = (banner: BannerWithCategory) => {
     // Increment banner click count
