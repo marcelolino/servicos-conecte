@@ -22,7 +22,10 @@ import {
   Package,
   Tag,
   Clock,
-  DollarSign
+  DollarSign,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import type { Service, ServiceCategory, CustomChargingType } from '@shared/schema';
 
@@ -52,6 +55,12 @@ export default function AdminServicesCatalog() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedChargingType, setSelectedChargingType] = useState("all");
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<(Service & { category: ServiceCategory })[]>({
     queryKey: ['/api/admin/services-catalog'],
@@ -203,6 +212,32 @@ export default function AdminServicesCatalog() {
       imageUrl: 'none',
     });
     setIsCreateDialogOpen(true);
+  };
+
+  // Filter services based on search and filters
+  const filteredServices = services.filter((service) => {
+    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || 
+      service.categoryId.toString() === selectedCategory;
+    
+    const matchesStatus = selectedStatus === "all" || 
+      (selectedStatus === "active" && service.isActive) ||
+      (selectedStatus === "inactive" && !service.isActive);
+    
+    const matchesChargingType = selectedChargingType === "all" || 
+      service.defaultChargingType === selectedChargingType;
+    
+    return matchesSearch && matchesCategory && matchesStatus && matchesChargingType;
+  });
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setSelectedStatus("all");
+    setSelectedChargingType("all");
   };
 
   if (servicesLoading || categoriesLoading) {
@@ -733,14 +768,97 @@ export default function AdminServicesCatalog() {
           </Card>
         </div>
 
+        {/* Filter Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Pesquisar por categoria ou nome do serviço..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Status Filter */}
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Ativos</SelectItem>
+                  <SelectItem value="inactive">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Charging Type Filter */}
+              <Select value={selectedChargingType} onValueChange={setSelectedChargingType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo de Cobrança" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {chargingTypes.map((type) => (
+                    <SelectItem key={type.key} value={type.key}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(searchTerm || selectedCategory !== "all" || selectedStatus !== "all" || selectedChargingType !== "all") && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Limpar
+                </Button>
+              </div>
+            )}
+
+            {/* Results Summary */}
+            <div className="mt-4 text-sm text-muted-foreground">
+              Mostrando {filteredServices.length} de {services.length} serviços
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Lista de Serviços do Catálogo</CardTitle>
           </CardHeader>
           <CardContent>
-            {services.length === 0 ? (
+            {filteredServices.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum serviço cadastrado no catálogo
+                {services.length === 0 ? "Nenhum serviço cadastrado no catálogo" : "Nenhum serviço encontrado com os filtros aplicados"}
               </div>
             ) : (
               <Table>
@@ -755,7 +873,7 @@ export default function AdminServicesCatalog() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {services.map((service) => (
+                  {filteredServices.map((service) => (
                     <TableRow key={service.id}>
                       <TableCell className="font-medium">
                         <div>
@@ -792,10 +910,7 @@ export default function AdminServicesCatalog() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {service.defaultChargingType === 'visit' ? 'Visita' :
-                           service.defaultChargingType === 'hour' ? 'Hora' :
-                           service.defaultChargingType === 'daily' ? 'Diária' :
-                           service.defaultChargingType === 'package' ? 'Pacote' : 'Orçamento'}
+                          {chargingTypes.find(type => type.key === service.defaultChargingType)?.name || service.defaultChargingType}
                         </Badge>
                       </TableCell>
                       <TableCell>
