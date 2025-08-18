@@ -684,8 +684,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Unsubscribe from a service (delete provider service)
-  app.delete("/api/provider-services/:id", authenticateToken, requireProvider, async (req, res) => {
+  // Check service dependencies before deletion
+  app.get("/api/provider-services/:id/dependencies", authenticateToken, requireProvider, async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
       const provider = await storage.getProviderByUserId(req.user!.id);
@@ -702,8 +702,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      await storage.deleteProviderService(serviceId);
-      res.json({ message: "Service unsubscribed successfully" });
+      const dependencies = await storage.checkProviderServiceDependencies(serviceId);
+      res.json(dependencies);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to check service dependencies", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Unsubscribe from a service (delete provider service) with safety checks
+  app.delete("/api/provider-services/:id", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const force = req.query.force === 'true';
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Get the service to verify ownership
+      const services = await storage.getProviderServices(provider.id);
+      const service = services.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const result = await storage.deleteProviderServiceSafe(serviceId, force);
+      
+      if (result.success) {
+        res.json({ 
+          message: result.message,
+          warnings: result.warnings 
+        });
+      } else {
+        res.status(400).json({ 
+          message: result.message,
+          warnings: result.warnings 
+        });
+      }
     } catch (error) {
       res.status(400).json({ message: "Failed to unsubscribe from service", error: error instanceof Error ? error.message : "Unknown error" });
     }

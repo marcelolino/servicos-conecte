@@ -694,6 +694,102 @@ export class DatabaseStorage implements IStorage {
     return updatedService;
   }
 
+  async checkProviderServiceDependencies(id: number): Promise<{
+    hasOrderItems: boolean;
+    orderItemsCount: number;
+    hasActiveOrders: boolean;
+    chargingTypesCount: number;
+    canDelete: boolean;
+    warnings: string[];
+  }> {
+    // Check order items that reference this service
+    const orderItemsQuery = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        orderStatus: orders.status,
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orderItems.orderId, orders.id))
+      .where(eq(orderItems.providerServiceId, id));
+
+    // Check charging types
+    const chargingTypesQuery = await db
+      .select({ id: serviceChargingTypes.id })
+      .from(serviceChargingTypes)
+      .where(eq(serviceChargingTypes.providerServiceId, id));
+
+    const hasOrderItems = orderItemsQuery.length > 0;
+    const hasActiveOrders = orderItemsQuery.some(item => 
+      item.orderStatus !== 'cancelled' && item.orderStatus !== 'completed'
+    );
+    
+    const warnings: string[] = [];
+    let canDelete = true;
+
+    if (hasActiveOrders) {
+      warnings.push('Este serviço possui pedidos ativos que impedem a exclusão');
+      canDelete = false;
+    }
+
+    if (hasOrderItems && !hasActiveOrders) {
+      warnings.push('Este serviço possui histórico de pedidos que serão mantidos');
+    }
+
+    if (chargingTypesQuery.length > 0) {
+      warnings.push('Os tipos de cobrança associados serão removidos');
+    }
+
+    return {
+      hasOrderItems,
+      orderItemsCount: orderItemsQuery.length,
+      hasActiveOrders,
+      chargingTypesCount: chargingTypesQuery.length,
+      canDelete,
+      warnings,
+    };
+  }
+
+  async deleteProviderServiceSafe(id: number, force: boolean = false): Promise<{ success: boolean; message: string; warnings?: string[] }> {
+    // Check dependencies first
+    const dependencies = await this.checkProviderServiceDependencies(id);
+    
+    if (!dependencies.canDelete && !force) {
+      return {
+        success: false,
+        message: 'Não é possível excluir este serviço devido às dependências existentes',
+        warnings: dependencies.warnings,
+      };
+    }
+
+    try {
+      // Start transaction
+      await db.transaction(async (tx) => {
+        // Delete associated charging types
+        if (dependencies.chargingTypesCount > 0) {
+          await tx.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));
+        }
+
+        // If forcing deletion and there are completed order items, 
+        // we keep them but the service reference will be maintained for historical purposes
+        // Only delete the provider service entry
+        await tx.delete(providerServices).where(eq(providerServices.id, id));
+      });
+
+      return {
+        success: true,
+        message: 'Serviço excluído com sucesso',
+        warnings: dependencies.warnings,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Erro ao excluir serviço: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+      };
+    }
+  }
+
+  // Keep the original method for backward compatibility but mark as deprecated
   async deleteProviderService(id: number): Promise<void> {
     // First delete associated charging types
     await db.delete(serviceChargingTypes).where(eq(serviceChargingTypes.providerServiceId, id));

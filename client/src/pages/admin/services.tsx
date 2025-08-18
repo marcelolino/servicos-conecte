@@ -102,6 +102,7 @@ export default function AdminServicesPage() {
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
   const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [pendingDeletion, setPendingDeletion] = useState<{ id: number; dependencies: any } | null>(null);
 
   const toggleServiceStatusMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
@@ -123,21 +124,65 @@ export default function AdminServicesPage() {
     },
   });
 
-  const deleteServiceMutation = useMutation({
+  // Check dependencies mutation
+  const checkDependenciesMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/admin/services/${id}`);
+      return apiRequest("GET", `/api/provider-services/${id}/dependencies`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+    onSuccess: (data, id) => {
+      if (data.canDelete) {
+        // Can delete safely
+        if (data.warnings.length > 0) {
+          const message = `Este serviço pode ser excluído, mas:\n\n${data.warnings.join('\n')}\n\nDeseja continuar?`;
+          if (window.confirm(message)) {
+            deleteServiceMutation.mutate({ id, force: false });
+          }
+        } else {
+          if (window.confirm("Tem certeza que deseja excluir este serviço?")) {
+            deleteServiceMutation.mutate({ id, force: false });
+          }
+        }
+      } else {
+        // Cannot delete - show detailed info
+        setPendingDeletion({ id, dependencies: data });
+      }
+    },
+    onError: (error: any) => {
       toast({
-        title: "Serviço excluído",
-        description: "O serviço foi excluído com sucesso.",
+        title: "Erro ao verificar dependências",
+        description: error.message,
+        variant: "destructive",
       });
     },
-    onError: () => {
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: async ({ id, force = false }: { id: number; force?: boolean }) => {
+      const queryParam = force ? '?force=true' : '';
+      return apiRequest("DELETE", `/api/provider-services/${id}${queryParam}`);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
+      setPendingDeletion(null);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao excluir o serviço.",
+        title: "Serviço excluído",
+        description: data.message || "O serviço foi excluído com sucesso.",
+      });
+      
+      if (data.warnings && data.warnings.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: "Avisos importantes",
+            description: data.warnings.join(' '),
+            variant: "default",
+          });
+        }, 1500);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir serviço",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -193,8 +238,15 @@ export default function AdminServicesPage() {
   };
 
   const handleDeleteService = (id: number) => {
-    if (window.confirm("Tem certeza que deseja excluir este serviço?")) {
-      deleteServiceMutation.mutate(id);
+    checkDependenciesMutation.mutate(id);
+  };
+
+  const handleForceDelete = () => {
+    if (pendingDeletion) {
+      const message = "ATENÇÃO: Esta ação irá forçar a exclusão do serviço mesmo com dependências ativas. Isto pode causar problemas no sistema.\n\nTem certeza absoluta que deseja continuar?";
+      if (window.confirm(message)) {
+        deleteServiceMutation.mutate({ id: pendingDeletion.id, force: true });
+      }
     }
   };
 
@@ -874,6 +926,66 @@ export default function AdminServicesPage() {
                 </div>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dependencies Warning Dialog */}
+        <Dialog open={!!pendingDeletion} onOpenChange={() => setPendingDeletion(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-yellow-600">⚠️ Não é possível excluir o serviço</DialogTitle>
+              <DialogDescription>
+                Este serviço possui dependências que impedem sua exclusão segura
+              </DialogDescription>
+            </DialogHeader>
+            
+            {pendingDeletion && (
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 mb-2">Problemas encontrados:</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
+                    {pendingDeletion.dependencies.warnings?.map((warning: string, index: number) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">Estatísticas:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Pedidos vinculados:</span>
+                      <span className="font-semibold ml-2">{pendingDeletion.dependencies.orderItemsCount || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Tipos de cobrança:</span>
+                      <span className="font-semibold ml-2">{pendingDeletion.dependencies.chargingTypesCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-red-800 mb-2">⚠️ Opção avançada (somente administradores):</h4>
+                  <p className="text-sm text-red-700 mb-3">
+                    Você pode forçar a exclusão, mas isso pode causar problemas no sistema
+                  </p>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleForceDelete}
+                    disabled={deleteServiceMutation.isPending}
+                  >
+                    {deleteServiceMutation.isPending ? "Excluindo..." : "Forçar Exclusão"}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPendingDeletion(null)}>
+                Fechar
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
