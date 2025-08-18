@@ -1437,7 +1437,7 @@ router.get('/media', authenticateToken, requireAdmin, async (req, res) => {
     const path = await import('path');
     
     const uploadsDir = path.default.join(process.cwd(), 'uploads');
-    const categories = ['banners', 'services', 'categories', 'providers', 'avatars', 'general', 'portfolio'];
+    const categories = ['banners', 'services', 'categories', 'providers', 'avatars', 'general', 'portfolio', 'logos', 'documents'];
     const mediaFiles: any[] = [];
     
     for (const category of categories) {
@@ -1460,7 +1460,9 @@ router.get('/media', authenticateToken, requireAdmin, async (req, res) => {
                        category === 'services' ? 'service' :
                        category === 'providers' ? 'provider' :
                        category === 'avatars' ? 'avatar' :
-                       category === 'general' ? 'general' : 'portfolio',
+                       category === 'general' ? 'general' : 
+                       category === 'portfolio' ? 'portfolio' :
+                       category === 'logos' ? 'logos' : 'documents',
               createdAt: stats.birthtime
             });
           }
