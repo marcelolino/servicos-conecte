@@ -97,6 +97,11 @@ export default function Home() {
     enabled: true,
   });
 
+  const { data: allServices, isLoading: servicesLoading } = useQuery<any[]>({
+    queryKey: ['/api/services/all'],
+    enabled: true,
+  });
+
   // Query for nearby providers based on user location
   const { data: nearbyProviders, isLoading: nearbyProvidersLoading } = useQuery({
     queryKey: ['/api/providers/nearby', userLocation?.lat, userLocation?.lng, proximityRadius, selectedCategory],
@@ -158,6 +163,156 @@ export default function Home() {
               className="pl-10 h-12 text-lg border-2 border-blue-200 focus:border-blue-400 rounded-xl"
             />
           </div>
+        </div>
+
+        {/* Featured Services */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Serviços Disponíveis
+          </h2>
+          
+          {servicesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-80 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : allServices && allServices.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {allServices.slice(0, 12).map((service: any) => {
+                // Parse images from JSON string
+                let serviceImages: string[] = [];
+                try {
+                  serviceImages = service.images ? JSON.parse(service.images) : [];
+                } catch (e) {
+                  serviceImages = [];
+                }
+                
+                const firstImage = serviceImages[0] || service.service?.imageUrl || '/uploads/services/limpeza_residencial.png';
+                const chargingTypesWithPrice = service.chargingTypes?.filter((ct: any) => ct.price) || [];
+                const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
+                
+                return (
+                  <Link key={service.id} to={`/services?category=${service.categoryId}`}>
+                    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
+                      <div className="relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={firstImage}
+                          alt={service.name}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
+                          }}
+                        />
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {service.category?.name}
+                          </Badge>
+                        </div>
+                        {serviceImages.length > 1 && (
+                          <div className="absolute bottom-2 right-2">
+                            <Badge variant="outline" className="text-xs bg-white/80">
+                              +{serviceImages.length - 1} fotos
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg group-hover:text-blue-600 transition-colors line-clamp-2">
+                          {service.name}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {service.description || service.service?.description}
+                        </CardDescription>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-3">
+                        {/* Provider Info */}
+                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                          <Users className="h-4 w-4" />
+                          <span>{service.provider?.user?.name}</span>
+                        </div>
+                        
+                        {/* Location */}
+                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                          <MapPin className="h-4 w-4" />
+                          <span>{service.provider?.user?.city || "Região"}</span>
+                        </div>
+                        
+                        {/* Pricing */}
+                        <div className="space-y-2">
+                          {chargingTypesWithPrice.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {chargingTypesWithPrice.slice(0, 2).map((ct: any, index: number) => {
+                                const chargingTypeInfo = chargingTypes?.find(type => type.key === ct.chargingType);
+                                const typeName = chargingTypeInfo?.name || ct.chargingType;
+                                
+                                return (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {typeName}: R$ {ct.price}
+                                    {ct.chargingType === 'hourly' || ct.chargingType.includes('hour') ? '/h' : ''}
+                                  </Badge>
+                                );
+                              })}
+                              {chargingTypesWithPrice.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{chargingTypesWithPrice.length - 2} preços
+                                </Badge>
+                              )}
+                            </div>
+                          ) : hasQuoteOnly ? (
+                            <Badge variant="outline" className="text-xs">
+                              Sob consulta
+                            </Badge>
+                          ) : service.service?.suggestedMinPrice ? (
+                            <Badge variant="outline" className="text-xs">
+                              A partir de R$ {service.service.suggestedMinPrice}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              Preço sob consulta
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Duration and features */}
+                        <div className="space-y-1">
+                          {service.service?.estimatedDuration && (
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {service.service.estimatedDuration}
+                            </div>
+                          )}
+                          {service.service?.materialsIncluded && (
+                            <div className="text-xs text-green-600 flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3" />
+                              Materiais incluídos
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600 dark:text-gray-300">Nenhum serviço disponível no momento.</p>
+            </div>
+          )}
+          
+          {allServices && allServices.length > 12 && (
+            <div className="text-center mt-8">
+              <Link to="/services">
+                <Button variant="outline" size="lg" className="px-8">
+                  Ver Todos os Serviços
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Promotional Banners */}
