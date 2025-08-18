@@ -166,7 +166,7 @@ export default function ServicesPage() {
     };
   };
 
-  const filteredServices = (services || [])?.filter((service: ProviderService) => {
+  const filteredServices = (services as ProviderService[] || [])?.filter((service: ProviderService) => {
     const matchesCategory = selectedCategory === "all" || service.categoryId.toString() === selectedCategory;
     const matchesSearch = !searchTerm || 
       service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,7 +214,7 @@ export default function ServicesPage() {
     }
   };
 
-  const cartItemCount = Array.isArray(cart?.items) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
+  const cartItemCount = Array.isArray((cart as any)?.items) ? (cart as any).items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   if (categoriesLoading || servicesLoading) {
     return (

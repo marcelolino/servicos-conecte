@@ -151,12 +151,13 @@ export default function Home() {
       ) || [];
     }
 
-    // Default: show catalog services marked as visible on home
-    return homeVisibleServices || [];
+    // Default: show ALL provider services (not catalog services)
+    // The catalog services are only for reference and service requests
+    return allServices || [];
   };
 
   const servicesToDisplay = getServicesToDisplay();
-  const isLoadingServices = searchTerm.trim() || (selectedCategory && selectedCategory !== "all") ? servicesLoading : homeServicesLoading;
+  const isLoadingServices = servicesLoading;
 
   const handleBannerClick = (banner: BannerWithCategory) => {
     // Increment banner click count
