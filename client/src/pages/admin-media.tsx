@@ -130,13 +130,11 @@ export default function AdminMedia() {
       const formData = new FormData();
       formData.append('image', file);
       
-      return fetch(`/api/upload/advanced/${category}`, {
+      // Use apiRequest which handles authentication properly
+      return apiRequest(`/api/upload/advanced/${category}`, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      }).then(res => res.json());
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/media'] });
