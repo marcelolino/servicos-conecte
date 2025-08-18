@@ -119,7 +119,7 @@ const menuData = {
           url: "/provider-service-requests",
         },
         {
-          title: "Minhas Inscrições",
+          title: "Meus Serviços",
           url: "/provider-service-subscriptions",
         },
         {

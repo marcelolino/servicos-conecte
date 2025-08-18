@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,7 +24,12 @@ import {
   CheckCircle,
   XCircle,
   DollarSign,
-  Loader2
+  Loader2,
+  Image as ImageIcon,
+  Clock,
+  ShieldCheck,
+  MapPin,
+  User
 } from "lucide-react";
 import type { ServiceCategory, ProviderService } from "@shared/schema";
 
@@ -33,13 +40,22 @@ interface ProviderServiceWithCategory extends ProviderService {
     name: string;
     description?: string;
     category: ServiceCategory;
+    imageUrl?: string;
+    estimatedDuration?: string;
+    materialsIncluded?: boolean;
+    materialsDescription?: string;
+    requirements?: string;
+    suggestedMinPrice?: string;
+    suggestedMaxPrice?: string;
   };
+  chargingTypes?: any[];
 }
 
 export default function ProviderServiceSubscriptionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedService, setSelectedService] = useState<ProviderServiceWithCategory | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -143,9 +159,9 @@ export default function ProviderServiceSubscriptionsPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Minhas Inscrições</h1>
+            <h1 className="text-3xl font-bold text-foreground">Meus Serviços</h1>
             <p className="text-muted-foreground">
-              Gerenciar os serviços em que você está inscrito
+              Gerencie seus serviços e tipos de cobrança
             </p>
           </div>
         </div>
@@ -156,7 +172,7 @@ export default function ProviderServiceSubscriptionsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total de Inscrições</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total de Serviços</p>
                   <p className="text-3xl font-bold text-foreground">{providerServices.length}</p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -276,85 +292,281 @@ export default function ProviderServiceSubscriptionsPage() {
           </CardContent>
         </Card>
 
-        {/* Services Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Serviços Inscritos ({filteredServices.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome do Serviço</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredServices.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <div className="text-muted-foreground">
-                          {searchTerm || selectedCategory !== "all" || selectedStatus !== "all"
-                            ? "Nenhum serviço encontrado com os filtros aplicados." 
-                            : "Você ainda não está inscrito em nenhum serviço. Vá para 'Todos De Serviços' para se inscrever."
-                          }
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredServices.map((service) => (
-                      <TableRow key={service.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{service.name || service.service?.name || 'Nome não definido'}</div>
-                            {(service.description || service.service?.description) && (
-                              <div className="text-sm text-muted-foreground max-w-xs truncate" title={service.description || service.service?.description}>
-                                {service.description || service.service?.description}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{service.category?.name}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-green-600">
-                              R$ {parseFloat(service.price || "0").toFixed(2)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(service.isActive ?? false)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                id={`status-${service.id}`}
-                                checked={service.isActive ?? false}
-                                onCheckedChange={() => handleToggleStatus(service.id, service.isActive ?? false)}
-                                disabled={toggleServiceStatusMutation.isPending}
-                              />
-                              <Label htmlFor={`status-${service.id}`} className="text-sm">
-                                {(service.isActive ?? false) ? "Ativo" : "Inativo"}
-                              </Label>
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredServices.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-muted-foreground">
+                {searchTerm || selectedCategory !== "all" || selectedStatus !== "all"
+                  ? "Nenhum serviço encontrado com os filtros aplicados." 
+                  : "Você ainda não possui nenhum serviço. Vá para 'Todos De Serviços' para adicionar serviços."
+                }
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            filteredServices.map((service) => {
+              // Parse images from JSON string
+              let serviceImages: string[] = [];
+              try {
+                serviceImages = service.images ? JSON.parse(service.images) : [];
+              } catch (e) {
+                serviceImages = [];
+              }
+              
+              const firstImage = serviceImages[0] || service.service?.imageUrl || '/uploads/services/limpeza_residencial.png';
+              
+              return (
+                <Card key={service.id} className="group hover:shadow-lg transition-all duration-300">
+                  <div className="relative overflow-hidden rounded-t-lg">
+                    <img
+                      src={firstImage}
+                      alt={service.name || service.service?.name || 'Serviço'}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
+                      }}
+                    />
+                    <div className="absolute top-2 right-2">
+                      {getStatusBadge(service.isActive ?? false)}
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {service.category?.name}
+                      </Badge>
+                    </div>
+                    {serviceImages.length > 1 && (
+                      <div className="absolute bottom-2 right-2">
+                        <Badge variant="outline" className="text-xs bg-white/80">
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          +{serviceImages.length - 1}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg line-clamp-2">
+                      {service.name || service.service?.name || 'Nome não definido'}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {service.description || service.service?.description || 'Descrição não disponível'}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Service Details (Read-only) */}
+                    <div className="space-y-2 text-sm">
+                      {service.service?.estimatedDuration && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          <span>Duração: {service.service.estimatedDuration}</span>
+                        </div>
+                      )}
+                      
+                      {service.service?.materialsIncluded && (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <ShieldCheck className="h-4 w-4" />
+                          <span>Materiais incluídos</span>
+                        </div>
+                      )}
+                      
+                      {service.serviceZone && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          <span className="line-clamp-1">Zona: {service.serviceZone}</span>
+                        </div>
+                      )}
+                      
+                      {service.service?.requirements && (
+                        <div className="text-gray-600">
+                          <span className="font-medium">Requisitos:</span>
+                          <p className="line-clamp-2 text-xs mt-1">{service.service.requirements}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id={`status-${service.id}`}
+                          checked={service.isActive ?? false}
+                          onCheckedChange={() => handleToggleStatus(service.id, service.isActive ?? false)}
+                          disabled={toggleServiceStatusMutation.isPending}
+                        />
+                        <Label htmlFor={`status-${service.id}`} className="text-sm">
+                          {(service.isActive ?? false) ? "Ativo" : "Inativo"}
+                        </Label>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedService(service)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Detalhes
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>{service.name || service.service?.name}</DialogTitle>
+                              <DialogDescription>
+                                Detalhes completos do serviço e tipos de cobrança
+                              </DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Service Images */}
+                              <div className="space-y-4">
+                                <h3 className="font-semibold">Imagens do Serviço</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {serviceImages.length > 0 ? serviceImages.map((image, index) => (
+                                    <img
+                                      key={index}
+                                      src={image}
+                                      alt={`${service.name} - ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg border"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
+                                      }}
+                                    />
+                                  )) : (
+                                    <img
+                                      src={service.service?.imageUrl || '/uploads/services/limpeza_residencial.png'}
+                                      alt={service.name || 'Serviço'}
+                                      className="w-full h-24 object-cover rounded-lg border"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Service Details */}
+                              <div className="space-y-4">
+                                <h3 className="font-semibold">Informações do Serviço</h3>
+                                <div className="space-y-3 text-sm">
+                                  <div>
+                                    <Label className="font-medium">Categoria:</Label>
+                                    <p className="text-gray-600">{service.category?.name}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <Label className="font-medium">Descrição:</Label>
+                                    <p className="text-gray-600">{service.description || service.service?.description}</p>
+                                  </div>
+                                  
+                                  {service.service?.estimatedDuration && (
+                                    <div>
+                                      <Label className="font-medium">Duração Estimada:</Label>
+                                      <p className="text-gray-600">{service.service.estimatedDuration}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {service.service?.materialsDescription && (
+                                    <div>
+                                      <Label className="font-medium">Materiais:</Label>
+                                      <p className="text-gray-600">{service.service.materialsDescription}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {service.service?.requirements && (
+                                    <div>
+                                      <Label className="font-medium">Requisitos:</Label>
+                                      <p className="text-gray-600">{service.service.requirements}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {service.serviceZone && (
+                                    <div>
+                                      <Label className="font-medium">Zona de Atendimento:</Label>
+                                      <p className="text-gray-600">{service.serviceZone}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {service.service?.suggestedMinPrice && service.service?.suggestedMaxPrice && (
+                                    <div>
+                                      <Label className="font-medium">Faixa de Preço Sugerida:</Label>
+                                      <p className="text-gray-600">
+                                        R$ {service.service.suggestedMinPrice} - R$ {service.service.suggestedMaxPrice}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Charging Types Section */}
+                            <div className="mt-6 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-semibold">Tipos de Cobrança</h3>
+                                <Badge variant="outline">Editável pelo prestador</Badge>
+                              </div>
+                              
+                              {service.chargingTypes && service.chargingTypes.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {service.chargingTypes.map((ct: any, index: number) => (
+                                    <Card key={index} className="p-4">
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <Label className="font-medium">Tipo:</Label>
+                                          <Badge variant="secondary">{ct.chargingType}</Badge>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between">
+                                          <Label className="font-medium">Preço:</Label>
+                                          <span className="font-semibold text-green-600">
+                                            {ct.price ? `R$ ${ct.price}` : 'Sob consulta'}
+                                          </span>
+                                        </div>
+                                        
+                                        {ct.description && (
+                                          <div>
+                                            <Label className="font-medium">Descrição:</Label>
+                                            <p className="text-sm text-gray-600">{ct.description}</p>
+                                          </div>
+                                        )}
+                                        
+                                        {ct.minimumQuantity && (
+                                          <div className="flex items-center justify-between">
+                                            <Label className="font-medium">Quantidade Mínima:</Label>
+                                            <span>{ct.minimumQuantity}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center py-4 text-gray-500">
+                                  Nenhum tipo de cobrança configurado
+                                </div>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => window.location.href = `/meus-servicos?service=${service.id}`}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Preços
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
       </div>
     </ModernProviderLayout>
   );
