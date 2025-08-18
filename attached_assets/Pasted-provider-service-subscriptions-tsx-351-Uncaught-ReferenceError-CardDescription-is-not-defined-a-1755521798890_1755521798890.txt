@@ -1,0 +1,41 @@
+provider-service-subscriptions.tsx:351 Uncaught ReferenceError: CardDescription is not defined
+    at provider-service-subscriptions.tsx:351:22
+    at Array.map (<anonymous>)
+    at ProviderServiceSubscriptionsPage (provider-service-subscriptions.tsx:307:30)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=8ec6e0be:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=8ec6e0be:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=8ec6e0be:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=8ec6e0be:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=8ec6e0be:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=8ec6e0be:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=8ec6e0be:19765:15)
+chunk-RPCDYKBN.js?v=8ec6e0be:14032 The above error occurred in the <ProviderServiceSubscriptionsPage> component:
+
+    at ProviderServiceSubscriptionsPage (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/src/pages/provider-service-subscriptions.tsx:48:39)
+    at Route (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8ec6e0be:323:16)
+    at Switch (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8ec6e0be:379:17)
+    at Router (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/src/App.tsx?v=0Tk62uir2hiCpaj4lVE02:107:22)
+    at Provider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=8ec6e0be:38:15)
+    at TooltipProvider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=8ec6e0be:97:5)
+    at AuthProvider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/src/hooks/use-auth.ts:12:32)
+    at LocationProvider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/src/contexts/LocationContext.tsx:20:36)
+    at ThemeProvider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/src/components/theme-provider.tsx:20:33)
+    at QueryClientProvider (https://e4b7d9ba-e38e-4b9c-8e66-89e009b190f3-00-38ghp9ojl22vy.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=8ec6e0be:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=8ec6e0be:14032
+Mostrar mais 1 frame
+Mostrar menos
+chunk-RPCDYKBN.js?v=8ec6e0be:9129 Uncaught ReferenceError: CardDescription is not defined
+    at provider-service-subscriptions.tsx:351:22
+    at Array.map (<anonymous>)
+    at ProviderServiceSubscriptionsPage (provider-service-subscriptions.tsx:307:30)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=8ec6e0be:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=8ec6e0be:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=8ec6e0be:15924:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=8ec6e0be:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=8ec6e0be:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=8ec6e0be:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=8ec6e0be:19116:15)

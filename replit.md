@@ -30,6 +30,34 @@ The platform is built with a modern tech stack to ensure scalability, performanc
 
 ## Recent Changes (2025-01-18)
 
+### Provider Services Interface Redesign
+**Status**: ✅ Completed
+
+**Changes Made**:
+1. **Navigation Menu Update** - Changed "Minhas Inscrições" to "Meus Serviços" in provider sidebar
+   - Updated menu title to better reflect functionality
+   - Improved clarity for service management
+
+2. **Complete Page Redesign** - Transformed provider services page with modern card-based layout
+   - Replaced table layout with responsive grid of service cards
+   - Added service image thumbnails from `/uploads/services/` folder
+   - Implemented visual status badges and category indicators
+   - Created detailed modal dialogs for complete service information
+
+3. **Read-Only Service Details** - All service fields are now display-only for providers
+   - Service name, description, duration, materials, requirements: read-only
+   - Images managed by admin only
+   - Clear separation between admin-controlled and provider-controlled data
+
+4. **Editable Charging Types Only** - Providers can only edit their pricing
+   - "Preços" button redirects to charging type configuration
+   - Maintains business rule that only admins edit service catalog details
+   - Providers manage their own pricing strategies
+
+**Files Modified**:
+- `client/src/components/layout/provider-sidebar.tsx` - Menu title update
+- `client/src/pages/provider-service-subscriptions.tsx` - Complete interface redesign
+
 ### Media Management System Implementation
 **Status**: ✅ Completed
 
