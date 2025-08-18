@@ -58,6 +58,32 @@ The platform is built with a modern tech stack to ensure scalability, performanc
 - `client/src/components/layout/provider-sidebar.tsx` - Menu title update
 - `client/src/pages/provider-service-subscriptions.tsx` - Complete interface redesign
 
+### Service Synchronization and Bulk Re-adoption
+**Status**: ✅ Completed
+
+**Changes Made**:
+1. **Database Cleanup** - Synchronized provider services with admin catalog
+   - Created backup table: `provider_services_backup_20250118`
+   - Removed 20 orphaned services without catalog references
+   - Preserved 4 services with order history (marked for reconfiguration)
+   - Cleaned up orphaned charging types
+
+2. **Bulk Re-adoption Feature** - Added mass service adoption functionality
+   - "Adotar Todos" button to adopt all available services at once
+   - "Adotar Categoria" button for category-specific bulk adoption
+   - Smart filtering to show only non-adopted services
+   - Progress indicators and detailed success/error reporting
+   - Uses suggested prices from admin catalog as defaults
+
+3. **Enhanced UI Indicators** - Improved service status visualization
+   - Color-coded counters for adopted vs available services
+   - Real-time updates during bulk operations
+   - Better filtering and search capabilities
+
+**Files Modified**:
+- `client/src/pages/provider-all-services.tsx` - Bulk adoption functionality
+- Database: Service synchronization and cleanup
+
 ### Media Management System Implementation
 **Status**: ✅ Completed
 

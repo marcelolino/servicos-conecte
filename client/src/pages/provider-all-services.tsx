@@ -67,6 +67,7 @@ export default function ProviderAllServices() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [bulkAdopting, setBulkAdopting] = useState(false);
 
   // Fetch provider data first
   const { data: provider, isLoading: providerLoading } = useQuery({
@@ -122,6 +123,63 @@ export default function ProviderAllServices() {
     onError: (error: any) => {
       toast({
         title: "Erro ao adotar serviço",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk adopt services mutation
+  const bulkAdoptServicesMutation = useMutation({
+    mutationFn: async (serviceIds: number[]) => {
+      setBulkAdopting(true);
+      const results = [];
+      
+      for (const serviceId of serviceIds) {
+        try {
+          const service = availableServices?.find(s => s.id === serviceId);
+          const defaultPrice = service?.suggestedMinPrice || "50.00";
+          const result = await apiRequest("POST", "/api/provider/adopt-service", {
+            serviceId,
+            price: defaultPrice,
+            serviceRadius: 10,
+            customName: service?.name,
+          });
+          results.push({ serviceId, success: true, result });
+        } catch (error) {
+          results.push({ serviceId, success: false, error });
+        }
+      }
+      
+      setBulkAdopting(false);
+      return results;
+    },
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+      
+      if (successCount > 0) {
+        toast({
+          title: "Adoção em massa concluída!",
+          description: `${successCount} serviços adotados com sucesso${errorCount > 0 ? `, ${errorCount} falharam` : ''}.`,
+        });
+      }
+      
+      if (errorCount > 0 && successCount === 0) {
+        toast({
+          title: "Erro na adoção em massa",
+          description: `Falha ao adotar ${errorCount} serviços.`,
+          variant: "destructive",
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/providers/services"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/provider/available-services"] });
+    },
+    onError: (error: any) => {
+      setBulkAdopting(false);
+      toast({
+        title: "Erro na adoção em massa",
         description: error.message,
         variant: "destructive",
       });
@@ -220,6 +278,46 @@ export default function ProviderAllServices() {
     });
   };
 
+  const handleBulkAdoptAll = () => {
+    const availableServiceIds = filteredServices
+      .filter(service => !service.isAdopted)
+      .map(service => service.id);
+    
+    if (availableServiceIds.length === 0) {
+      toast({
+        title: "Nenhum serviço disponível",
+        description: "Todos os serviços filtrados já foram adotados.",
+      });
+      return;
+    }
+    
+    bulkAdoptServicesMutation.mutate(availableServiceIds);
+  };
+
+  const handleBulkAdoptCategory = () => {
+    if (selectedCategory === "all") {
+      toast({
+        title: "Selecione uma categoria",
+        description: "Escolha uma categoria específica para adoção em massa.",
+      });
+      return;
+    }
+    
+    const categoryServiceIds = filteredServices
+      .filter(service => !service.isAdopted)
+      .map(service => service.id);
+    
+    if (categoryServiceIds.length === 0) {
+      toast({
+        title: "Nenhum serviço disponível",
+        description: "Todos os serviços desta categoria já foram adotados.",
+      });
+      return;
+    }
+    
+    bulkAdoptServicesMutation.mutate(categoryServiceIds);
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("all");
@@ -269,6 +367,37 @@ export default function ProviderAllServices() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Catálogo de Serviços</h1>
             <p className="text-muted-foreground">Adote serviços do catálogo global e ofereça aos seus clientes</p>
+          </div>
+          
+          {/* Bulk Actions */}
+          <div className="flex items-center gap-2">
+            {selectedCategory !== "all" && (
+              <Button
+                onClick={handleBulkAdoptCategory}
+                disabled={bulkAdopting || filteredServices.filter(s => !s.isAdopted).length === 0}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {bulkAdopting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                Adotar Categoria
+              </Button>
+            )}
+            <Button
+              onClick={handleBulkAdoptAll}
+              disabled={bulkAdopting || filteredServices.filter(s => !s.isAdopted).length === 0}
+              className="flex items-center gap-2"
+            >
+              {bulkAdopting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+              {selectedCategory === "all" ? "Adotar Todos" : "Adotar Filtrados"}
+            </Button>
           </div>
         </div>
 
@@ -322,6 +451,17 @@ export default function ProviderAllServices() {
               </span>
             )}
           </p>
+          
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              Adotados: {filteredServices.filter(s => s.isAdopted).length}
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              Disponíveis: {filteredServices.filter(s => !s.isAdopted).length}
+            </span>
+          </div>
         </div>
 
         {/* Services Table */}
