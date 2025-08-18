@@ -4109,6 +4109,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for managing provider services
+  // Check service dependencies (admin only)
+  app.get("/api/admin/provider-services/:id/dependencies", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const dependencies = await storage.checkProviderServiceDependencies(serviceId);
+      res.json(dependencies);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to check service dependencies", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Delete service with safety checks (admin only)
+  app.delete("/api/admin/provider-services/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const force = req.query.force === 'true';
+      
+      const result = await storage.deleteProviderServiceSafe(serviceId, force);
+      
+      if (result.success) {
+        res.json({ 
+          message: result.message,
+          warnings: result.warnings 
+        });
+      } else {
+        res.status(400).json({ 
+          message: result.message,
+          warnings: result.warnings 
+        });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete service", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Provider service request routes
   // Get all provider service requests (admin only)
   app.get("/api/admin/provider-service-requests", authenticateToken, requireAdmin, async (req, res) => {

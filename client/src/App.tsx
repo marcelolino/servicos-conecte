@@ -112,7 +112,7 @@ function Router() {
       <Route path="/admin-payment-methods" component={AdminPaymentMethods} />
       <Route path="/admin-providers" component={AdminProvidersPage} />
       <Route path="/admin-users" component={AdminUsersPage} />
-      <Route path="/admin-services-catalog" component={AdminServicesCatalog} />
+      <Route path="/admin-services" component={AdminServicesCatalog} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin-provider-service-requests" component={AdminProviderServiceRequests} />
       <Route path="/admin-page-configurations" component={AdminPageConfigurations} />

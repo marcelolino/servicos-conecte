@@ -127,7 +127,7 @@ export default function AdminServicesPage() {
   // Check dependencies mutation
   const checkDependenciesMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("GET", `/api/provider-services/${id}/dependencies`);
+      return apiRequest("GET", `/api/admin/provider-services/${id}/dependencies`);
     },
     onSuccess: (data, id) => {
       if (data.canDelete) {
@@ -159,7 +159,7 @@ export default function AdminServicesPage() {
   const deleteServiceMutation = useMutation({
     mutationFn: async ({ id, force = false }: { id: number; force?: boolean }) => {
       const queryParam = force ? '?force=true' : '';
-      return apiRequest("DELETE", `/api/provider-services/${id}${queryParam}`);
+      return apiRequest("DELETE", `/api/admin/provider-services/${id}${queryParam}`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/services"] });
