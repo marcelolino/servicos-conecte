@@ -41,6 +41,8 @@ const serviceSchema = z.object({
   materialsIncluded: z.boolean().default(false),
   materialsDescription: z.string().optional(),
   visibleOnHome: z.boolean().default(false),
+  isOnSale: z.boolean().default(false),
+  salePercentage: z.string().optional(),
   defaultChargingType: z.enum(['visit', 'hour', 'daily', 'package', 'quote']).default('visit'),
   suggestedMinPrice: z.string().optional(),
   suggestedMaxPrice: z.string().optional(),
@@ -95,6 +97,8 @@ export default function AdminServicesCatalog() {
       materialsIncluded: false,
       materialsDescription: '',
       visibleOnHome: false,
+      isOnSale: false,
+      salePercentage: '',
       defaultChargingType: 'visit',
       suggestedMinPrice: '',
       suggestedMaxPrice: '',
@@ -187,6 +191,8 @@ export default function AdminServicesCatalog() {
       materialsIncluded: service.materialsIncluded || false,
       materialsDescription: service.materialsDescription || '',
       visibleOnHome: (service as any).visibleOnHome || false,
+      isOnSale: (service as any).isOnSale || false,
+      salePercentage: (service as any).salePercentage || '',
       defaultChargingType: (service.defaultChargingType as any) || 'visit',
       suggestedMinPrice: service.suggestedMinPrice || '',
       suggestedMaxPrice: service.suggestedMaxPrice || '',
@@ -209,6 +215,8 @@ export default function AdminServicesCatalog() {
       materialsIncluded: false,
       materialsDescription: '',
       visibleOnHome: false,
+      isOnSale: false,
+      salePercentage: '',
       defaultChargingType: 'visit',
       suggestedMinPrice: '',
       suggestedMaxPrice: '',
@@ -503,6 +511,54 @@ export default function AdminServicesCatalog() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="isOnSale"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Em Oferta
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Ative para aplicar um desconto em porcentagem neste serviço.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch('isOnSale') && (
+                    <FormField
+                      control={form.control}
+                      name="salePercentage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Porcentagem de Desconto (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: 15 (para 15% de desconto)"
+                              type="number"
+                              min="1"
+                              max="99"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-muted-foreground">
+                            Informe a porcentagem de desconto (1-99%)
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -748,6 +804,54 @@ export default function AdminServicesCatalog() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="isOnSale"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Em Oferta
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Ative para aplicar um desconto em porcentagem neste serviço.
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch('isOnSale') && (
+                    <FormField
+                      control={form.control}
+                      name="salePercentage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Porcentagem de Desconto (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: 15 (para 15% de desconto)"
+                              type="number"
+                              min="1"
+                              max="99"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-muted-foreground">
+                            Informe a porcentagem de desconto (1-99%)
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -921,6 +1025,7 @@ export default function AdminServicesCatalog() {
                     <TableHead>Preço Sugerido</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Home</TableHead>
+                    <TableHead>Em Oferta</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -969,6 +1074,19 @@ export default function AdminServicesCatalog() {
                         <Badge variant={(service as any).visibleOnHome ? "default" : "outline"}>
                           {(service as any).visibleOnHome ? "Visível" : "Oculto"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(service as any).isOnSale ? (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="destructive">
+                              {(service as any).salePercentage}% OFF
+                            </Badge>
+                          </div>
+                        ) : (
+                          <Badge variant="outline">
+                            Sem oferta
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

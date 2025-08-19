@@ -404,9 +404,25 @@ export default function Home() {
                             </Badge>
                           ) : isCatalogService && service.suggestedMinPrice ? (
                             <div className="flex flex-wrap gap-1">
-                              <Badge variant="outline" className="text-xs">
-                                A partir de R$ {service.suggestedMinPrice}
-                              </Badge>
+                              {service.isOnSale && service.salePercentage ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="destructive" className="text-xs">
+                                    {service.salePercentage}% OFF
+                                  </Badge>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs text-muted-foreground line-through">
+                                      R$ {service.suggestedMinPrice}
+                                    </span>
+                                    <Badge variant="outline" className="text-xs text-green-600">
+                                      R$ {(parseFloat(service.suggestedMinPrice) * (1 - parseFloat(service.salePercentage) / 100)).toFixed(2)}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">
+                                  A partir de R$ {service.suggestedMinPrice}
+                                </Badge>
+                              )}
                             </div>
                           ) : service.service?.suggestedMinPrice ? (
                             <Badge variant="outline" className="text-xs">

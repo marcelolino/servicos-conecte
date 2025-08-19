@@ -111,6 +111,8 @@ export const services = pgTable("services", {
   imageUrl: text("image_url"), // Representative service image
   isActive: boolean("is_active").default(true),
   visibleOnHome: boolean("visible_on_home").default(false), // If the service should be visible on home page
+  isOnSale: boolean("is_on_sale").default(false), // If the service is on sale/offer
+  salePercentage: decimal("sale_percentage", { precision: 5, scale: 2 }), // Discount percentage (0-100)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
