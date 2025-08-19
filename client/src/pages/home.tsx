@@ -152,7 +152,20 @@ export default function Home() {
         service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
       ) || [];
       
-      return [...filteredProviderServices, ...filteredCatalogServices];
+      // Use same deduplication logic for search
+      const searchServicesById: Record<string, any> = {};
+      
+      // Add catalog services first
+      filteredCatalogServices.forEach(service => {
+        searchServicesById[service.name] = service;
+      });
+      
+      // Add or replace with provider services
+      filteredProviderServices.forEach(service => {
+        searchServicesById[service.name] = service;
+      });
+      
+      return Object.values(searchServicesById);
     }
 
     // If a specific category is selected, show provider services + catalog services from that category
@@ -165,37 +178,42 @@ export default function Home() {
         service.categoryId === parseInt(selectedCategory)
       ) || [];
       
-      return [...categoryProviderServices, ...categoryCatalogServices];
+      // Use same deduplication logic for categories
+      const categoryServicesById: Record<string, any> = {};
+      
+      // Add catalog services first
+      categoryCatalogServices.forEach(service => {
+        categoryServicesById[service.name] = service;
+      });
+      
+      // Add or replace with provider services
+      categoryProviderServices.forEach(service => {
+        categoryServicesById[service.name] = service;
+      });
+      
+      return Object.values(categoryServicesById);
     }
 
     // Default: show ALL provider services + catalog services marked as visible on home
-    // Remove duplicates by creating a Set of unique service names + provider IDs
+    // Remove duplicates more intelligently - show catalog services even if no provider adopted them
     const providerServices = allServices || [];
     const catalogServices = homeVisibleServices || [];
     
-    // Create a unique identifier for deduplication
-    const seenServices = new Set();
-    const uniqueServices = [];
+    // Create a simple object to track services by name
+    const servicesById: Record<string, any> = {};
     
-    // Add provider services first
-    for (const service of providerServices) {
-      const key = `${service.name}-${service.providerId || 'catalog'}`;
-      if (!seenServices.has(key)) {
-        seenServices.add(key);
-        uniqueServices.push(service);
-      }
-    }
+    // Add catalog services first (as base)
+    catalogServices.forEach(service => {
+      servicesById[service.name] = service;
+    });
     
-    // Add catalog services only if not already present
-    for (const service of catalogServices) {
-      const key = `${service.name}-catalog`;
-      if (!seenServices.has(key)) {
-        seenServices.add(key);
-        uniqueServices.push(service);
-      }
-    }
+    // Add or replace with provider services (they have more details like provider info)
+    providerServices.forEach(service => {
+      servicesById[service.name] = service;
+    });
     
-    return uniqueServices;
+    // Return all unique services as array
+    return Object.values(servicesById);
   };
 
   const servicesToDisplay = getServicesToDisplay();
