@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryId = parseInt(req.params.id);
       
       // Instead of deleting, we'll mark as inactive
-      await storage.updateServiceCategory(categoryId, { isActive: false });
+      await storage.updateServiceCategory(categoryId, { isActive: false } as any);
       
       res.json({ message: "Category deleted successfully" });
     } catch (error) {
@@ -388,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all service requests for services visible on home that match provider's categories
       const providerServices = await storage.getProviderServices(provider.id);
-      const providerCategories = [...new Set(providerServices.map(ps => ps.categoryId))];
+      const providerCategories = Array.from(new Set(providerServices.map(ps => ps.categoryId)));
       
       // Get requests for catalog services that are visible on home and match provider categories
       const catalogRequests = await storage.getServiceRequestsByCategories(providerCategories);

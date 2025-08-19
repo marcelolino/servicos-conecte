@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { LocationCard } from "@/components/location/LocationCard";
 import { ProvidersMap } from "@/components/maps/ProvidersMap";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import type { ServiceCategory, PromotionalBanner, CustomChargingType } from "@shared/schema";
 
 interface PageSettings {
@@ -386,6 +387,20 @@ export default function Home() {
                               Materiais incluídos
                             </div>
                           )}
+                        </div>
+                        
+                        {/* Add to Cart Button */}
+                        <div className="pt-3 border-t">
+                          <AddToCartButton
+                            serviceId={service.id}
+                            serviceName={service.name}
+                            providerId={service.providerId}
+                            chargingTypes={service.chargingTypes || []}
+                            isProviderService={!isCatalogService}
+                            variant="default"
+                            size="sm"
+                            className="w-full"
+                          />
                         </div>
                       </CardContent>
                     </Card>
