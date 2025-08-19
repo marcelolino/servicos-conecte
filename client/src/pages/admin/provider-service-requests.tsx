@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { AdminLayout } from "@/components/layout/admin-layout";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 import { 
   Search, 
   Filter,
@@ -178,14 +178,14 @@ export default function AdminProviderServiceRequestsPage() {
 
   if (categoriesLoading || requestsLoading) {
     return (
-      <AdminLayout>
+      <ModernAdminLayout>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Carregando solicitações...</p>
           </div>
         </div>
-      </AdminLayout>
+      </ModernAdminLayout>
     );
   }
 
@@ -194,7 +194,7 @@ export default function AdminProviderServiceRequestsPage() {
   const rejectedCount = serviceRequests.filter(r => r.status === "rejected").length;
 
   return (
-    <AdminLayout>
+    <ModernAdminLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -519,6 +519,6 @@ export default function AdminProviderServiceRequestsPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
+    </ModernAdminLayout>
   );
 }

@@ -102,6 +102,8 @@ export default function Home() {
   const { data: homeVisibleServices, isLoading: homeServicesLoading } = useQuery<any[]>({
     queryKey: ['/api/services-catalog/home'],
     enabled: true,
+    refetchOnMount: true,
+    staleTime: 0, // Always refetch to get latest data
   });
 
   // Query for all provider services (for category filtering)
