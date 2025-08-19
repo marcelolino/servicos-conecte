@@ -30,12 +30,31 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 ## Alterações Recentes
 
-### 19/08/2025 - Provisionamento Completo de Dados de Teste
+### 19/08/2025 - Catálogo Completo de Serviços e Sistema de Seeds
 
-**Dados Provisionados**:
+**Catálogo de Serviços Completo**:
+- **27 serviços no catálogo** distribuídos em 11 categorias
+- **Sistema de seed robusto** para preservação de dados
+- **Scripts SQL e TypeScript** para backup e restauração
+- **Documentação técnica** completa do catálogo
+
+**Distribuição por Categoria**:
+- **Limpeza**: 6 serviços (5 visíveis na home)
+- **Desentupimento**: 5 serviços (3 visíveis na home)
+- **Elétrica**: 3 serviços (2 visíveis na home)
+- **Jardinagem**: 3 serviços (2 visíveis na home)
+- **Manutenção**: 2 serviços (2 visíveis na home)
+- **Pintor**: 2 serviços (1 visível na home)
+- **Encanador**: 2 serviços (1 visível na home)
+- **Beleza**: 2 serviços (2 visíveis na home)
+- **Educação**: 1 serviço (1 visível na home)
+- **Tecnologia**: 1 serviço (1 visível na home)
+- **Saúde**: 0 serviços (categoria preparada)
+
+**Dados de Teste Mantidos**:
 - **21 usuários totais**: 1 admin, 3 clientes, 17 prestadores
 - **17 prestadores aprovados** com perfis completos e serviços
-- **34 serviços de prestadores** distribuídos entre as categorias
+- **34 serviços de prestadores** vinculados ao catálogo
 - **Todas as contas de teste do CONTAS_TESTE.md** funcionais
 
 **Contas de Teste Principais**:
@@ -60,12 +79,19 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 **Senha universal**: Todos os usuários usam a senha `password`
 
+**Sistema de Seeds Implementado**:
+- `server/seeds/services-catalog-seed.sql` - Seed SQL completo
+- `server/seeds/run-seed.ts` - Script TypeScript para execução
+- Backup e restauração automática de dados
+- Integridade referencial preservada
+
 **Dados Realísticos**:
 - Ratings variados (4.50 a 4.95 estrelas)
 - Histórico de avaliações (25 a 200 reviews)
 - Serviços concluídos (35 a 500 serviços)
 - Preços diversificados por especialidade
 - Descrições detalhadas e realísticas
+- Catálogo baseado em dados reais do mercado
 
 ### 18/08/2025 - Sistema de Exclusão Segura de Serviços
 
