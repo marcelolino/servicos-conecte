@@ -820,11 +820,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Service not found in catalog" });
       }
 
-      // Adopt the service
+      // Adopt the service with proper data mapping
       const adoptedService = await storage.adoptServiceFromCatalog(
         provider.id,
         serviceId,
-        serviceData
+        {
+          name: catalogService.name, // Use catalog name as base
+          description: catalogService.description, // Use catalog description as base
+          estimatedDuration: catalogService.estimatedDuration,
+          ...serviceData, // Provider can override with custom values
+        }
       );
 
       res.json(adoptedService);
@@ -833,24 +838,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new service
-  app.post("/api/services", authenticateToken, requireProvider, async (req, res) => {
+  // Provider service requests - for requesting new services not in catalog
+  app.get("/api/provider/service-requests", authenticateToken, requireProvider, async (req, res) => {
     try {
       const provider = await storage.getProviderByUserId(req.user!.id);
       if (!provider) {
         return res.status(404).json({ message: "Provider not found" });
       }
       
-      const serviceData = {
+      const requests = await storage.getProviderServiceRequestsByProvider(provider.id);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get service requests", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/provider/service-requests", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      const requestData = insertProviderServiceRequestSchema.parse({
         ...req.body,
         providerId: provider.id,
-      };
+      });
       
-      const service = await storage.createProviderService(serviceData);
-      res.json(service);
+      const request = await storage.createProviderServiceRequest(requestData);
+      res.json(request);
     } catch (error) {
-      res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(400).json({ message: "Failed to create service request", error: error instanceof Error ? error.message : "Unknown error" });
     }
+  });
+
+  // Create new service
+  // DEPRECATED: Use /api/provider/adopt-service instead
+  // This endpoint is kept for backwards compatibility but redirects to adoption
+  app.post("/api/services", authenticateToken, requireProvider, async (req, res) => {
+    res.status(400).json({ 
+      message: "Serviços devem ser adotados do catálogo admin. Use /api/provider/adopt-service",
+      redirectTo: "/api/provider/adopt-service"
+    });
   });
 
   // Update service
@@ -1302,11 +1331,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Provider route to access admin services for subscription
-  app.get("/api/admin/services/available", authenticateToken, requireProvider, async (req, res) => {
+  // Provider route to access admin services for adoption
+  app.get("/api/provider/available-services", authenticateToken, requireProvider, async (req, res) => {
     try {
-      const services = await storage.getAllServicesForAdmin();
-      res.json(services);
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+
+      // Get all services from catalog that provider hasn't adopted yet
+      const allCatalogServices = await storage.getAllServicesForAdmin();
+      const providerServices = await storage.getProviderServices(provider.id);
+      
+      // Filter out already adopted services
+      const adoptedServiceIds = providerServices
+        .filter(ps => ps.serviceId !== null)
+        .map(ps => ps.serviceId);
+      
+      const availableServices = allCatalogServices.filter(
+        service => !adoptedServiceIds.includes(service.id)
+      );
+      
+      res.json(availableServices);
     } catch (error) {
       res.status(500).json({ message: "Failed to get available services", error: error instanceof Error ? error.message : "Unknown error" });
     }
