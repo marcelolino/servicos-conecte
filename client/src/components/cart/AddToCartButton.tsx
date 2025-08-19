@@ -53,6 +53,7 @@ export function AddToCartButton({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include session cookies
         body: JSON.stringify({
           providerServiceId: serviceId,
           quantity,
