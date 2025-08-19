@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#16a34a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="200" fill="#ecfdf5"/>
+  
+  <!-- Ground -->
+  <rect x="0" y="160" width="200" height="40" fill="#92400e"/>
+  
+  <!-- Tree trunk -->
+  <rect x="85" y="120" width="30" height="40" fill="#7c2d12" rx="5"/>
+  
+  <!-- Tree crown -->
+  <circle cx="100" cy="100" r="40" fill="url(#leafGrad)"/>
+  <circle cx="80" cy="90" r="25" fill="#22c55e" opacity="0.8"/>
+  <circle cx="120" cy="85" r="20" fill="#22c55e" opacity="0.8"/>
+  
+  <!-- Flowers -->
+  <circle cx="60" cy="150" r="8" fill="#ec4899"/>
+  <circle cx="55" cy="148" r="3" fill="#f9a8d4"/>
+  <circle cx="65" cy="148" r="3" fill="#f9a8d4"/>
+  <circle cx="60" cy="142" r="3" fill="#f9a8d4"/>
+  <circle cx="60" cy="158" r="3" fill="#f9a8d4"/>
+  
+  <circle cx="140" cy="155" r="6" fill="#f97316"/>
+  <circle cx="138" cy="152" r="2" fill="#fed7aa"/>
+  <circle cx="142" cy="152" r="2" fill="#fed7aa"/>
+  <circle cx="140" cy="149" r="2" fill="#fed7aa"/>
+  <circle cx="140" cy="161" r="2" fill="#fed7aa"/>
+  
+  <!-- Gardening tool (spade) -->
+  <rect x="20" y="80" width="6" height="60" fill="#92400e" rx="3"/>
+  <path d="M 18 140 L 23 130 L 28 140 Z" fill="#6b7280"/>
+  
+  <!-- Watering can -->
+  <ellipse cx="160" cy="140" rx="20" ry="15" fill="#3b82f6"/>
+  <rect x="140" y="135" width="15" height="4" fill="#3b82f6" rx="2"/>
+  <rect x="175" y="138" width="8" height="2" fill="#3b82f6" rx="1"/>
+  <circle cx="160" cy="130" r="3" fill="#1d4ed8"/>
+  
+  <!-- Water drops -->
+  <circle cx="180" cy="145" r="1.5" fill="#06b6d4"/>
+  <circle cx="185" cy="150" r="1" fill="#06b6d4"/>
+  <circle cx="178" cy="152" r="1" fill="#06b6d4"/>
+</svg>

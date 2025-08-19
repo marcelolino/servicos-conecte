@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="brushGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="200" fill="#fffbeb"/>
+  
+  <!-- Paint brush handle -->
+  <rect x="45" y="140" width="110" height="8" fill="#92400e" rx="4" transform="rotate(-30 100 144)"/>
+  
+  <!-- Brush ferrule (metal part) -->
+  <rect x="130" y="120" width="20" height="8" fill="#94a3b8" rx="4" transform="rotate(-30 140 124)"/>
+  
+  <!-- Brush bristles -->
+  <rect x="145" y="115" width="25" height="10" fill="#1f2937" rx="5" transform="rotate(-30 157 120)"/>
+  
+  <!-- Paint bucket -->
+  <rect x="50" y="160" width="60" height="30" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2" rx="5"/>
+  <rect x="52" y="162" width="56" height="20" fill="#3b82f6" rx="3"/>
+  
+  <!-- Paint drips -->
+  <path d="M 155 125 Q 157 135 155 140 Q 153 135 155 125" fill="#3b82f6" transform="rotate(-30 155 132)"/>
+  <path d="M 160 120 Q 162 130 160 135 Q 158 130 160 120" fill="#3b82f6" transform="rotate(-30 160 127)"/>
+  
+  <!-- Paint roller -->
+  <rect x="120" y="60" width="50" height="12" fill="#6b7280" rx="6"/>
+  <rect x="115" y="66" width="8" height="40" fill="#92400e" rx="4"/>
+  <rect x="110" y="100" width="18" height="8" fill="#451a03" rx="4"/>
+  
+  <!-- Paint on wall -->
+  <rect x="20" y="20" width="80" height="100" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
+  <rect x="25" y="25" width="30" height="90" fill="#3b82f6" opacity="0.8"/>
+  <rect x="60" y="25" width="35" height="60" fill="#10b981" opacity="0.8"/>
+  
+  <!-- Color palette -->
+  <ellipse cx="150" cy="170" rx="30" ry="20" fill="#ffffff" stroke="#d1d5db" stroke-width="2"/>
+  <circle cx="140" cy="165" r="5" fill="#dc2626"/>
+  <circle cx="155" cy="165" r="5" fill="#3b82f6"/>
+  <circle cx="160" cy="175" r="5" fill="#16a34a"/>
+  <circle cx="145" cy="175" r="5" fill="#f59e0b"/>
+</svg>

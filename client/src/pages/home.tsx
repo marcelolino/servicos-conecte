@@ -169,7 +169,33 @@ export default function Home() {
     }
 
     // Default: show ALL provider services + catalog services marked as visible on home
-    return [...(allServices || []), ...(homeVisibleServices || [])];
+    // Remove duplicates by creating a Set of unique service names + provider IDs
+    const providerServices = allServices || [];
+    const catalogServices = homeVisibleServices || [];
+    
+    // Create a unique identifier for deduplication
+    const seenServices = new Set();
+    const uniqueServices = [];
+    
+    // Add provider services first
+    for (const service of providerServices) {
+      const key = `${service.name}-${service.providerId || 'catalog'}`;
+      if (!seenServices.has(key)) {
+        seenServices.add(key);
+        uniqueServices.push(service);
+      }
+    }
+    
+    // Add catalog services only if not already present
+    for (const service of catalogServices) {
+      const key = `${service.name}-catalog`;
+      if (!seenServices.has(key)) {
+        seenServices.add(key);
+        uniqueServices.push(service);
+      }
+    }
+    
+    return uniqueServices;
   };
 
   const servicesToDisplay = getServicesToDisplay();

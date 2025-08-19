@@ -30,7 +30,7 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 ## Alterações Recentes
 
-### 19/08/2025 - Sistema de Aprovação de Serviços e Layout Admin
+### 19/08/2025 - Sistema de Aprovação e Interface Corrigidos
 
 **Sistema de Aprovação Corrigido**:
 - **Serviços aprovados** automaticamente adicionados ao catálogo global
@@ -38,12 +38,19 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 - **Fluxo completo**: Solicitação → Aprovação → Catálogo → Vinculação
 - **Layout "Administrador de demonstração"** removido e substituído por "Qserviços Admin"
 
+**Interface da Home Corrigida**:
+- **Duplicação de serviços** resolvida com sistema de deduplicação
+- **Cache atualizado** para mostrar serviços em tempo real
+- **Serviços visíveis na home** aparecendo corretamente
+- **Imagens SVG** criadas para 5 categorias: Desentupimento, Elétrica, Encanador, Jardinagem, Pintor
+
 **Correções Implementadas**:
 - ✅ Aprovação de "Assistência médica domiciliar" funcionando
-- ✅ Serviço aparece no catálogo admin
-- ✅ Prestador vinculado corretamente ao catálogo
-- ✅ 48 serviços no catálogo (31 visíveis na home)
-- ✅ 36 serviços de prestadores 100% vinculados
+- ✅ Serviço "Limpeza de Vidros e Janelas" aparece na home
+- ✅ Sistema de deduplicação implementado
+- ✅ ModernAdminLayout aplicado nas solicitações de serviço
+- ✅ 48 serviços no catálogo (32 visíveis na home)
+- ✅ 37 serviços de prestadores 100% vinculados
 
 ### 19/08/2025 - Catálogo Completo de Serviços e Sistema de Seeds
 
