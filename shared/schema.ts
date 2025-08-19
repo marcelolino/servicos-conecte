@@ -14,7 +14,7 @@ export const orderStatusEnum = pgEnum("order_status", ["cart", "pending_payment"
 export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected", "completed"]);
 export const chatStatusEnum = pgEnum("chat_status", ["active", "closed", "archived"]);
 export const messageStatusEnum = pgEnum("message_status", ["sent", "delivered", "read"]);
-export const chargingTypeEnum = pgEnum("charging_type", ["visit", "hour", "daily", "package", "quote"]);
+export const chargingTypeEnum = pgEnum("charging_type", ["visit", "hour", "daily", "package", "quote", "servico"]);
 export const requestStatusEnum = pgEnum("request_status", ["pending", "approved", "rejected"]);
 
 // Users table

@@ -43,7 +43,7 @@ const serviceSchema = z.object({
   visibleOnHome: z.boolean().default(false),
   isOnSale: z.boolean().default(false),
   salePercentage: z.string().optional(),
-  defaultChargingType: z.enum(['visit', 'hour', 'daily', 'package', 'quote']).default('visit'),
+  defaultChargingType: z.enum(['visit', 'hour', 'daily', 'package', 'quote', 'servico']).default('visit'),
   suggestedMinPrice: z.string().optional(),
   suggestedMaxPrice: z.string().optional(),
   tags: z.string().optional(),

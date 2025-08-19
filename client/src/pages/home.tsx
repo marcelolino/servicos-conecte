@@ -48,6 +48,9 @@ export default function Home() {
   const [showMap, setShowMap] = useState(false);
   const [proximityRadius, setProximityRadius] = useState("10"); // km
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAllServices, setShowAllServices] = useState(false);
+  const SERVICES_PER_PAGE = 12;
 
   // Função para formatar endereços de forma segura
   const formatAddress = (address: string | any): string => {
@@ -216,8 +219,19 @@ export default function Home() {
     return Object.values(servicesById);
   };
 
-  const servicesToDisplay = getServicesToDisplay();
+  const allServicesList = getServicesToDisplay();
   const isLoadingServices = servicesLoading || homeServicesLoading;
+  
+  // Calculate pagination
+  const totalServices = allServicesList.length;
+  const totalPages = Math.ceil(totalServices / SERVICES_PER_PAGE);
+  const startIndex = (currentPage - 1) * SERVICES_PER_PAGE;
+  const endIndex = startIndex + SERVICES_PER_PAGE;
+  
+  // Services to display based on whether showing all or limited
+  const servicesToDisplay = showAllServices 
+    ? allServicesList.slice(startIndex, endIndex)
+    : allServicesList.slice(0, 12);
 
   const handleBannerClick = (banner: BannerWithCategory) => {
     // Increment banner click count
@@ -328,7 +342,7 @@ export default function Home() {
                 const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
                 
                 return (
-                  <Link key={service.id} to={`/services?category=${service.categoryId}`}>
+                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services?category=${service.categoryId}`}>
                     <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img
@@ -339,10 +353,15 @@ export default function Home() {
                             (e.target as HTMLImageElement).src = '/uploads/services/limpeza_residencial.png';
                           }}
                         />
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex flex-col gap-1">
                           <Badge variant="secondary" className="text-xs">
                             {service.category?.name}
                           </Badge>
+                          {isCatalogService && service.isOnSale && service.salePercentage && (
+                            <Badge variant="destructive" className="text-xs animate-pulse">
+                              🔥 {service.salePercentage}% OFF
+                            </Badge>
+                          )}
                         </div>
                         {!isCatalogService && serviceImages.length > 1 && (
                           <div className="absolute bottom-2 right-2">
@@ -477,14 +496,61 @@ export default function Home() {
             </div>
           )}
           
-          {allServices && allServices.length > 12 && (
+          {/* Show pagination controls when displaying all services */}
+          {showAllServices && totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Página {currentPage} de {totalPages} ({totalServices} serviços)
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+          
+          {/* Show "View All Services" button when not showing all */}
+          {!showAllServices && totalServices > 12 && (
             <div className="text-center mt-8">
-              <Link to="/services">
-                <Button variant="outline" size="lg" className="px-8">
-                  Ver Todos os Serviços
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-8"
+                onClick={() => {
+                  setShowAllServices(true);
+                  setCurrentPage(1);
+                }}
+              >
+                Ver Todos os {totalServices} Serviços
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
+          {/* Show "Show Less" button when showing all */}
+          {showAllServices && (
+            <div className="text-center mt-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setShowAllServices(false);
+                  setCurrentPage(1);
+                  setSelectedCategory("all");
+                }}
+              >
+                Mostrar Menos
+              </Button>
             </div>
           )}
         </div>
