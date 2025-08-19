@@ -170,7 +170,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Package className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="font-bold text-primary">Administrador de demonstração</h2>
+              <h2 className="font-bold text-primary">Qserviços Admin</h2>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   const Icon = item.icon;
                   const hasSubItems = item.subItems && item.subItems.length > 0;
                   const isActive = hasSubItems 
-                    ? item.subItems.some(subItem => isActiveLink(subItem.href))
+                    ? item.subItems?.some(subItem => isActiveLink(subItem.href))
                     : isActiveLink(item.href, item.exact || false);
                   const isOpen = isSubmenuOpen(item.label);
                   

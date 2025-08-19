@@ -4297,20 +4297,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminResponse
       );
       
-      // If approved, create the actual provider service
+      // If approved, create service in global catalog and then provider service
       if (status === "approved") {
         const request = await storage.getProviderServiceRequests();
         const serviceRequest = request.find(r => r.id === requestId);
         
         if (serviceRequest) {
-          await storage.createProviderService({
-            providerId: serviceRequest.providerId,
+          // First, create the service in the global catalog
+          const catalogService = await storage.createService({
             categoryId: serviceRequest.categoryId,
             name: serviceRequest.name,
-            description: serviceRequest.description,
-            price: "50.00", // Default price
+            description: serviceRequest.description || "",
+            shortDescription: serviceRequest.description?.substring(0, 500) || "",
+            estimatedDuration: "2 horas",
+            durationType: "hours",
+            materialsIncluded: false,
+            defaultChargingType: "visit",
+            suggestedMinPrice: "50.00",
+            suggestedMaxPrice: "150.00",
+            tags: `["${serviceRequest.name.toLowerCase()}", "solicitação", "aprovada"]`,
+            requirements: "Conforme solicitação do prestador",
             isActive: true,
+            visibleOnHome: false,
           });
+
+          // Then, create the provider service linked to the catalog
+          await storage.adoptServiceFromCatalog(
+            serviceRequest.providerId,
+            catalogService.id,
+            {
+              name: serviceRequest.name,
+              description: serviceRequest.description,
+              price: "50.00", // Default price
+              serviceRadius: 10,
+            }
+          );
         }
       }
       

@@ -30,6 +30,21 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 ## Alterações Recentes
 
+### 19/08/2025 - Sistema de Aprovação de Serviços e Layout Admin
+
+**Sistema de Aprovação Corrigido**:
+- **Serviços aprovados** automaticamente adicionados ao catálogo global
+- **Vinculação automática** entre prestador e catálogo após aprovação
+- **Fluxo completo**: Solicitação → Aprovação → Catálogo → Vinculação
+- **Layout "Administrador de demonstração"** removido e substituído por "Qserviços Admin"
+
+**Correções Implementadas**:
+- ✅ Aprovação de "Assistência médica domiciliar" funcionando
+- ✅ Serviço aparece no catálogo admin
+- ✅ Prestador vinculado corretamente ao catálogo
+- ✅ 48 serviços no catálogo (31 visíveis na home)
+- ✅ 36 serviços de prestadores 100% vinculados
+
 ### 19/08/2025 - Catálogo Completo de Serviços e Sistema de Seeds
 
 **Catálogo de Serviços Completo**:
