@@ -30,6 +30,43 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 ## Alterações Recentes
 
+### 19/08/2025 - Provisionamento Completo de Dados de Teste
+
+**Dados Provisionados**:
+- **21 usuários totais**: 1 admin, 3 clientes, 17 prestadores
+- **17 prestadores aprovados** com perfis completos e serviços
+- **34 serviços de prestadores** distribuídos entre as categorias
+- **Todas as contas de teste do CONTAS_TESTE.md** funcionais
+
+**Contas de Teste Principais**:
+- **Admin**: `admin@qservicos.com` | senha: `password`
+- **Cliente**: `cliente@teste.com` | senha: `password` 
+- **Prestador**: `prestador@teste.com` | senha: `password`
+
+**Prestadores Especializados**:
+- João Silva (Encanamento): `joao.silva@email.com`
+- Maria Santos (Limpeza): `maria.santos@email.com`
+- Carlos Oliveira (Transporte): `carlos.oliveira@email.com`
+- Ana Pereira (Soldagem): `ana.pereira@email.com`
+- Pedro Costa (Diarista): `pedro.costa@email.com`
+- Lúcia Fernandes (Faxina): `lucia.fernandes@email.com`
+- Roberto Machado (Entregador): `roberto.machado@email.com`
+- Fernanda Alves (Cuidadora): `fernanda.alves@email.com`
+- Ricardo Souza (Pet Care): `ricardo.souza@email.com`
+- Claudia Lima (Enfermagem): `claudia.lima@email.com`
+- Marcos Rodrigues (Chef): `marcos.rodrigues@email.com`
+- Patricia Rocha (Manutenção): `patricia.rocha@email.com`
+- Antonio Silva (Montagem): `antonio.silva@email.com`
+
+**Senha universal**: Todos os usuários usam a senha `password`
+
+**Dados Realísticos**:
+- Ratings variados (4.50 a 4.95 estrelas)
+- Histórico de avaliações (25 a 200 reviews)
+- Serviços concluídos (35 a 500 serviços)
+- Preços diversificados por especialidade
+- Descrições detalhadas e realísticas
+
 ### 18/08/2025 - Sistema de Exclusão Segura de Serviços
 
 **Problema Identificado**: 
