@@ -93,7 +93,7 @@ export default function Header() {
                 <img 
                   src={pageSettings.siteLogo} 
                   alt={pageSettings.siteName || "Logo"} 
-                  className="h-12 w-auto max-w-[200px] object-contain"
+                  className="h-10 w-auto max-w-[150px] object-contain"
                 />
               ) : (
                 <>

@@ -14,6 +14,7 @@ interface AddToCartButtonProps {
     chargingType: string;
     price: number;
   }>;
+  directPrice?: string | number; // For services that have direct pricing
   isProviderService?: boolean;
   className?: string;
   variant?: "default" | "outline" | "ghost" | "secondary";
@@ -25,6 +26,7 @@ export function AddToCartButton({
   serviceName,
   providerId,
   chargingTypes = [],
+  directPrice,
   isProviderService = false,
   className = "",
   variant = "default",
@@ -42,9 +44,9 @@ export function AddToCartButton({
         throw new Error("Login necessário");
       }
 
-      // Determine the price - use the first charging type with a price
+      // Determine the price - use charging types first, then directPrice
       const priceInfo = chargingTypes.find(ct => ct.price > 0);
-      const price = priceInfo?.price || 0;
+      const price = priceInfo?.price || (directPrice ? parseFloat(directPrice.toString()) : 0);
 
       const response = await fetch('/api/cart/items', {
         method: 'POST',
@@ -113,8 +115,8 @@ export function AddToCartButton({
     addToCartMutation.mutate();
   };
 
-  const hasValidPrice = chargingTypes.some(ct => ct.price > 0);
-  const isQuoteOnly = chargingTypes.length === 0 || !hasValidPrice;
+  const hasValidPrice = chargingTypes.some(ct => ct.price && ct.price > 0) || (directPrice && parseFloat(directPrice.toString()) > 0);
+  const isQuoteOnly = !hasValidPrice;
 
   // Don't show add to cart for quote-only services
   if (isQuoteOnly) {

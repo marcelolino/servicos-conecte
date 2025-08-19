@@ -396,6 +396,7 @@ export default function Home() {
                             serviceName={service.name}
                             providerId={service.providerId}
                             chargingTypes={service.chargingTypes || []}
+                            directPrice={service.price || service.suggestedMinPrice || service.service?.suggestedMinPrice}
                             isProviderService={!isCatalogService}
                             variant="default"
                             size="sm"
