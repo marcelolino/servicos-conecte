@@ -110,7 +110,7 @@ export default function AdminServicesCatalog() {
 
   const createServiceMutation = useMutation({
     mutationFn: (data: ServiceFormData) =>
-      apiRequest('POST', '/api/admin/services-catalog', data),
+      apiRequest('/api/admin/services-catalog', 'POST', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       form.reset();
@@ -131,7 +131,7 @@ export default function AdminServicesCatalog() {
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: ServiceFormData }) =>
-      apiRequest('PUT', `/api/admin/services-catalog/${id}`, data),
+      apiRequest(`/api/admin/services-catalog/${id}`, 'PUT', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       form.reset();
@@ -153,7 +153,7 @@ export default function AdminServicesCatalog() {
 
   const deleteServiceMutation = useMutation({
     mutationFn: (serviceId: number) =>
-      apiRequest('DELETE', `/api/admin/services-catalog/${serviceId}`),
+      apiRequest(`/api/admin/services-catalog/${serviceId}`, 'DELETE'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       toast({

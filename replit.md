@@ -30,6 +30,32 @@ Plataforma marketplace que conecta prestadores de serviços e clientes através 
 
 ## Alterações Recentes
 
+### 20/08/2025 - Correção Definitiva de Bugs e Melhorias na Interface
+
+**Correções de Bugs Principais**:
+- **Tipos de Cobrança Dinâmicos**: Corrigido carregamento no painel do prestador
+- **Filtros da Home**: Corrigido paginação automática para mostrar todos os serviços filtrados
+- **API de Atualização**: Corrigido erro "Erro ao atualizar Serviço" no catálogo admin
+- **Enum chargingType**: Adicionado tipo "servico" faltante ao esquema
+
+**Melhorias Implementadas**:
+- ✅ Dropdown de tipos de cobrança carrega dinamicamente via `/api/charging-types`
+- ✅ Filtro "Limpeza" mostra todos os 10 serviços da categoria com paginação automática
+- ✅ Remoção do limite artificial de 12 serviços quando filtro está ativo
+- ✅ Reset automático da paginação quando categoria muda
+- ✅ API de atualização de serviços funcionando corretamente (testado via curl)
+
+**Frontend Corrigido**:
+- Parâmetros `apiRequest()` padronizados: `apiRequest(url, method, data)`
+- UseEffect adicionado para resetar paginação em mudanças de filtro
+- Import do useEffect corrigido na home page
+
+**Status do Sistema**:
+- 48 serviços no catálogo global
+- 37 serviços de prestadores 100% vinculados
+- Sistema de ofertas funcionando com badges animados
+- Todas as funcionalidades principais operacionais
+
 ### 19/08/2025 - Sistema de Aprovação e Interface Corrigidos
 
 **Sistema de Aprovação Corrigido**:
