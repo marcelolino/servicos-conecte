@@ -431,13 +431,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const serviceId = parseInt(req.params.id);
       const requestBody = { ...req.body };
+      console.log('Updating service:', serviceId, 'with data:', requestBody);
+      console.log('Request headers:', req.headers);
+      console.log('User from token:', req.user);
+      
       // Convert 'none' back to null for imageUrl
       if (requestBody.imageUrl === 'none') {
         requestBody.imageUrl = null;
       }
+      
+      console.log('Processed data before storage update:', requestBody);
       const service = await storage.updateService(serviceId, requestBody);
+      console.log('Service updated successfully:', service);
       res.json(service);
     } catch (error) {
+      console.error('Error updating service:', error);
       res.status(400).json({ message: "Failed to update service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });

@@ -31,8 +31,8 @@ import {
 import type { Service, ServiceCategory, CustomChargingType } from '@shared/schema';
 
 const serviceSchema = z.object({
-  categoryId: z.number().min(1, "Categoria é obrigatória"),
-  subcategoryId: z.number().optional(),
+  categoryId: z.coerce.number().min(1, "Categoria é obrigatória"),
+  subcategoryId: z.coerce.number().optional(),
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
   shortDescription: z.string().optional(),
@@ -142,10 +142,11 @@ export default function AdminServicesCatalog() {
         description: 'Serviço atualizado com sucesso',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Erro ao atualizar serviço:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao atualizar serviço',
+        description: error?.message || 'Erro ao atualizar serviço',
         variant: 'destructive',
       });
     },
@@ -171,10 +172,22 @@ export default function AdminServicesCatalog() {
   });
 
   const onSubmit = (data: ServiceFormData) => {
+    console.log('Form submitted with data:', data);
+    console.log('Form validation errors:', form.formState.errors);
+    
+    // Ensure numeric fields are properly converted
+    const processedData = {
+      ...data,
+      categoryId: typeof data.categoryId === 'string' ? parseInt(data.categoryId) : data.categoryId,
+      subcategoryId: data.subcategoryId ? (typeof data.subcategoryId === 'string' ? parseInt(data.subcategoryId) : data.subcategoryId) : undefined,
+    };
+    
     if (editingService) {
-      updateServiceMutation.mutate({ id: editingService.id, data });
+      console.log('Updating service:', editingService.id, 'with processed data:', processedData);
+      updateServiceMutation.mutate({ id: editingService.id, data: processedData });
     } else {
-      createServiceMutation.mutate(data);
+      console.log('Creating new service with processed data:', processedData);
+      createServiceMutation.mutate(processedData);
     }
   };
 
