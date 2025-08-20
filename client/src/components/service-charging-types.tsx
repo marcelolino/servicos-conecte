@@ -69,7 +69,7 @@ export function ServiceChargingTypes({ serviceId, serviceName }: ServiceCharging
 
   // Get dynamic charging types from admin panel
   const { data: availableChargingTypes = [], isLoading: chargingTypesLoading } = useQuery<CustomChargingType[]>({
-    queryKey: ["/api/admin/charging-types"],
+    queryKey: ["/api/charging-types"],
   });
 
   // Get charging types for this service

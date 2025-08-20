@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,17 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showAllServices, setShowAllServices] = useState(false);
   const SERVICES_PER_PAGE = 12;
+
+  // Reset pagination when category changes
+  useEffect(() => {
+    if (selectedCategory && selectedCategory !== "all") {
+      setCurrentPage(1);
+      setShowAllServices(true);
+    } else {
+      setShowAllServices(false);
+      setCurrentPage(1);
+    }
+  }, [selectedCategory]);
 
   // Função para formatar endereços de forma segura
   const formatAddress = (address: string | any): string => {
@@ -317,7 +328,7 @@ export default function Home() {
             </div>
           ) : servicesToDisplay && servicesToDisplay.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {servicesToDisplay.slice(0, 12).map((service: any) => {
+              {servicesToDisplay.map((service: any) => {
                 // Determine if this is a catalog service or provider service
                 const isCatalogService = !service.provider;
                 
