@@ -110,7 +110,7 @@ export default function AdminServicesCatalog() {
 
   const createServiceMutation = useMutation({
     mutationFn: (data: ServiceFormData) =>
-      apiRequest('/api/admin/services-catalog', 'POST', data),
+      apiRequest('POST', '/api/admin/services-catalog', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       form.reset();
@@ -131,7 +131,7 @@ export default function AdminServicesCatalog() {
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: ServiceFormData }) =>
-      apiRequest(`/api/admin/services-catalog/${id}`, 'PUT', data),
+      apiRequest('PUT', `/api/admin/services-catalog/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       form.reset();
@@ -143,7 +143,8 @@ export default function AdminServicesCatalog() {
       });
     },
     onError: (error: any) => {
-      console.error('Erro ao atualizar serviço:', error);
+      console.error('Erro detalhado ao atualizar serviço:', error);
+      console.error('Stack trace:', error.stack);
       toast({
         title: 'Erro',
         description: error?.message || 'Erro ao atualizar serviço',
@@ -154,7 +155,7 @@ export default function AdminServicesCatalog() {
 
   const deleteServiceMutation = useMutation({
     mutationFn: (serviceId: number) =>
-      apiRequest(`/api/admin/services-catalog/${serviceId}`, 'DELETE'),
+      apiRequest('DELETE', `/api/admin/services-catalog/${serviceId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services-catalog'] });
       toast({
