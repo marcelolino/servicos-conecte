@@ -415,15 +415,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/services-catalog", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const requestBody = { ...req.body };
+      console.log('Creating service with data:', requestBody);
+      console.log('Request headers:', req.headers);
+      console.log('User from token:', req.user);
+      
       // Convert 'none' back to null for imageUrl
       if (requestBody.imageUrl === 'none') {
         requestBody.imageUrl = null;
       }
+      
+      console.log('Processed data before validation:', requestBody);
       const serviceData = insertServiceSchema.parse(requestBody);
+      console.log('Validated service data:', serviceData);
+      
       const service = await storage.createService(serviceData);
+      console.log('Service created successfully:', service);
       res.json(service);
     } catch (error) {
-      res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
+      console.error('Error creating service:', error);
+      if (error instanceof ZodError) {
+        console.error('Validation errors:', error.errors);
+        res.status(400).json({ 
+          message: "Validation failed", 
+          errors: error.errors,
+          error: error.message 
+        });
+      } else {
+        res.status(400).json({ message: "Failed to create service", error: error instanceof Error ? error.message : "Unknown error" });
+      }
     }
   });
 
