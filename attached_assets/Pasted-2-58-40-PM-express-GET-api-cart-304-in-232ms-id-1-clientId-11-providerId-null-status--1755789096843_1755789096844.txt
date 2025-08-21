@@ -1,0 +1,127 @@
+2:58:40 PM [express] GET /api/cart 304 in 232ms :: {"id":1,"clientId":11,"providerId":null,"status":…
+Creating service with data: {
+  categoryId: 5,
+  name: 'Desbloqueio PS3',
+  description: 'Desbloqueio PS3',
+  shortDescription: '',
+  estimatedDuration: '2',
+  durationType: 'hours',
+  materialsIncluded: false,
+  materialsDescription: '',
+  visibleOnHome: false,
+  isOnSale: false,
+  salePercentage: '',
+  defaultChargingType: 'servico',
+  suggestedMinPrice: '70',
+  suggestedMaxPrice: '150',
+  tags: '',
+  requirements: '',
+  imageUrl: '/uploads/services/1755513895647_auotnimguwi.webp'
+}
+Request headers: {
+  host: 'f6337fb3-ebbf-40f4-b762-ece8f4e73286-00-3vfeb5dl0j8el.picard.replit.dev',
+  'user-agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 Edg/109.0.1518.140',
+  'content-length': '426',
+  accept: '*/*',
+  'accept-encoding': 'gzip, deflate, br',
+  'accept-language': 'pt-BR,pt;q=0.9',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBxc2Vydmljb3MuY29tIiwidXNlclR5cGUiOiJhZG1pbiIsImlhdCI6MTc1NTc4NDU4NiwiZXhwIjoxNzU4Mzc2NTg2fQ.CLRgYYNVTnO35Gt_8XH7edNxljUxH2Z-vHaaNUthHTE',
+  'content-type': 'application/json',
+  dnt: '1',
+  origin: 'https://f6337fb3-ebbf-40f4-b762-ece8f4e73286-00-3vfeb5dl0j8el.picard.replit.dev',
+  referer: 'https://f6337fb3-ebbf-40f4-b762-ece8f4e73286-00-3vfeb5dl0j8el.picard.replit.dev/admin-services',
+  'sec-ch-ua': '"Not_A Brand";v="99", "Microsoft Edge";v="109", "Chromium";v="109"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-origin',
+  'x-forwarded-for': '179.251.163.189, 10.81.9.82',
+  'x-forwarded-proto': 'https',
+  'x-replit-user-bio': '',
+  'x-replit-user-id': '',
+  'x-replit-user-name': '',
+  'x-replit-user-profile-image': '',
+  'x-replit-user-roles': '',
+  'x-replit-user-teams': '',
+  'x-replit-user-url': ''
+}
+User from token: {
+  id: 1,
+  email: 'admin@qservicos.com',
+  userType: 'admin',
+  iat: 1755784586,
+  exp: 1758376586
+}
+Processed data before validation: {
+  categoryId: 5,
+  name: 'Desbloqueio PS3',
+  description: 'Desbloqueio PS3',
+  shortDescription: '',
+  estimatedDuration: '2',
+  durationType: 'hours',
+  materialsIncluded: false,
+  materialsDescription: '',
+  visibleOnHome: false,
+  isOnSale: false,
+  salePercentage: '',
+  defaultChargingType: 'servico',
+  suggestedMinPrice: '70',
+  suggestedMaxPrice: '150',
+  tags: '',
+  requirements: '',
+  imageUrl: '/uploads/services/1755513895647_auotnimguwi.webp'
+}
+Validated service data: {
+  categoryId: 5,
+  name: 'Desbloqueio PS3',
+  description: 'Desbloqueio PS3',
+  shortDescription: '',
+  estimatedDuration: '2',
+  durationType: 'hours',
+  materialsIncluded: false,
+  materialsDescription: '',
+  defaultChargingType: 'servico',
+  suggestedMinPrice: '70',
+  suggestedMaxPrice: '150',
+  tags: '',
+  requirements: '',
+  imageUrl: '/uploads/services/1755513895647_auotnimguwi.webp',
+  visibleOnHome: false,
+  isOnSale: false,
+  salePercentage: ''
+}
+Error creating service: error: invalid input syntax for type numeric: ""
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.createService (/home/runner/workspace/server/storage.ts:648:26)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:431:23) {
+  length: 132,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $17 = ''",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numeric.c',
+  line: '800',
+  routine: 'numeric_in'
+}
+/home/runner/workspace/server/routes.ts:436
+      if (error instanceof ZodError) {
+                           ^
+
+
+ReferenceError: ZodError is not defined
+    at <anonymous> (/home/runner/workspace/server/routes.ts:436:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v20.19.3

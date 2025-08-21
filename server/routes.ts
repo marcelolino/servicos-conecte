@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { chargingTypesStorage } from "./charging-types-storage";
 import { db } from "./db";
 import jwt from "jsonwebtoken";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import fs from "fs";
 import path from "path";
 import { insertUserSchema, insertProviderSchema, insertServiceRequestSchema, insertReviewSchema, insertProviderServiceSchema, insertServiceChargingTypeSchema, insertOrderSchema, insertOrderItemSchema, insertWithdrawalRequestSchema, insertProviderEarningSchema, insertProviderBankAccountSchema, insertProviderPixKeySchema, insertChatConversationSchema, insertChatMessageSchema, insertPaymentGatewayConfigSchema, insertProviderServiceRequestSchema, insertServiceSchema, insertServiceCategorySchema } from "@shared/schema";
@@ -419,9 +419,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Request headers:', req.headers);
       console.log('User from token:', req.user);
       
-      // Convert 'none' back to null for imageUrl
+      // Convert 'none' back to null for imageUrl and empty strings to null for numeric fields
       if (requestBody.imageUrl === 'none') {
         requestBody.imageUrl = null;
+      }
+      
+      // Fix numeric fields - convert empty strings to null to avoid PostgreSQL errors
+      if (requestBody.salePercentage === '') {
+        requestBody.salePercentage = null;
+      }
+      if (requestBody.suggestedMinPrice === '') {
+        requestBody.suggestedMinPrice = null;
+      }
+      if (requestBody.suggestedMaxPrice === '') {
+        requestBody.suggestedMaxPrice = null;
       }
       
       console.log('Processed data before validation:', requestBody);
@@ -454,9 +465,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Request headers:', req.headers);
       console.log('User from token:', req.user);
       
-      // Convert 'none' back to null for imageUrl
+      // Convert 'none' back to null for imageUrl and empty strings to null for numeric fields
       if (requestBody.imageUrl === 'none') {
         requestBody.imageUrl = null;
+      }
+      
+      // Fix numeric fields - convert empty strings to null to avoid PostgreSQL errors
+      if (requestBody.salePercentage === '') {
+        requestBody.salePercentage = null;
+      }
+      if (requestBody.suggestedMinPrice === '') {
+        requestBody.suggestedMinPrice = null;
+      }
+      if (requestBody.suggestedMaxPrice === '') {
+        requestBody.suggestedMaxPrice = null;
       }
       
       console.log('Processed data before storage update:', requestBody);
