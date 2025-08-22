@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatInterface } from "@/components/chat/chat-interface";
-import { ChatNotification } from "@/components/chat/chat-notification";
+import { AdminNotifications } from "@/components/notifications/admin-notifications";
 import type { ServiceCategory, User, Provider } from "@shared/schema";
 
 // Import transaction pages
@@ -4796,7 +4796,7 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <ChatNotification userType="admin" />
+              <AdminNotifications />
               <Button 
                 onClick={() => logout()}
                 variant="outline"

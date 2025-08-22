@@ -1476,7 +1476,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(notifications)
       .innerJoin(users, eq(notifications.userId, users.id))
-      .where(eq(users.userType, userType))
+      .where(eq(users.userType, userType as any))
       .orderBy(desc(notifications.createdAt));
   }
 
@@ -1491,7 +1491,7 @@ export class DatabaseStorage implements IStorage {
   async createAdminNotification(type: string, title: string, message: string, relatedId?: number): Promise<void> {
     const adminUsers = await this.getAdminUsers();
     
-    const notifications = adminUsers.map(admin => ({
+    const notificationData = adminUsers.map(admin => ({
       userId: admin.id,
       type,
       title,
@@ -1500,9 +1500,18 @@ export class DatabaseStorage implements IStorage {
       isRead: false
     }));
 
-    if (notifications.length > 0) {
-      await db.insert(notifications).values(notifications);
+    if (notificationData.length > 0) {
+      await db.insert(notifications).values(notificationData);
     }
+  }
+
+  async notifyAllAdmins(notification: { type: string; title: string; message: string; relatedId?: number }): Promise<void> {
+    await this.createAdminNotification(
+      notification.type,
+      notification.title,
+      notification.message,
+      notification.relatedId
+    );
   }
 
   async markNotificationAsRead(id: number): Promise<void> {
