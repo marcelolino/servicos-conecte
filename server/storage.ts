@@ -277,6 +277,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order>;
   addItemToCart(clientId: number, item: InsertOrderItem): Promise<OrderItem>;
+  addCatalogItemToCart(clientId: number, item: { catalogServiceId: number; quantity: number; unitPrice: string; notes?: string; chargingType?: string }): Promise<OrderItem>;
   updateCartItem(itemId: number, quantity?: number, unitPrice?: string): Promise<OrderItem>;
   removeCartItem(itemId: number): Promise<void>;
   clearCart(clientId: number): Promise<void>;
@@ -2445,7 +2446,7 @@ export class DatabaseStorage implements IStorage {
       .from(orderItems)
       .where(and(
         eq(orderItems.orderId, cart.id),
-        eq(orderItems.providerServiceId, item.providerServiceId)
+        eq(orderItems.providerServiceId, item.providerServiceId!)
       ));
 
     if (existingItems.length > 0) {
@@ -2476,11 +2477,82 @@ export class DatabaseStorage implements IStorage {
       
       const insertData = {
         orderId: cart.id,
-        providerServiceId: item.providerServiceId,
+        providerServiceId: item.providerServiceId!,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: totalPrice,
         notes: item.notes || null
+      };
+      
+      const [newItem] = await db
+        .insert(orderItems)
+        .values(insertData)
+        .returning();
+      
+      // Update cart totals after adding item
+      await this.updateCartTotals(cart.id);
+      
+      return newItem;
+    }
+  }
+
+  async addCatalogItemToCart(clientId: number, item: { catalogServiceId: number; quantity: number; unitPrice: string; notes?: string; chargingType?: string }): Promise<OrderItem> {
+    // Get or create cart
+    let cart = await this.getCartByClient(clientId);
+    if (!cart) {
+      cart = await this.createOrder({
+        clientId,
+        status: "cart",
+        subtotal: "0.00",
+        discountAmount: "0.00",
+        serviceAmount: "0.00",
+        totalAmount: "0.00",
+      });
+    }
+
+    // Check if catalog item already exists in cart
+    const existingItems = await db
+      .select()
+      .from(orderItems)
+      .where(and(
+        eq(orderItems.orderId, cart.id),
+        eq(orderItems.catalogServiceId, item.catalogServiceId)
+      ));
+
+    if (existingItems.length > 0) {
+      // Update existing item quantity
+      const existingItem = existingItems[0];
+      const newQuantity = existingItem.quantity + item.quantity;
+      const unitPrice = parseFloat(existingItem.unitPrice);
+      const newTotalPrice = (unitPrice * newQuantity).toFixed(2);
+      
+      const [updatedItem] = await db
+        .update(orderItems)
+        .set({
+          quantity: newQuantity,
+          totalPrice: newTotalPrice,
+          updatedAt: new Date()
+        })
+        .where(eq(orderItems.id, existingItem.id))
+        .returning();
+      
+      // Update cart totals after updating item
+      await this.updateCartTotals(cart.id);
+      
+      return updatedItem;
+    } else {
+      // Add new catalog item
+      const unitPrice = parseFloat(item.unitPrice);
+      const totalPrice = (unitPrice * item.quantity).toFixed(2);
+      
+      const insertData = {
+        orderId: cart.id,
+        catalogServiceId: item.catalogServiceId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: totalPrice,
+        notes: item.notes || null,
+        chargingType: item.chargingType as any || "visit"
       };
       
       const [newItem] = await db

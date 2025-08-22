@@ -376,7 +376,8 @@ export const orders = pgTable("orders", {
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").references(() => orders.id).notNull(),
-  providerServiceId: integer("provider_service_id").references(() => providerServices.id).notNull(),
+  providerServiceId: integer("provider_service_id").references(() => providerServices.id),
+  catalogServiceId: integer("catalog_service_id").references(() => services.id),
   serviceChargingTypeId: integer("service_charging_type_id").references(() => serviceChargingTypes.id),
   quantity: integer("quantity").default(1),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),

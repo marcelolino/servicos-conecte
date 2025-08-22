@@ -2806,32 +2806,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Service not found" });
         }
         
-        // Create a service request for catalog services that all providers in the category can see
-        const serviceRequestData = {
-          clientId: req.user!.id,
-          categoryId: catalogService.categoryId,
-          title: catalogService.name,
-          description: `Solicitação de serviço: ${catalogService.name}\n\n${catalogService.description || ''}`,
-          address: 'A definir (cliente será contatado)', // Temporary address
-          cep: '00000-000', // Temporary CEP
-          city: 'A definir', // Temporary city
-          state: 'A definir', // Temporary state
-          estimatedPrice: req.body.unitPrice ? req.body.unitPrice.toString() : catalogService.suggestedMinPrice || '0.00',
-          totalAmount: req.body.unitPrice ? req.body.unitPrice.toString() : catalogService.suggestedMinPrice || '0.00',
-          notes: req.body.notes || `Serviço solicitado através do catálogo: ${catalogService.name}. Preço estimado: R$ ${req.body.unitPrice || catalogService.suggestedMinPrice || '0.00'}. Cliente será contatado para definir local e agendamento.`,
-          status: "pending" as const,
-          paymentStatus: "pending" as const
+        // Add catalog service to cart normally like provider services
+        const cartItem = {
+          catalogServiceId: catalogService.id,
+          quantity: req.body.quantity || 1,
+          unitPrice: req.body.unitPrice || catalogService.suggestedMinPrice || "0.00",
+          notes: req.body.notes || `Serviço do catálogo: ${catalogService.name}`,
+          chargingType: req.body.chargingType || "visit"
         };
 
-        const serviceRequest = await storage.createServiceRequest(serviceRequestData);
-        
-        // Get category info for better response message
-        const category = await storage.getServiceCategory(catalogService.categoryId);
+        const addedItem = await storage.addCatalogItemToCart(req.user!.id, cartItem);
         
         res.json({
-          type: 'service_request',
-          serviceRequest,
-          message: `Solicitação criada! Sua reserva aparecerá na lista de prestadores da categoria "${category?.name || 'categoria'}" para que possam aceitar.`
+          type: 'cart_item',
+          item: addedItem,
+          message: `${catalogService.name} foi adicionado ao carrinho`
         });
       }
     } catch (error) {

@@ -72,16 +72,15 @@ export function AddToCartButton({
     onSuccess: (data) => {
       setIsAdded(true);
       
-      if (data.type === 'service_request') {
-        // It's a catalog service - service request created
+      if (data.type === 'cart_item') {
+        // It's a catalog service - added to cart
         toast({
-          title: "Solicitação criada!",
-          description: data.message || "Sua reserva foi criada e prestadores da categoria poderão aceitá-la.",
+          title: "Sucesso!",
+          description: data.message || `${serviceName} foi adicionado ao carrinho`,
         });
         
-        // Invalidate service requests queries
-        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/client/reservas'] });
+        // Invalidate cart queries
+        queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
       } else {
         // It's a provider service - added to cart normally
         toast({
