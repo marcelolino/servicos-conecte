@@ -2738,26 +2738,60 @@ export class DatabaseStorage implements IStorage {
       .values(orderData)
       .returning();
 
-    // Create service requests based on items
+    // Create order items and service requests based on items
     if (items && items.length > 0) {
-      // For now, we'll create a simple service request
-      // This assumes items contains basic service information
       for (const item of items) {
-        await db.insert(serviceRequests).values({
-          clientId: orderData.clientId,
-          providerId: item.providerId || null,
-          categoryId: item.categoryId || 1, // Default to first category
-          title: "Solicitação de Serviço", // Required field
-          description: item.description || "Serviço solicitado",
-          address: orderData.address || "",
-          cep: orderData.cep || "",
-          city: orderData.city || "",
-          state: orderData.state || "",
-          scheduledAt: orderData.scheduledAt,
-          status: "pending",
-          price: parseFloat(orderData.totalAmount) || 0,
-          notes: orderData.notes,
+        // Create order item
+        await db.insert(orderItems).values({
+          orderId: newOrder.id,
+          providerServiceId: item.providerServiceId || null,
+          catalogServiceId: item.catalogServiceId || null,
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || "0.00",
+          totalPrice: item.totalPrice || "0.00",
+          notes: item.notes || null,
+          chargingType: item.chargingType || null,
         });
+
+        // If it's a catalog service, create service request for relevant providers
+        if (item.catalogServiceId && !item.providerServiceId) {
+          // Get the catalog service to find its category
+          const catalogService = await this.getService(item.catalogServiceId);
+          if (catalogService) {
+            await db.insert(serviceRequests).values({
+              clientId: orderData.clientId,
+              providerId: null, // Will be assigned when provider accepts
+              categoryId: catalogService.categoryId,
+              title: catalogService.name,
+              description: catalogService.description || "Serviço solicitado do catálogo",
+              address: orderData.address || "",
+              cep: orderData.cep || "",
+              city: orderData.city || "",
+              state: orderData.state || "",
+              scheduledAt: orderData.scheduledAt,
+              status: "pending",
+              price: parseFloat(item.totalPrice) || 0,
+              notes: orderData.notes,
+            });
+          }
+        } else if (item.providerServiceId) {
+          // For provider services, create targeted service request
+          await db.insert(serviceRequests).values({
+            clientId: orderData.clientId,
+            providerId: item.providerId || null,
+            categoryId: item.categoryId || 1,
+            title: item.name || "Solicitação de Serviço",
+            description: item.description || "Serviço solicitado",
+            address: orderData.address || "",
+            cep: orderData.cep || "",
+            city: orderData.city || "",
+            state: orderData.state || "",
+            scheduledAt: orderData.scheduledAt,
+            status: "pending",
+            price: parseFloat(item.totalPrice) || 0,
+            notes: orderData.notes,
+          });
+        }
       }
     }
 
