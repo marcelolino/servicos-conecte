@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { chargingTypesStorage } from "./charging-types-storage";
 import { db } from "./db";
@@ -587,6 +588,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const provider = await storage.createProvider(providerData);
+      
+      // Create notification for admins about new provider registration
+      try {
+        await storage.notifyAllAdmins({
+          type: 'new_provider',
+          title: 'Novo Prestador Registrado',
+          message: `O prestador ${providerData.cpfCnpj} se registrou e aguarda aprovação`,
+          relatedId: provider.id,
+        });
+        
+        // Broadcast real-time notification to admins
+        if (app.locals.broadcastToAdmins) {
+          app.locals.broadcastToAdmins({
+            type: 'new_provider',
+            title: 'Novo Prestador Registrado',
+            message: `O prestador ${providerData.cpfCnpj} se registrou e aguarda aprovação`,
+            relatedId: provider.id,
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send provider registration notification:', notificationError);
+      }
+      
       res.json(provider);
     } catch (error) {
       res.status(400).json({ message: "Failed to create provider", error: error instanceof Error ? error.message : "Unknown error" });
@@ -915,6 +939,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const request = await storage.createProviderServiceRequest(requestData);
+      
+      // Create notification for admins about new provider service request
+      try {
+        const user = await storage.getUser(req.user!.id);
+        await storage.notifyAllAdmins({
+          type: 'service_request',
+          title: 'Nova Solicitação de Serviço',
+          message: `Prestador ${user?.name || 'Desconhecido'} solicitou aprovação para ${requestData.name}`,
+          relatedId: request.id,
+        });
+        
+        // Broadcast real-time notification to admins
+        if (app.locals.broadcastToAdmins) {
+          app.locals.broadcastToAdmins({
+            type: 'service_request',
+            title: 'Nova Solicitação de Serviço',
+            message: `Prestador ${user?.name || 'Desconhecido'} solicitou aprovação para ${requestData.name}`,
+            relatedId: request.id,
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send provider service request notification:', notificationError);
+      }
+      
       res.json(request);
     } catch (error) {
       res.status(400).json({ message: "Failed to create service request", error: error instanceof Error ? error.message : "Unknown error" });
@@ -1119,6 +1167,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const serviceRequest = await storage.createServiceRequest(requestData);
+      
+      // Create notification for admins about new service request
+      try {
+        const user = await storage.getUser(req.user!.id);
+        await storage.notifyAllAdmins({
+          type: 'new_booking',
+          title: 'Nova Reserva de Serviço',
+          message: `${user?.name || 'Cliente'} solicitou um novo serviço`,
+          relatedId: serviceRequest.id,
+        });
+        
+        // Broadcast real-time notification to admins
+        if (app.locals.broadcastToAdmins) {
+          app.locals.broadcastToAdmins({
+            type: 'new_booking',
+            title: 'Nova Reserva de Serviço',
+            message: `${user?.name || 'Cliente'} solicitou um novo serviço`,
+            relatedId: serviceRequest.id,
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send service request notification:', notificationError);
+      }
+      
       res.json(serviceRequest);
     } catch (error) {
       res.status(400).json({ message: "Failed to create service request", error: error instanceof Error ? error.message : "Unknown error" });
@@ -1360,6 +1432,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/notifications/unread-count", authenticateToken, async (req, res) => {
+    try {
+      const count = await storage.getUnreadNotificationsCount(req.user!.id);
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get unread notifications count", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.put("/api/notifications/:id/read", authenticateToken, async (req, res) => {
     try {
       const notificationId = parseInt(req.params.id);
@@ -1367,6 +1448,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Notification marked as read" });
     } catch (error) {
       res.status(400).json({ message: "Failed to mark notification as read", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/notifications/mark-all-read", authenticateToken, async (req, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.user!.id);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark all notifications as read", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -4497,5 +4587,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/admin', adminRoutes.default);
 
   const httpServer = createServer(app);
+  
+  // WebSocket server for real-time notifications
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  // Store WebSocket connections by user ID
+  const connections = new Map<number, WebSocket[]>();
+
+  // Function to broadcast notification to specific user
+  const broadcastToUser = (userId: number, notification: any) => {
+    const userConnections = connections.get(userId);
+    if (userConnections) {
+      const message = JSON.stringify({
+        type: 'notification',
+        data: notification
+      });
+      
+      userConnections.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(message);
+        }
+      });
+    }
+  };
+
+  // Function to broadcast notification to all admin users
+  const broadcastToAdmins = async (notification: any) => {
+    try {
+      const adminUsers = await storage.getAdminUsers();
+      const message = JSON.stringify({
+        type: 'notification',
+        data: notification
+      });
+      
+      adminUsers.forEach(admin => {
+        const userConnections = connections.get(admin.id);
+        if (userConnections) {
+          userConnections.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(message);
+            }
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to broadcast to admins:', error);
+    }
+  };
+
+  // WebSocket connection handler
+  wss.on('connection', (ws, req) => {
+    let userId: number | null = null;
+
+    console.log('WebSocket connection established');
+
+    ws.on('message', async (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+
+        if (message.type === 'auth') {
+          // Authenticate WebSocket connection
+          const token = message.token;
+          if (!token) {
+            ws.send(JSON.stringify({ type: 'error', message: 'Token required' }));
+            return;
+          }
+
+          try {
+            const decoded = jwt.verify(token, JWT_SECRET) as any;
+            userId = decoded.id;
+
+            // Add connection to user's connections
+            if (!connections.has(userId)) {
+              connections.set(userId, []);
+            }
+            connections.get(userId)!.push(ws);
+
+            // Send confirmation
+            ws.send(JSON.stringify({ 
+              type: 'auth_success', 
+              message: 'WebSocket authenticated successfully' 
+            }));
+
+            console.log(`WebSocket authenticated for user ${userId}`);
+
+            // Send unread notification count
+            const unreadCount = await storage.getUnreadNotificationsCount(userId);
+            ws.send(JSON.stringify({
+              type: 'unread_count',
+              data: { count: unreadCount }
+            }));
+
+          } catch (error) {
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid token' }));
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
+      }
+    });
+
+    ws.on('close', () => {
+      // Remove connection from user's connections
+      if (userId && connections.has(userId)) {
+        const userConnections = connections.get(userId)!;
+        const index = userConnections.indexOf(ws);
+        if (index > -1) {
+          userConnections.splice(index, 1);
+        }
+        if (userConnections.length === 0) {
+          connections.delete(userId);
+        }
+      }
+      console.log(`WebSocket connection closed for user ${userId}`);
+    });
+  });
+
+  // Export broadcast functions for use in other parts of the app
+  app.locals.broadcastToUser = broadcastToUser;
+  app.locals.broadcastToAdmins = broadcastToAdmins;
+
   return httpServer;
 }

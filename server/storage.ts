@@ -181,8 +181,13 @@ export interface IStorage {
   
   // Notifications
   getNotificationsByUser(userId: number): Promise<Notification[]>;
+  getNotificationsByUserType(userType: string): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
+  createAdminNotification(type: string, title: string, message: string, relatedId?: number): Promise<void>;
   markNotificationAsRead(id: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
+  getAdminUsers(): Promise<User[]>;
   
   // Authentication
   validateUser(email: string, password: string): Promise<User | null>;
@@ -1457,6 +1462,24 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(notifications.createdAt));
   }
 
+  async getNotificationsByUserType(userType: string): Promise<Notification[]> {
+    return await db
+      .select({
+        id: notifications.id,
+        userId: notifications.userId,
+        type: notifications.type,
+        title: notifications.title,
+        message: notifications.message,
+        relatedId: notifications.relatedId,
+        isRead: notifications.isRead,
+        createdAt: notifications.createdAt
+      })
+      .from(notifications)
+      .innerJoin(users, eq(notifications.userId, users.id))
+      .where(eq(users.userType, userType))
+      .orderBy(desc(notifications.createdAt));
+  }
+
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const [newNotification] = await db
       .insert(notifications)
@@ -1465,11 +1488,51 @@ export class DatabaseStorage implements IStorage {
     return newNotification;
   }
 
+  async createAdminNotification(type: string, title: string, message: string, relatedId?: number): Promise<void> {
+    const adminUsers = await this.getAdminUsers();
+    
+    const notifications = adminUsers.map(admin => ({
+      userId: admin.id,
+      type,
+      title,
+      message,
+      relatedId: relatedId || null,
+      isRead: false
+    }));
+
+    if (notifications.length > 0) {
+      await db.insert(notifications).values(notifications);
+    }
+  }
+
   async markNotificationAsRead(id: number): Promise<void> {
     await db
       .update(notifications)
       .set({ isRead: true })
       .where(eq(notifications.id, id));
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+    
+    return result[0]?.count || 0;
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.userType, 'admin'));
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
