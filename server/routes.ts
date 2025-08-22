@@ -2779,9 +2779,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add item to cart
   app.post("/api/cart/items", authenticateSession, async (req, res) => {
     try {
-      const serviceId = parseInt(req.body.providerServiceId);
+      // Support both providerServiceId and serviceId for compatibility
+      const serviceId = parseInt(req.body.providerServiceId || req.body.serviceId);
       
-      // Check if this is a provider service or a catalog service
+      console.log('Add to cart request:', {
+        body: req.body,
+        serviceId,
+        userId: req.user?.id
+      });
+
+      if (!serviceId || isNaN(serviceId)) {
+        return res.status(400).json({ message: "Service ID is required" });
+      }
+
+      // Check if this is a provider service first
       const providerServices = await storage.getAllProviderServices();
       const providerService = providerServices.find(ps => ps.id === serviceId);
       
@@ -2791,29 +2802,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderId: 1, // Temporary orderId, will be set properly in storage
           providerServiceId: serviceId,
           quantity: parseInt(req.body.quantity) || 1,
-          unitPrice: req.body.unitPrice,
-          totalPrice: req.body.unitPrice, // Will be calculated in storage
+          unitPrice: req.body.unitPrice || "0.00",
+          totalPrice: req.body.unitPrice || "0.00", // Will be calculated in storage
           notes: req.body.notes || null,
         };
 
         const item = await storage.addItemToCart(req.user!.id, itemData);
         res.json(item);
       } else {
-        // It's a catalog service - create an open service request for providers of the same category
+        // Check if it's a catalog service
         const catalogService = await storage.getService(serviceId);
         
         if (!catalogService) {
-          return res.status(404).json({ message: "Service not found" });
+          console.log('Service not found:', serviceId);
+          return res.status(404).json({ message: "Service not found in provider services or catalog" });
         }
         
-        // Add catalog service to cart normally like provider services
+        console.log('Found catalog service:', catalogService.name);
+
+        // Validate unitPrice
+        let unitPrice = req.body.unitPrice;
+        if (!unitPrice || unitPrice === 0) {
+          unitPrice = catalogService.suggestedMinPrice || "0.00";
+        }
+        
+        if (parseFloat(unitPrice) < 0) {
+          return res.status(400).json({ message: "Invalid unit price" });
+        }
+
+        // Add catalog service to cart
         const cartItem = {
           catalogServiceId: catalogService.id,
-          quantity: req.body.quantity || 1,
-          unitPrice: req.body.unitPrice || catalogService.suggestedMinPrice || "0.00",
+          quantity: parseInt(req.body.quantity) || 1,
+          unitPrice: unitPrice.toString(),
           notes: req.body.notes || `Serviço do catálogo: ${catalogService.name}`,
           chargingType: req.body.chargingType || "visit"
         };
+
+        console.log('Adding catalog item to cart:', cartItem);
 
         const addedItem = await storage.addCatalogItemToCart(req.user!.id, cartItem);
         
@@ -2824,7 +2850,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      res.status(400).json({ message: "Failed to add item to cart", error: error instanceof Error ? error.message : "Unknown error" });
+      console.error("Error adding item to cart:", error);
+      res.status(400).json({ 
+        message: "Failed to add item to cart", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
