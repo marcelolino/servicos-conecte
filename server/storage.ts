@@ -2822,62 +2822,64 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, cart.id))
       .returning();
 
-    // Create service requests for each provider in the cart
-    const providerRequests = new Map<number, {
-      providerId: number;
-      categoryId: number;
-      items: any[];
-    }>();
-
-    // Group items by provider
-    cart.items.forEach(item => {
-      const providerId = item.providerService.provider.id;
-      const categoryId = item.providerService.category.id;
-      
-      if (!providerRequests.has(providerId)) {
-        providerRequests.set(providerId, {
-          providerId,
-          categoryId,
-          items: []
+    // Process items and create service requests
+    for (const item of cart.items) {
+      if (item.type === 'catalog' && item.catalogServiceId) {
+        // Catalog service item - create service request for any provider in the category
+        const catalogService = await this.getService(item.catalogServiceId);
+        if (catalogService) {
+          await db.insert(serviceRequests).values({
+            clientId,
+            categoryId: catalogService.categoryId,
+            providerId: null, // Will be assigned when provider accepts
+            title: catalogService.name,
+            description: catalogService.description || "Serviço solicitado do catálogo",
+            address: orderData.address || '',
+            cep: orderData.cep || '',
+            city: orderData.city || '',
+            state: orderData.state || '',
+            latitude: orderData.latitude,
+            longitude: orderData.longitude,
+            estimatedPrice: item.totalPrice,
+            finalPrice: null,
+            totalAmount: item.totalPrice,
+            paymentMethod: orderData.paymentMethod,
+            paymentStatus: "completed",
+            notes: orderData.notes,
+            status: "pending",
+            scheduledAt: orderData.scheduledAt,
+            completedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      } else if (item.providerServiceId && item.providerService.provider.id !== 0) {
+        // Real provider service item - create targeted service request
+        await db.insert(serviceRequests).values({
+          clientId,
+          categoryId: item.providerService.category.id,
+          providerId: item.providerService.provider.id,
+          title: `${item.providerService.name} - Pedido #${updatedOrder.id}`,
+          description: `${item.quantity}x ${item.providerService.name}${orderData.notes ? ` - ${orderData.notes}` : ''}`,
+          address: orderData.address || '',
+          cep: orderData.cep || '',
+          city: orderData.city || '',
+          state: orderData.state || '',
+          latitude: orderData.latitude,
+          longitude: orderData.longitude,
+          estimatedPrice: item.totalPrice,
+          finalPrice: null,
+          totalAmount: item.totalPrice,
+          paymentMethod: orderData.paymentMethod,
+          paymentStatus: "completed",
+          notes: orderData.notes,
+          status: "pending",
+          scheduledAt: orderData.scheduledAt,
+          completedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
       }
-      
-      providerRequests.get(providerId)!.items.push(item);
-    });
-
-    // Create service requests for each provider
-    for (const [providerId, providerData] of providerRequests) {
-      const serviceDescription = providerData.items
-        .map(item => `${item.quantity}x ${item.providerService.category.name}`)
-        .join(', ');
-      
-      const totalPrice = providerData.items
-        .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
-
-      await db.insert(serviceRequests).values({
-        clientId,
-        categoryId: providerData.categoryId,
-        providerId: null, // Will be assigned when provider accepts
-        title: `Pedido #${updatedOrder.id}`,
-        description: `${serviceDescription}${orderData.notes ? ` - ${orderData.notes}` : ''}`,
-        address: orderData.address || '',
-        cep: orderData.cep || '',
-        city: orderData.city || '',
-        state: orderData.state || '',
-        latitude: orderData.latitude,
-        longitude: orderData.longitude,
-        estimatedPrice: totalPrice.toString(),
-        finalPrice: null,
-        totalAmount: totalPrice.toString(),
-        paymentMethod: orderData.paymentMethod,
-        paymentStatus: "completed", // Since order was processed successfully
-        notes: orderData.notes,
-        status: "pending",
-        scheduledAt: orderData.scheduledAt,
-        completedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
     }
 
     return updatedOrder;
