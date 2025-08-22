@@ -2859,6 +2859,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Failed to send order notification:', notificationError);
         }
         
+        // Clear cart after successful order creation
+        try {
+          await storage.clearCart(req.user!.id);
+          console.log('Cart cleared after order creation');
+        } catch (clearError) {
+          console.error('Failed to clear cart after order:', clearError);
+        }
+        
         res.json(order);
       } else if (cart) {
         // Convert existing cart to order
