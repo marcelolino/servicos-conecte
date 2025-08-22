@@ -2134,7 +2134,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Orders and cart management
-  async getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider & { user: User }; chargingTypes: ServiceChargingType[] } })[] }) | undefined> {
+  async getCartByClient(clientId: number): Promise<(Order & { items: any[] }) | undefined> {
     const [order] = await db
       .select({
         id: orders.id,
@@ -2164,92 +2164,163 @@ export class DatabaseStorage implements IStorage {
 
     if (!order) return undefined;
 
-    const items = await db
-      .select({
-        id: orderItems.id,
-        orderId: orderItems.orderId,
-        providerServiceId: orderItems.providerServiceId,
-        quantity: orderItems.quantity,
-        unitPrice: orderItems.unitPrice,
-        totalPrice: orderItems.totalPrice,
-        notes: orderItems.notes,
-        createdAt: orderItems.createdAt,
-        updatedAt: orderItems.updatedAt,
-        providerService: {
-          id: providerServices.id,
-          providerId: providerServices.providerId,
-          categoryId: providerServices.categoryId,
-          name: providerServices.name,
-          description: providerServices.description,
-          price: providerServices.price,
-          minimumPrice: providerServices.minimumPrice,
-          estimatedDuration: providerServices.estimatedDuration,
-          requirements: providerServices.requirements,
-          serviceZone: providerServices.serviceZone,
-          images: providerServices.images,
-          isActive: providerServices.isActive,
-          createdAt: providerServices.createdAt,
-          updatedAt: providerServices.updatedAt,
-          category: serviceCategories,
-          provider: {
-            id: providers.id,
-            userId: providers.userId,
-            status: providers.status,
-            serviceRadius: providers.serviceRadius,
-            basePrice: providers.basePrice,
-            description: providers.description,
-            experience: providers.experience,
-            documents: providers.documents,
-            portfolioImages: providers.portfolioImages,
-            rating: providers.rating,
-            totalReviews: providers.totalReviews,
-            totalServices: providers.totalServices,
-            isTrialActive: providers.isTrialActive,
-            trialEndsAt: providers.trialEndsAt,
-            createdAt: providers.createdAt,
-            updatedAt: providers.updatedAt,
-            user: {
-              id: users.id,
-              email: users.email,
-              name: users.name,
-              phone: users.phone,
-              userType: users.userType,
-              address: users.address,
-              cep: users.cep,
-              city: users.city,
-              state: users.state,
-              latitude: users.latitude,
-              longitude: users.longitude,
-              avatar: users.avatar,
-              isActive: users.isActive,
-              createdAt: users.createdAt,
-              updatedAt: users.updatedAt,
-            },
-          },
-        },
-      })
+    // Get all order items
+    const allOrderItems = await db
+      .select()
       .from(orderItems)
-      .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
-      .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
-      .innerJoin(providers, eq(providerServices.providerId, providers.id))
-      .innerJoin(users, eq(providers.userId, users.id))
       .where(eq(orderItems.orderId, order.id));
 
-    // Add charging types for each service
-    const itemsWithChargingTypes = await Promise.all(
-      items.map(async (item) => {
-        const chargingTypes = await this.getServiceChargingTypes(item.providerService.id);
-        return {
-          ...item,
-          providerService: {
-            ...item.providerService,
-            chargingTypes,
-          },
-        };
-      })
-    );
+    const items = [];
+    
+    for (const item of allOrderItems) {
+      if (item.providerServiceId) {
+        // Provider service item
+        const [providerServiceData] = await db
+          .select({
+            id: orderItems.id,
+            orderId: orderItems.orderId,
+            providerServiceId: orderItems.providerServiceId,
+            quantity: orderItems.quantity,
+            unitPrice: orderItems.unitPrice,
+            totalPrice: orderItems.totalPrice,
+            notes: orderItems.notes,
+            createdAt: orderItems.createdAt,
+            updatedAt: orderItems.updatedAt,
+            providerService: {
+              id: providerServices.id,
+              providerId: providerServices.providerId,
+              categoryId: providerServices.categoryId,
+              name: providerServices.name,
+              description: providerServices.description,
+              price: providerServices.price,
+              minimumPrice: providerServices.minimumPrice,
+              estimatedDuration: providerServices.estimatedDuration,
+              requirements: providerServices.requirements,
+              serviceZone: providerServices.serviceZone,
+              images: providerServices.images,
+              isActive: providerServices.isActive,
+              createdAt: providerServices.createdAt,
+              updatedAt: providerServices.updatedAt,
+              category: serviceCategories,
+              provider: {
+                id: providers.id,
+                userId: providers.userId,
+                status: providers.status,
+                serviceRadius: providers.serviceRadius,
+                basePrice: providers.basePrice,
+                description: providers.description,
+                experience: providers.experience,
+                documents: providers.documents,
+                portfolioImages: providers.portfolioImages,
+                rating: providers.rating,
+                totalReviews: providers.totalReviews,
+                totalServices: providers.totalServices,
+                isTrialActive: providers.isTrialActive,
+                trialEndsAt: providers.trialEndsAt,
+                createdAt: providers.createdAt,
+                updatedAt: providers.updatedAt,
+                user: {
+                  id: users.id,
+                  email: users.email,
+                  name: users.name,
+                  phone: users.phone,
+                  userType: users.userType,
+                  address: users.address,
+                  cep: users.cep,
+                  city: users.city,
+                  state: users.state,
+                  latitude: users.latitude,
+                  longitude: users.longitude,
+                  avatar: users.avatar,
+                  isActive: users.isActive,
+                  createdAt: users.createdAt,
+                  updatedAt: users.updatedAt,
+                },
+              },
+            },
+          })
+          .from(orderItems)
+          .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+          .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+          .innerJoin(providers, eq(providerServices.providerId, providers.id))
+          .innerJoin(users, eq(providers.userId, users.id))
+          .where(eq(orderItems.id, item.id));
 
-    return { ...order, items: itemsWithChargingTypes };
+        if (providerServiceData) {
+          const chargingTypes = await this.getServiceChargingTypes(providerServiceData.providerService.id);
+          items.push({
+            ...providerServiceData,
+            providerService: {
+              ...providerServiceData.providerService,
+              chargingTypes,
+            },
+          });
+        }
+      } else if (item.catalogServiceId) {
+        // Catalog service item
+        const catalogService = await this.getService(item.catalogServiceId);
+        if (catalogService) {
+          items.push({
+            id: item.id,
+            orderId: item.orderId,
+            providerServiceId: item.providerServiceId,
+            catalogServiceId: item.catalogServiceId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            notes: item.notes,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+            type: 'catalog',
+            providerService: {
+              id: catalogService.id,
+              name: catalogService.name,
+              description: catalogService.description,
+              images: catalogService.imageUrl ? JSON.stringify([catalogService.imageUrl]) : '[]',
+              category: catalogService.category,
+              chargingTypes: [],
+              provider: {
+                id: 0,
+                userId: 0,
+                status: 'approved' as any,
+                serviceRadius: 0,
+                basePrice: '0',
+                description: 'Serviço de Catálogo Global',
+                experience: '',
+                documents: '',
+                portfolioImages: '',
+                rating: '5.0',
+                totalReviews: 0,
+                totalServices: 0,
+                isTrialActive: false,
+                trialEndsAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                user: {
+                  id: 0,
+                  email: 'catalogo@qservicos.com',
+                  name: 'Catálogo Qserviços',
+                  phone: '',
+                  userType: 'provider' as any,
+                  address: '',
+                  cep: '',
+                  city: 'Todo o Brasil',
+                  state: '',
+                  latitude: '0',
+                  longitude: '0',
+                  avatar: '',
+                  isActive: true,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              },
+            },
+          });
+        }
+      }
+    }
+
+    return { ...order, items };
   }
 
   async getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined> {
