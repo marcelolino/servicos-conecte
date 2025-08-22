@@ -69,15 +69,28 @@ export function AddToCartButton({
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setIsAdded(true);
-      toast({
-        title: "Sucesso!",
-        description: `${serviceName} foi adicionado ao carrinho`,
-      });
       
-      // Invalidate and refetch cart data
-      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      if (data.type === 'catalog_interest') {
+        // It's a catalog service - providers were notified
+        toast({
+          title: "Interesse registrado!",
+          description: data.message || "Prestadores da categoria foram notificados sobre seu interesse.",
+        });
+        
+        // Invalidate notifications queries
+        queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      } else {
+        // It's a provider service - added to cart normally
+        toast({
+          title: "Sucesso!",
+          description: `${serviceName} foi adicionado ao carrinho`,
+        });
+        
+        // Invalidate and refetch cart data
+        queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      }
       
       // Reset the "added" state after 2 seconds
       setTimeout(() => setIsAdded(false), 2000);

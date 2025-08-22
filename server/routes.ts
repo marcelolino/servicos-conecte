@@ -2779,17 +2779,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add item to cart
   app.post("/api/cart/items", authenticateSession, async (req, res) => {
     try {
-      const itemData = {
-        orderId: 1, // Temporary orderId, will be set properly in storage
-        providerServiceId: parseInt(req.body.providerServiceId),
-        quantity: parseInt(req.body.quantity) || 1,
-        unitPrice: req.body.unitPrice,
-        totalPrice: req.body.unitPrice, // Will be calculated in storage
-        notes: req.body.notes || null,
-      };
+      const serviceId = parseInt(req.body.providerServiceId);
+      
+      // Check if this is a provider service or a catalog service
+      const providerServices = await storage.getAllProviderServices();
+      const providerService = providerServices.find(ps => ps.id === serviceId);
+      
+      if (providerService) {
+        // It's a provider service - add to cart normally
+        const itemData = {
+          orderId: 1, // Temporary orderId, will be set properly in storage
+          providerServiceId: serviceId,
+          quantity: parseInt(req.body.quantity) || 1,
+          unitPrice: req.body.unitPrice,
+          totalPrice: req.body.unitPrice, // Will be calculated in storage
+          notes: req.body.notes || null,
+        };
 
-      const item = await storage.addItemToCart(req.user!.id, itemData);
-      res.json(item);
+        const item = await storage.addItemToCart(req.user!.id, itemData);
+        res.json(item);
+      } else {
+        // It's a catalog service - create an open service request for providers of the same category
+        const catalogService = await storage.getService(serviceId);
+        
+        if (!catalogService) {
+          return res.status(404).json({ message: "Service not found" });
+        }
+        
+        // For catalog services, create a simple notification to providers instead of full service request
+        // since we don't have address/location data at this point
+        
+        // Notify all providers in the same category about the interest
+        const providers = await storage.getAllProviders();
+        const categoryProviders = providers.filter(p => 
+          p.status === "approved"
+        );
+        
+        // Get providers that have services in the same category
+        const providerServices = await storage.getAllProviderServices();
+        const providersInCategory = providerServices
+          .filter(ps => ps.categoryId === catalogService.categoryId)
+          .map(ps => ps.providerId);
+        
+        const uniqueProviderIds = [...new Set(providersInCategory)];
+        
+        // Create notifications for providers in the category
+        for (const providerId of uniqueProviderIds) {
+          const provider = categoryProviders.find(p => p.id === providerId);
+          if (provider) {
+            try {
+              await storage.createNotification({
+                userId: provider.userId,
+                type: 'catalog_service_interest',
+                title: `Interesse em ${catalogService.name}`,
+                message: `Um cliente demonstrou interesse no serviço "${catalogService.name}". Entre em contato para oferecer uma proposta personalizada.`,
+                relatedId: catalogService.id,
+              });
+            } catch (notificationError) {
+              console.error('Failed to notify provider:', notificationError);
+            }
+          }
+        }
+
+        res.json({
+          type: 'catalog_interest',
+          catalogService,
+          notifiedProviders: uniqueProviderIds.length,
+          message: `Interesse registrado! ${uniqueProviderIds.length} prestadores da categoria "${catalogService.category?.name || 'categoria'}" foram notificados.`
+        });
+      }
     } catch (error) {
       res.status(400).json({ message: "Failed to add item to cart", error: error instanceof Error ? error.message : "Unknown error" });
     }
