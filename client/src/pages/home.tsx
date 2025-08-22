@@ -353,7 +353,7 @@ export default function Home() {
                 const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
                 
                 return (
-                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services?category=${service.categoryId}`}>
+                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services/${service.id}`}>
                     <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img

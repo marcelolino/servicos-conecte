@@ -59,6 +59,7 @@ import AdvancedUploadDemo from "@/pages/advanced-upload-demo";
 import TestProfile from "@/pages/test-profile";
 import Profile from "@/pages/profile";
 import Services from "@/pages/services";
+import ServiceDetails from "@/pages/service-details";
 import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import CheckoutStep1 from "@/pages/checkout-step1";
@@ -179,6 +180,7 @@ function Router() {
                 <Route path="/profile" component={Profile} />
                 <Route path="/profile/:id" component={ProviderProfile} />
                 <Route path="/services" component={Services} />
+                <Route path="/services/:id" component={ServiceDetails} />
                 <Route path="/cart" component={Cart} />
                 <Route path="/checkout" component={Checkout} />
                 <Route path="/checkout/scheduling" component={CheckoutStep1} />
