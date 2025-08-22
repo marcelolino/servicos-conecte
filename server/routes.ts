@@ -2462,6 +2462,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get a specific service by ID (public endpoint)
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      // First try to find in provider services
+      const providerServices = await storage.getAllProviderServices();
+      let service = providerServices.find(s => s.id === serviceId);
+      
+      // If not found in provider services, try catalog services
+      if (!service) {
+        const catalogService = await storage.getService(serviceId);
+        if (catalogService) {
+          service = catalogService;
+        }
+      }
+      
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      res.json(service);
+    } catch (error) {
+      console.error("Error in /api/services/:id:", error);
+      res.status(500).json({ 
+        message: "Failed to get service", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Search services (public endpoint)
   app.get("/api/services/search", async (req, res) => {
     try {

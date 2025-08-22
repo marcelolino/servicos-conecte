@@ -380,7 +380,10 @@ export default function ServiceDetails() {
                   serviceId={service.id}
                   serviceName={service.name}
                   providerId={service.provider?.id}
-                  chargingTypes={service.chargingTypes || []}
+                  chargingTypes={(service.chargingTypes || []).map(ct => ({
+                    chargingType: ct.chargingType,
+                    price: parseFloat(ct.price)
+                  }))}
                   directPrice={service.price || service.suggestedMinPrice}
                   isProviderService={isProviderService}
                   variant="default"
