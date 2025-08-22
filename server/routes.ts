@@ -2806,46 +2806,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Service not found" });
         }
         
-        // For catalog services, create a simple notification to providers instead of full service request
-        // since we don't have address/location data at this point
-        
-        // Notify all providers in the same category about the interest
-        const providers = await storage.getAllProviders();
-        const categoryProviders = providers.filter(p => 
-          p.status === "approved"
-        );
-        
-        // Get providers that have services in the same category
-        const providerServices = await storage.getAllProviderServices();
-        const providersInCategory = providerServices
-          .filter(ps => ps.categoryId === catalogService.categoryId)
-          .map(ps => ps.providerId);
-        
-        const uniqueProviderIds = [...new Set(providersInCategory)];
-        
-        // Create notifications for providers in the category
-        for (const providerId of uniqueProviderIds) {
-          const provider = categoryProviders.find(p => p.id === providerId);
-          if (provider) {
-            try {
-              await storage.createNotification({
-                userId: provider.userId,
-                type: 'catalog_service_interest',
-                title: `Interesse em ${catalogService.name}`,
-                message: `Um cliente demonstrou interesse no serviço "${catalogService.name}". Entre em contato para oferecer uma proposta personalizada.`,
-                relatedId: catalogService.id,
-              });
-            } catch (notificationError) {
-              console.error('Failed to notify provider:', notificationError);
-            }
-          }
-        }
+        // Create a service request for catalog services that all providers in the category can see
+        const serviceRequestData = {
+          clientId: req.user!.id,
+          categoryId: catalogService.categoryId,
+          title: catalogService.name,
+          description: `Solicitação de serviço: ${catalogService.name}\n\n${catalogService.description || ''}`,
+          address: 'A definir (cliente será contatado)', // Temporary address
+          cep: '00000-000', // Temporary CEP
+          city: 'A definir', // Temporary city
+          state: 'A definir', // Temporary state
+          estimatedPrice: req.body.unitPrice ? req.body.unitPrice.toString() : catalogService.suggestedMinPrice || '0.00',
+          totalAmount: req.body.unitPrice ? req.body.unitPrice.toString() : catalogService.suggestedMinPrice || '0.00',
+          notes: req.body.notes || `Serviço solicitado através do catálogo: ${catalogService.name}. Preço estimado: R$ ${req.body.unitPrice || catalogService.suggestedMinPrice || '0.00'}. Cliente será contatado para definir local e agendamento.`,
+          status: "pending" as const,
+          paymentStatus: "pending" as const
+        };
 
+        const serviceRequest = await storage.createServiceRequest(serviceRequestData);
+        
+        // Get category info for better response message
+        const category = await storage.getServiceCategory(catalogService.categoryId);
+        
         res.json({
-          type: 'catalog_interest',
-          catalogService,
-          notifiedProviders: uniqueProviderIds.length,
-          message: `Interesse registrado! ${uniqueProviderIds.length} prestadores da categoria "${catalogService.category?.name || 'categoria'}" foram notificados.`
+          type: 'service_request',
+          serviceRequest,
+          message: `Solicitação criada! Sua reserva aparecerá na lista de prestadores da categoria "${category?.name || 'categoria'}" para que possam aceitar.`
         });
       }
     } catch (error) {
