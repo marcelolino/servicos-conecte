@@ -21,12 +21,13 @@ import {
   Tag,
   Package
 } from 'lucide-react';
+import ImageUpload from '@/components/image-upload';
 import type { ServiceCategory } from '@shared/schema';
 
 const categorySchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
-  icon: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -37,6 +38,7 @@ export default function AdminCategories() {
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [categoryImage, setCategoryImage] = useState<string>('');
 
   const { data: categories = [], isLoading } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
@@ -47,16 +49,17 @@ export default function AdminCategories() {
     defaultValues: {
       name: '',
       description: '',
-      icon: '',
+      imageUrl: '',
     },
   });
 
   const createCategoryMutation = useMutation({
     mutationFn: (data: CategoryFormData) =>
-      apiRequest('POST', '/api/categories', data),
+      apiRequest('POST', '/api/categories', { ...data, imageUrl: categoryImage }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       form.reset();
+      setCategoryImage('');
       setIsCreateDialogOpen(false);
       toast({
         title: 'Sucesso',
@@ -74,10 +77,11 @@ export default function AdminCategories() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CategoryFormData }) =>
-      apiRequest('PUT', `/api/categories/${id}`, data),
+      apiRequest('PUT', `/api/categories/${id}`, { ...data, imageUrl: categoryImage }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       form.reset();
+      setCategoryImage('');
       setIsEditDialogOpen(false);
       setEditingCategory(null);
       toast({
@@ -126,8 +130,9 @@ export default function AdminCategories() {
     form.reset({
       name: category.name,
       description: category.description || '',
-      icon: category.icon || '',
+      imageUrl: category.imageUrl || '',
     });
+    setCategoryImage(category.imageUrl || '');
     setIsEditDialogOpen(true);
   };
 
@@ -136,9 +141,19 @@ export default function AdminCategories() {
     form.reset({
       name: '',
       description: '',
-      icon: '',
+      imageUrl: '',
     });
+    setCategoryImage('');
     setIsCreateDialogOpen(true);
+  };
+
+  // Image handling functions
+  const handleCategoryImageUpload = (imageUrl: string) => {
+    setCategoryImage(imageUrl);
+  };
+
+  const handleCategoryImageRemove = () => {
+    setCategoryImage('');
   };
 
   if (isLoading) {
@@ -203,19 +218,21 @@ export default function AdminCategories() {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="icon"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ícone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome do ícone (opcional)" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Imagem da Categoria (Opcional)</label>
+                    <ImageUpload
+                      category="category"
+                      onUpload={handleCategoryImageUpload}
+                      onRemove={handleCategoryImageRemove}
+                      currentImages={categoryImage ? [categoryImage] : []}
+                      multiple={false}
+                      maxFiles={1}
+                      accept="image/*"
+                      maxSize={5}
+                      disabled={createCategoryMutation.isPending}
+                      showPreview={true}
+                    />
+                  </div>
                   
                   <Button 
                     type="submit" 
@@ -265,19 +282,21 @@ export default function AdminCategories() {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="icon"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ícone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome do ícone (opcional)" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Imagem da Categoria (Opcional)</label>
+                    <ImageUpload
+                      category="category"
+                      onUpload={handleCategoryImageUpload}
+                      onRemove={handleCategoryImageRemove}
+                      currentImages={categoryImage ? [categoryImage] : []}
+                      multiple={false}
+                      maxFiles={1}
+                      accept="image/*"
+                      maxSize={5}
+                      disabled={updateCategoryMutation.isPending}
+                      showPreview={true}
+                    />
+                  </div>
                   
                   <Button 
                     type="submit" 
@@ -338,7 +357,7 @@ export default function AdminCategories() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Serviços</TableHead>
-                    <TableHead>Ícone</TableHead>
+                    <TableHead>Imagem</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -357,7 +376,17 @@ export default function AdminCategories() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {category.icon || '-'}
+                        {category.imageUrl ? (
+                          <img 
+                            src={category.imageUrl} 
+                            alt={category.name}
+                            className="w-12 h-12 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
