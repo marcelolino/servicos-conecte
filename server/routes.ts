@@ -2835,6 +2835,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const order = await storage.createOrderFromData(orderData, req.body.items);
         console.log("Order created successfully from payment data:", order);
+        
+        // Send notification to admins about new order
+        try {
+          const user = await storage.getUser(req.user!.id);
+          await storage.notifyAllAdmins({
+            type: 'new_booking',
+            title: 'Nova Reserva de Serviço',
+            message: `${user?.name || 'Cliente'} criou um novo pedido #${order.id}`,
+            relatedId: order.id,
+          });
+          
+          // Broadcast real-time notification to admins
+          if (app.locals.broadcastToAdmins) {
+            app.locals.broadcastToAdmins({
+              type: 'new_booking',
+              title: 'Nova Reserva de Serviço', 
+              message: `${user?.name || 'Cliente'} criou um novo pedido #${order.id}`,
+              relatedId: order.id,
+            });
+          }
+        } catch (notificationError) {
+          console.error('Failed to send order notification:', notificationError);
+        }
+        
         res.json(order);
       } else if (cart) {
         // Convert existing cart to order
@@ -2855,6 +2879,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const order = await storage.convertCartToOrder(req.user!.id, orderData);
         console.log("Order created successfully from cart:", order);
+        
+        // Send notification to admins about new order
+        try {
+          const user = await storage.getUser(req.user!.id);
+          await storage.notifyAllAdmins({
+            type: 'new_booking',
+            title: 'Nova Reserva de Serviço',
+            message: `${user?.name || 'Cliente'} criou um novo pedido #${order.id}`,
+            relatedId: order.id,
+          });
+          
+          // Broadcast real-time notification to admins
+          if (app.locals.broadcastToAdmins) {
+            app.locals.broadcastToAdmins({
+              type: 'new_booking',
+              title: 'Nova Reserva de Serviço',
+              message: `${user?.name || 'Cliente'} criou um novo pedido #${order.id}`,
+              relatedId: order.id,
+            });
+          }
+        } catch (notificationError) {
+          console.error('Failed to send order notification:', notificationError);
+        }
+        
         res.json(order);
       } else {
         throw new Error("No cart found and no items provided");

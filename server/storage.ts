@@ -2464,6 +2464,10 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(orderItems.id, existingItem.id))
         .returning();
+      
+      // Update cart totals after updating item
+      await this.updateCartTotals(cart.id);
+      
       return updatedItem;
     } else {
       // Add new item
@@ -2483,6 +2487,10 @@ export class DatabaseStorage implements IStorage {
         .insert(orderItems)
         .values(insertData)
         .returning();
+      
+      // Update cart totals after adding item
+      await this.updateCartTotals(cart.id);
+      
       return newItem;
     }
   }
@@ -2522,11 +2530,29 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(orderItems.id, itemId))
       .returning();
+    
+    // Update cart totals after updating item
+    if (currentItem.orderId) {
+      await this.updateCartTotals(currentItem.orderId);
+    }
+    
     return updatedItem;
   }
 
   async removeCartItem(itemId: number): Promise<void> {
+    // Get the item first to know which cart to update
+    const [item] = await db
+      .select({ orderId: orderItems.orderId })
+      .from(orderItems)
+      .where(eq(orderItems.id, itemId))
+      .limit(1);
+    
     await db.delete(orderItems).where(eq(orderItems.id, itemId));
+    
+    // Update cart totals after removing item
+    if (item?.orderId) {
+      await this.updateCartTotals(item.orderId);
+    }
   }
 
   async clearCart(clientId: number): Promise<void> {
@@ -2535,6 +2561,31 @@ export class DatabaseStorage implements IStorage {
       await db.delete(orderItems).where(eq(orderItems.orderId, cart.id));
       await db.delete(orders).where(eq(orders.id, cart.id));
     }
+  }
+
+  async updateCartTotals(cartId: number): Promise<void> {
+    // Calculate totals from cart items
+    const items = await db
+      .select({
+        totalPrice: orderItems.totalPrice
+      })
+      .from(orderItems)
+      .where(eq(orderItems.orderId, cartId));
+    
+    const subtotal = items.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+    const serviceAmount = subtotal * 0.1; // 10% service fee
+    const totalAmount = subtotal + serviceAmount;
+    
+    // Update cart totals
+    await db
+      .update(orders)
+      .set({
+        subtotal: subtotal.toFixed(2),
+        serviceAmount: serviceAmount.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, cartId));
   }
 
   async createOrderFromData(orderData: InsertOrder, items: any[]): Promise<Order> {
