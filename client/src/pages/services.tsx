@@ -46,6 +46,7 @@ interface Service {
   materialsIncluded?: boolean;
   materialsDescription?: string;
   defaultChargingType?: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+  price?: string;
   suggestedMinPrice?: string;
   suggestedMaxPrice?: string;
   tags?: string;
@@ -53,6 +54,32 @@ interface Service {
   imageUrl?: string;
   isActive: boolean;
 }
+
+// Catalog service interface (services without provider)
+interface CatalogService {
+  id: number;
+  categoryId: number;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  estimatedDuration?: string;
+  durationType?: string;
+  materialsIncluded?: boolean;
+  materialsDescription?: string;
+  defaultChargingType?: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+  price?: string;
+  suggestedMinPrice?: string;
+  suggestedMaxPrice?: string;
+  tags?: string;
+  requirements?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  category: ServiceCategory;
+  type: 'catalog'; // To distinguish from provider services
+}
+
+// Combined service type
+type CombinedService = ProviderService | CatalogService;
 
 interface ChargingType {
   id: number;
@@ -107,9 +134,16 @@ export default function ServicesPage() {
   });
 
   // Fetch all provider services
-  const { data: services, isLoading: servicesLoading } = useQuery({
+  const { data: providerServices, isLoading: providerServicesLoading } = useQuery({
     queryKey: ["/api/services/all"],
   });
+
+  // Fetch catalog services (services without provider)
+  const { data: catalogServices, isLoading: catalogServicesLoading } = useQuery({
+    queryKey: ["/api/services-catalog"],
+  });
+
+  const servicesLoading = providerServicesLoading || catalogServicesLoading;
 
   // Fetch cart (only if user is authenticated)
   const { data: cart } = useQuery({
@@ -117,9 +151,9 @@ export default function ServicesPage() {
     enabled: !!user,
   });
 
-  // Add to cart mutation
+  // Add to cart mutation for provider services
   const addToCartMutation = useMutation({
-    mutationFn: (data: { providerServiceId: number; quantity: number; unitPrice: string }) =>
+    mutationFn: (data: { providerServiceId?: number; catalogServiceId?: number; quantity: number; unitPrice: string }) =>
       apiRequest("POST", "/api/cart/items", data),
     onSuccess: () => {
       toast({
@@ -137,24 +171,50 @@ export default function ServicesPage() {
     },
   });
 
+  // Combine both types of services
+  const allServices: CombinedService[] = [
+    ...(providerServices as ProviderService[] || []),
+    ...(catalogServices as CatalogService[] || []).map(service => ({
+      ...service,
+      type: 'catalog' as const
+    }))
+  ];
+
+  // Helper function to check if service is a catalog service
+  const isCatalogService = (service: CombinedService): service is CatalogService => {
+    return 'type' in service && service.type === 'catalog';
+  };
+
   // Helper function to get price range from charging types
-  const getPriceRange = (service: ProviderService) => {
-    if (!service.chargingTypes || service.chargingTypes.length === 0) {
+  const getPriceRange = (service: CombinedService) => {
+    if (isCatalogService(service)) {
+      // For catalog services, use the fixed price
+      const price = parseFloat(service.price || "0");
       return {
-        min: parseFloat(service.price || "0"),
-        max: parseFloat(service.price || "0"),
+        min: price,
+        max: price,
         hasChargingTypes: false
       };
     }
     
-    const prices = service.chargingTypes
+    // For provider services
+    const providerService = service as ProviderService;
+    if (!providerService.chargingTypes || providerService.chargingTypes.length === 0) {
+      return {
+        min: parseFloat(providerService.price || "0"),
+        max: parseFloat(providerService.price || "0"),
+        hasChargingTypes: false
+      };
+    }
+    
+    const prices = providerService.chargingTypes
       .filter(ct => ct.price && ct.chargingType !== 'quote')
       .map(ct => parseFloat(ct.price));
     
     if (prices.length === 0) {
       return {
-        min: parseFloat(service.price || "0"),
-        max: parseFloat(service.price || "0"),
+        min: parseFloat(providerService.price || "0"),
+        max: parseFloat(providerService.price || "0"),
         hasChargingTypes: false
       };
     }
@@ -166,21 +226,24 @@ export default function ServicesPage() {
     };
   };
 
-  const filteredServices = (services as ProviderService[] || [])?.filter((service: ProviderService) => {
+  const filteredServices = allServices.filter((service: CombinedService) => {
     const matchesCategory = selectedCategory === "all" || service.categoryId.toString() === selectedCategory;
     const matchesSearch = !searchTerm || 
       service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.category.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch && service.isActive;
-  }).sort((a: ProviderService, b: ProviderService) => {
+  }).sort((a: CombinedService, b: CombinedService) => {
     switch (sortBy) {
       case "price":
         const aPriceRange = getPriceRange(a);
         const bPriceRange = getPriceRange(b);
         return aPriceRange.min - bPriceRange.min;
       case "rating":
-        return parseFloat(b.provider.rating) - parseFloat(a.provider.rating);
+        // Only provider services have ratings, catalog services come first
+        const aRating = isCatalogService(a) ? 0 : parseFloat((a as ProviderService).provider.rating);
+        const bRating = isCatalogService(b) ? 0 : parseFloat((b as ProviderService).provider.rating);
+        return bRating - aRating;
       case "name":
         return (a.name || "").localeCompare(b.name || "");
       default:
@@ -188,7 +251,7 @@ export default function ServicesPage() {
     }
   });
 
-  const handleAddToCart = (service: ProviderService) => {
+  const handleAddToCart = (service: CombinedService) => {
     // Check if user is authenticated
     if (!user) {
       setLocation("/login");
@@ -198,31 +261,48 @@ export default function ServicesPage() {
     const priceRange = getPriceRange(service);
     const unitPrice = priceRange.hasChargingTypes ? priceRange.min.toFixed(2) : (service.price || "0.00");
     
-    addToCartMutation.mutate({
-      providerServiceId: service.id,
-      quantity: 1,
-      unitPrice: unitPrice,
-    });
+    if (isCatalogService(service)) {
+      // For catalog services, add to cart with catalogServiceId
+      addToCartMutation.mutate({
+        catalogServiceId: service.id,
+        quantity: 1,
+        unitPrice: unitPrice,
+      });
+    } else {
+      // For provider services, add to cart with providerServiceId
+      addToCartMutation.mutate({
+        providerServiceId: service.id,
+        quantity: 1,
+        unitPrice: unitPrice,
+      });
+    }
   };
 
-  const getServiceImage = (service: ProviderService) => {
+  const getServiceImage = (service: CombinedService) => {
+    if (isCatalogService(service)) {
+      // For catalog services, use imageUrl directly
+      return service.imageUrl || "/uploads/services/limpeza_residencial.png";
+    }
+    
+    // For provider services
+    const providerService = service as ProviderService;
     try {
       // Try to parse images JSON array first
-      const images = JSON.parse(service.images || "[]");
+      const images = JSON.parse(providerService.images || "[]");
       if (images.length > 0) {
         return images[0];
       }
       
       // Fallback to service imageUrl if available
-      if (service.service?.imageUrl) {
-        return service.service.imageUrl;
+      if (providerService.service?.imageUrl) {
+        return providerService.service.imageUrl;
       }
       
       // Fallback to default service image
       return "/uploads/services/limpeza_residencial.png";
     } catch {
       // Fallback to service imageUrl or default
-      return service.service?.imageUrl || "/uploads/services/limpeza_residencial.png";
+      return providerService.service?.imageUrl || "/uploads/services/limpeza_residencial.png";
     }
   };
 
@@ -317,8 +397,8 @@ export default function ServicesPage() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.isArray(filteredServices) ? filteredServices.map((service: ProviderService) => (
-            <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          {Array.isArray(filteredServices) ? filteredServices.map((service: CombinedService) => (
+            <Card key={`${isCatalogService(service) ? 'catalog' : 'provider'}-${service.id}`} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video relative">
                 <img
                   src={getServiceImage(service)}
@@ -331,6 +411,17 @@ export default function ServicesPage() {
                 <div className="absolute top-2 left-2">
                   <Badge variant="secondary">{service.category.name}</Badge>
                 </div>
+                <div className="absolute top-2 right-2">
+                  {isCatalogService(service) ? (
+                    <Badge variant="outline" className="bg-blue-500 text-white border-blue-500">
+                      Prestador a definir
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-green-500 text-white border-green-500">
+                      Prestador definido
+                    </Badge>
+                  )}
+                </div>
               </div>
               
               <CardHeader className="pb-2">
@@ -340,15 +431,17 @@ export default function ServicesPage() {
                       {service.name || service.category.name}
                     </CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-current text-yellow-500" />
-                        <span>{parseFloat(service.provider.rating).toFixed(1)}</span>
-                        <span>({service.provider.totalReviews})</span>
-                      </div>
-                      {service.provider.user.city && (
+                      {!isCatalogService(service) && (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-current text-yellow-500" />
+                          <span>{parseFloat((service as ProviderService).provider.rating).toFixed(1)}</span>
+                          <span>({(service as ProviderService).provider.totalReviews})</span>
+                        </div>
+                      )}
+                      {!isCatalogService(service) && (service as ProviderService).provider.user.city && (
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          <span>{service.provider.user.city}</span>
+                          <span>{(service as ProviderService).provider.user.city}</span>
                         </div>
                       )}
                     </div>
@@ -359,7 +452,11 @@ export default function ServicesPage() {
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-sm text-muted-foreground">Por {service.provider.user.name}</div>
+                    {isCatalogService(service) ? (
+                      <div className="text-sm text-muted-foreground">Serviço do catálogo - Prestador será designado após compra</div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">Por {(service as ProviderService).provider.user.name}</div>
+                    )}
                     {service.estimatedDuration && (
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -376,7 +473,7 @@ export default function ServicesPage() {
                 {/* Informações adicionais do serviço */}
                 <div className="mb-3 space-y-1">
                   {/* Materiais incluídos */}
-                  {service.service?.materialsIncluded && (
+                  {(isCatalogService(service) ? service.materialsIncluded : service.service?.materialsIncluded) && (
                     <div className="flex items-center gap-1 text-xs text-green-600">
                       <Shield className="h-3 w-3" />
                       <span>Materiais incluídos</span>
@@ -384,23 +481,23 @@ export default function ServicesPage() {
                   )}
                   
                   {/* Tipo de cobrança */}
-                  {service.service?.defaultChargingType && (
+                  {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <DollarSign className="h-3 w-3" />
                       <span>
-                        {service.service.defaultChargingType === 'visit' && 'Por visita'}
-                        {service.service.defaultChargingType === 'hour' && 'Por hora'}
-                        {service.service.defaultChargingType === 'daily' && 'Diária'}
-                        {service.service.defaultChargingType === 'package' && 'Pacote'}
-                        {service.service.defaultChargingType === 'quote' && 'Orçamento'}
+                        {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) === 'visit' && 'Por visita'}
+                        {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) === 'hour' && 'Por hora'}
+                        {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) === 'daily' && 'Diária'}
+                        {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) === 'package' && 'Pacote'}
+                        {(isCatalogService(service) ? service.defaultChargingType : service.service?.defaultChargingType) === 'quote' && 'Orçamento'}
                       </span>
                     </div>
                   )}
                   
                   {/* Tags do serviço */}
-                  {service.service?.tags && (() => {
+                  {(isCatalogService(service) ? service.tags : service.service?.tags) && (() => {
                     try {
-                      const tags = JSON.parse(service.service.tags);
+                      const tags = JSON.parse(isCatalogService(service) ? service.tags || '[]' : service.service?.tags || '[]');
                       return Array.isArray(tags) && tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {tags.slice(0, 3).map((tag: string, index: number) => (
@@ -420,8 +517,24 @@ export default function ServicesPage() {
                   <div>
                     {(() => {
                       const priceRange = getPriceRange(service);
-                      const hasQuoteOnly = service.chargingTypes?.some(ct => ct.chargingType === 'quote') && 
-                        service.chargingTypes?.filter(ct => ct.price && ct.chargingType !== 'quote').length === 0;
+                      
+                      if (isCatalogService(service)) {
+                        return (
+                          <div>
+                            <div className="text-lg font-bold text-primary">
+                              R$ {parseFloat(service.price || "0").toFixed(2)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Preço fixo do catálogo
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // For provider services
+                      const providerService = service as ProviderService;
+                      const hasQuoteOnly = providerService.chargingTypes?.some(ct => ct.chargingType === 'quote') && 
+                        providerService.chargingTypes?.filter(ct => ct.price && ct.chargingType !== 'quote').length === 0;
                       
                       if (hasQuoteOnly) {
                         return (
@@ -454,17 +567,17 @@ export default function ServicesPage() {
                         return (
                           <div>
                             <div className="text-lg font-bold text-primary">
-                              R$ {parseFloat(service.price || "0").toFixed(2)}
+                              R$ {parseFloat(providerService.price || "0").toFixed(2)}
                             </div>
-                            {service.minimumPrice && service.minimumPrice !== service.price && (
+                            {providerService.minimumPrice && providerService.minimumPrice !== providerService.price && (
                               <div className="text-xs text-muted-foreground">
-                                Mínimo: R$ {parseFloat(service.minimumPrice).toFixed(2)}
+                                Mínimo: R$ {parseFloat(providerService.minimumPrice).toFixed(2)}
                               </div>
                             )}
                             {/* Faixa de preço sugerida do catálogo */}
-                            {service.service?.suggestedMinPrice && service.service?.suggestedMaxPrice && (
+                            {providerService.service?.suggestedMinPrice && providerService.service?.suggestedMaxPrice && (
                               <div className="text-xs text-muted-foreground">
-                                Faixa sugerida: R$ {parseFloat(service.service.suggestedMinPrice).toFixed(2)} - R$ {parseFloat(service.service.suggestedMaxPrice).toFixed(2)}
+                                Faixa sugerida: R$ {parseFloat(providerService.service.suggestedMinPrice).toFixed(2)} - R$ {parseFloat(providerService.service.suggestedMaxPrice).toFixed(2)}
                               </div>
                             )}
                           </div>

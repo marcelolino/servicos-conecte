@@ -48,6 +48,59 @@ declare global {
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
+// Helper function to notify providers for catalog services
+async function notifyProvidersForCatalogServices(order: any, items: any[], user: any, app: Express) {
+  if (!items || items.length === 0) return;
+  
+  console.log('Checking for catalog services in order:', order.id);
+  
+  for (const item of items) {
+    if (item.catalogServiceId) {
+      console.log('Found catalog service item:', item.catalogServiceId);
+      
+      try {
+        // Get the catalog service to find its category
+        const catalogService = await storage.getService(item.catalogServiceId);
+        if (!catalogService) continue;
+        
+        console.log('Catalog service found:', catalogService.name, 'Category:', catalogService.categoryId);
+        
+        // Get all providers in this category
+        const providers = await storage.getProvidersByCategory(catalogService.categoryId);
+        console.log(`Found ${providers.length} providers in category ${catalogService.categoryId}`);
+        
+        // Notify each provider
+        for (const provider of providers) {
+          try {
+            await storage.createNotification(provider.userId, {
+              type: 'new_catalog_order',
+              title: 'Nova Oportunidade de Serviço',
+              message: `Cliente solicitou: ${catalogService.name}. Pedido #${order.id} - Aceite para atender!`,
+              relatedId: order.id,
+            });
+            
+            // Send real-time notification if WebSocket is available
+            if (app.locals.broadcastToUser) {
+              app.locals.broadcastToUser(provider.userId, {
+                type: 'new_catalog_order',
+                title: 'Nova Oportunidade de Serviço',
+                message: `Cliente solicitou: ${catalogService.name}. Pedido #${order.id}`,
+                relatedId: order.id,
+                orderId: order.id,
+                serviceName: catalogService.name
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to notify provider ${provider.userId}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to process catalog service ${item.catalogServiceId}:`, error);
+      }
+    }
+  }
+}
+
 // Middleware to verify JWT token
 const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers["authorization"];
@@ -2952,6 +3005,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (notificationError) {
           console.error('Failed to send order notification:', notificationError);
         }
+
+        // Notify providers for catalog services
+        try {
+          await notifyProvidersForCatalogServices(order, req.body.items, user, app);
+        } catch (providerNotificationError) {
+          console.error('Failed to send provider notifications:', providerNotificationError);
+        }
         
         // Clear cart after successful order creation
         try {
@@ -3003,6 +3063,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (notificationError) {
           console.error('Failed to send order notification:', notificationError);
+        }
+
+        // Notify providers for catalog services (from cart conversion)
+        try {
+          // Get cart items to check for catalog services
+          const cartItems = await storage.getCartItems(req.user!.id);
+          await notifyProvidersForCatalogServices(order, cartItems, user, app);
+        } catch (providerNotificationError) {
+          console.error('Failed to send provider notifications:', providerNotificationError);
         }
         
         res.json(order);
@@ -3085,6 +3154,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedOrder);
     } catch (error) {
       res.status(400).json({ message: "Failed to update order", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Accept catalog service order (for providers)
+  app.put("/api/orders/:id/accept-catalog-service", authenticateToken, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Get provider info
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider profile not found" });
+      }
+
+      if (provider.status !== "approved") {
+        return res.status(403).json({ 
+          message: "Your provider profile must be approved before accepting orders"
+        });
+      }
+
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Check if order already has a provider assigned
+      if (order.providerId && order.providerId !== 0) {
+        return res.status(409).json({ message: "This order has already been accepted by another provider" });
+      }
+
+      // Check if order contains catalog services
+      const orderItems = await storage.getOrderItems(orderId);
+      const hasCatalogServices = orderItems.some(item => item.catalogServiceId);
+      
+      if (!hasCatalogServices) {
+        return res.status(400).json({ message: "This order does not contain catalog services" });
+      }
+
+      // Verify provider can serve in this category
+      const catalogItems = orderItems.filter(item => item.catalogServiceId);
+      for (const item of catalogItems) {
+        if (!item.catalogServiceId) continue;
+        
+        const catalogService = await storage.getService(item.catalogServiceId);
+        if (!catalogService) continue;
+        
+        // Check if provider offers services in this category
+        const providerServices = await storage.getProviderServicesByProvider(provider.id);
+        const hasServiceInCategory = providerServices.some(ps => ps.categoryId === catalogService.categoryId);
+        
+        if (!hasServiceInCategory) {
+          return res.status(403).json({ 
+            message: `You don't offer services in the ${catalogService.category?.name || 'required'} category` 
+          });
+        }
+      }
+
+      // Assign provider to order
+      const updatedOrder = await storage.updateOrder(orderId, {
+        providerId: provider.id,
+        status: "assigned"
+      });
+
+      console.log(`Provider ${provider.id} accepted order ${orderId}`);
+
+      // Notify client about provider assignment
+      try {
+        const client = await storage.getUser(order.clientId);
+        await storage.createNotification(order.clientId, {
+          type: 'order_accepted',
+          title: 'Prestador Designado',
+          message: `O prestador ${provider.user.name} aceitou seu pedido #${orderId}`,
+          relatedId: orderId,
+        });
+
+        // Send real-time notification to client
+        if (app.locals.broadcastToUser) {
+          app.locals.broadcastToUser(order.clientId, {
+            type: 'order_accepted',
+            title: 'Prestador Designado',
+            message: `O prestador ${provider.user.name} aceitou seu pedido #${orderId}`,
+            relatedId: orderId,
+            orderId: orderId,
+            providerName: provider.user.name
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to notify client about order acceptance:', notificationError);
+      }
+
+      // Notify other providers in the same categories that this order is no longer available
+      try {
+        for (const item of catalogItems) {
+          if (!item.catalogServiceId) continue;
+          
+          const catalogService = await storage.getService(item.catalogServiceId);
+          if (!catalogService) continue;
+          
+          const otherProviders = await storage.getProvidersByCategory(catalogService.categoryId);
+          
+          for (const otherProvider of otherProviders) {
+            if (otherProvider.id === provider.id) continue; // Skip the provider who accepted
+            
+            try {
+              await storage.createNotification(otherProvider.userId, {
+                type: 'order_taken',
+                title: 'Oportunidade Perdida',
+                message: `O pedido #${orderId} para ${catalogService.name} foi aceito por outro prestador`,
+                relatedId: orderId,
+              });
+
+              // Send real-time notification
+              if (app.locals.broadcastToUser) {
+                app.locals.broadcastToUser(otherProvider.userId, {
+                  type: 'order_taken',
+                  title: 'Oportunidade Perdida',
+                  message: `O pedido #${orderId} foi aceito por outro prestador`,
+                  relatedId: orderId,
+                  orderId: orderId
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to notify provider ${otherProvider.userId}:`, error);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error('Failed to notify other providers:', notificationError);
+      }
+
+      res.json({
+        message: "Order accepted successfully",
+        order: updatedOrder,
+        provider: {
+          id: provider.id,
+          name: provider.user.name
+        }
+      });
+
+    } catch (error) {
+      console.error("Failed to accept catalog service order:", error);
+      res.status(500).json({ 
+        message: "Failed to accept order", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 

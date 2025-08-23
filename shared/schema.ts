@@ -104,6 +104,7 @@ export const services = pgTable("services", {
   materialsIncluded: boolean("materials_included").default(false),
   materialsDescription: text("materials_description"), // What materials are included
   defaultChargingType: chargingTypeEnum("default_charging_type").default("visit"),
+  price: decimal("price", { precision: 10, scale: 2 }), // Fixed price for catalog services without provider
   suggestedMinPrice: decimal("suggested_min_price", { precision: 10, scale: 2 }),
   suggestedMaxPrice: decimal("suggested_max_price", { precision: 10, scale: 2 }),
   tags: text("tags"), // JSON array of tags for better search
