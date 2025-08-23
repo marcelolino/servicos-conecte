@@ -2848,23 +2848,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrderFromData(orderData: InsertOrder, items: any[]): Promise<Order> {
+    // Calculate totals from items
+    let calculatedSubtotal = 0;
+    let calculatedServiceAmount = 0;
+    
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const quantity = item.quantity || 1;
+        const unitPrice = parseFloat(item.unitPrice || "0.00");
+        const itemTotal = quantity * unitPrice;
+        calculatedSubtotal += itemTotal;
+      }
+      
+      // Calculate service fee (10% of subtotal)
+      calculatedServiceAmount = calculatedSubtotal * 0.1;
+    }
+    
+    const calculatedTotal = calculatedSubtotal + calculatedServiceAmount;
+    
+    // Update order data with calculated values
+    const finalOrderData = {
+      ...orderData,
+      subtotal: calculatedSubtotal.toFixed(2),
+      serviceAmount: calculatedServiceAmount.toFixed(2),
+      totalAmount: calculatedTotal.toFixed(2)
+    };
+
     // Create the order
     const [newOrder] = await db
       .insert(orders)
-      .values(orderData)
+      .values(finalOrderData)
       .returning();
 
     // Create order items and service requests based on items
     if (items && items.length > 0) {
       for (const item of items) {
+        const quantity = item.quantity || 1;
+        const unitPrice = parseFloat(item.unitPrice || "0.00");
+        const totalPrice = quantity * unitPrice;
+        
         // Create order item
         await db.insert(orderItems).values({
           orderId: newOrder.id,
           providerServiceId: item.providerServiceId || null,
           catalogServiceId: item.catalogServiceId || null,
-          quantity: item.quantity || 1,
-          unitPrice: item.unitPrice || "0.00",
-          totalPrice: item.totalPrice || "0.00",
+          quantity: quantity,
+          unitPrice: unitPrice.toFixed(2),
+          totalPrice: totalPrice.toFixed(2),
           notes: item.notes || null,
           chargingType: item.chargingType || null,
         });
