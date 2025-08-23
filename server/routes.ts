@@ -48,18 +48,19 @@ declare global {
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Helper function to notify providers for catalog services
-async function notifyProvidersForCatalogServices(order: any, items: any[], user: any, app: Express) {
+// Helper function to notify providers for orders
+async function notifyProvidersForOrders(order: any, items: any[], user: any, app: Express) {
   if (!items || items.length === 0) {
     console.log('No items found in order for provider notifications');
     return;
   }
   
-  console.log('Checking for catalog services in order:', order.id, 'Items count:', items.length);
+  console.log('Checking for services in order:', order.id, 'Items count:', items.length);
   
   for (const item of items) {
     console.log('Processing item:', item);
     
+    // Handle catalog services (general category notifications)
     if (item.catalogServiceId) {
       console.log('Found catalog service item:', item.catalogServiceId);
       
@@ -76,16 +77,6 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
         // Get all providers in this category
         const providers = await storage.getProvidersByCategory(catalogService.categoryId);
         console.log(`Found ${providers.length} providers in category ${catalogService.categoryId}`);
-        
-        if (providers.length === 0) {
-          console.log('No providers found for category:', catalogService.categoryId);
-          continue;
-        }
-        
-        // Log provider details
-        providers.forEach(provider => {
-          console.log(`Provider found: ID=${provider.id}, UserID=${provider.userId}, Name=${provider.user?.name}`);
-        });
         
         // Notify each provider
         for (const provider of providers) {
@@ -112,8 +103,6 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
                 serviceName: catalogService.name
               });
               console.log(`Real-time notification sent to provider ${provider.userId}`);
-            } else {
-              console.log('WebSocket broadcast not available');
             }
           } catch (error) {
             console.error(`Failed to notify provider ${provider.userId}:`, error);
@@ -122,8 +111,65 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
       } catch (error) {
         console.error(`Failed to process catalog service ${item.catalogServiceId}:`, error);
       }
-    } else {
-      console.log('Item has no catalogServiceId:', item);
+    }
+    
+    // Handle specific provider services (direct provider notifications)
+    else if (item.providerServiceId) {
+      console.log('Found provider service item:', item.providerServiceId);
+      
+      try {
+        // Get the provider service to find the provider
+        const providerService = await storage.getProviderService(item.providerServiceId);
+        if (!providerService) {
+          console.log('Provider service not found for ID:', item.providerServiceId);
+          continue;
+        }
+        
+        console.log('Provider service found:', providerService.name, 'Provider ID:', providerService.providerId);
+        
+        // Get provider details with user info
+        const provider = await storage.getProvider(providerService.providerId);
+        if (!provider || !provider.user) {
+          console.log('Provider not found for service:', item.providerServiceId);
+          continue;
+        }
+        
+        console.log(`Notifying specific provider ${provider.userId} (${provider.user?.name}) for their service`);
+        
+        try {
+          await storage.createNotification(provider.userId, {
+            type: 'new_provider_order',
+            title: 'Novo Pedido Recebido',
+            message: `${user?.name || 'Cliente'} fez um pedido do seu serviço: ${providerService.name || providerService.category?.name}. Pedido #${order.id}`,
+            relatedId: order.id,
+          });
+          
+          console.log(`Notification created successfully for provider ${provider.userId}`);
+          
+          // Send real-time notification if WebSocket is available
+          if (app.locals.broadcastToUser) {
+            app.locals.broadcastToUser(provider.userId, {
+              type: 'new_provider_order',
+              title: 'Novo Pedido Recebido',
+              message: `${user?.name || 'Cliente'} fez um pedido do seu serviço: ${providerService.name || providerService.category?.name}`,
+              relatedId: order.id,
+              orderId: order.id,
+              serviceName: providerService.name || providerService.category?.name,
+              clientName: user?.name || 'Cliente'
+            });
+            console.log(`Real-time notification sent to provider ${provider.userId}`);
+          }
+          
+        } catch (providerNotificationError) {
+          console.error(`Failed to notify provider ${provider.userId}:`, providerNotificationError);
+        }
+      } catch (providerServiceError) {
+        console.error(`Failed to process provider service ${item.providerServiceId}:`, providerServiceError);
+      }
+    }
+    
+    else {
+      console.log('Item has no catalogServiceId or providerServiceId:', item);
     }
   }
 }
@@ -3082,9 +3128,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Failed to send order notification:', notificationError);
         }
 
-        // Notify providers for catalog services
+        // Notify providers for all services
         try {
-          await notifyProvidersForCatalogServices(order, req.body.items, user, app);
+          await notifyProvidersForOrders(order, req.body.items, user, app);
         } catch (providerNotificationError) {
           console.error('Failed to send provider notifications:', providerNotificationError);
         }
@@ -3141,11 +3187,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Failed to send order notification:', notificationError);
         }
 
-        // Notify providers for catalog services (from cart conversion)
+        // Notify providers for all services (from cart conversion)
         try {
-          // Get cart items to check for catalog services
+          // Get cart items to check for services
           const cartItems = await storage.getCartItems(req.user!.id);
-          await notifyProvidersForCatalogServices(order, cartItems, user, app);
+          await notifyProvidersForOrders(order, cartItems, user, app);
         } catch (providerNotificationError) {
           console.error('Failed to send provider notifications:', providerNotificationError);
         }
