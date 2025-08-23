@@ -1286,6 +1286,119 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(serviceRequests.createdAt));
   }
 
+  // NEW: Unified function for provider bookings (ServiceRequests + Orders)
+  async getProviderBookings(providerId: number): Promise<any[]> {
+    try {
+      console.log(`Getting provider bookings for provider ${providerId}`);
+      
+      // Get service requests as before
+      const serviceRequestsData = await this.getServiceRequestsByProvider(providerId);
+      console.log(`Found ${serviceRequestsData.length} service requests`);
+      
+      // Get orders that are available for this provider or assigned to them
+      const ordersData = await db
+        .select({
+          id: orders.id,
+          clientId: orders.clientId,
+          providerId: orders.providerId,
+          status: orders.status,
+          subtotal: orders.subtotal,
+          discountAmount: orders.discountAmount,
+          serviceAmount: orders.serviceAmount,
+          totalAmount: orders.totalAmount,
+          couponCode: orders.couponCode,
+          paymentMethod: orders.paymentMethod,
+          address: orders.address,
+          cep: orders.cep,
+          city: orders.city,
+          state: orders.state,
+          latitude: orders.latitude,
+          longitude: orders.longitude,
+          scheduledAt: orders.scheduledAt,
+          notes: orders.notes,
+          createdAt: orders.createdAt,
+          updatedAt: orders.updatedAt,
+          client: users,
+        })
+        .from(orders)
+        .innerJoin(users, eq(orders.clientId, users.id))
+        .where(
+          or(
+            // Show orders confirmed without provider assigned (available for acceptance)
+            and(
+              eq(orders.status, "confirmed"),
+              isNull(orders.providerId)
+            ),
+            // Show orders assigned to this provider
+            eq(orders.providerId, providerId)
+          )
+        )
+        .orderBy(desc(orders.createdAt));
+
+      console.log(`Found ${ordersData.length} orders`);
+
+      // Transform service requests to unified format
+      const transformedServiceRequests = serviceRequestsData.map(sr => ({
+        id: sr.id,
+        clientId: sr.clientId,
+        categoryId: sr.categoryId,
+        providerId: sr.providerId,
+        status: sr.status,
+        totalAmount: sr.totalAmount || "0.00",
+        paymentMethod: sr.paymentMethod || "cash",
+        paymentStatus: sr.paymentStatus || "pending",
+        address: sr.address,
+        cep: sr.cep,
+        city: sr.city,
+        state: sr.state,
+        latitude: sr.latitude,
+        longitude: sr.longitude,
+        scheduledAt: sr.scheduledAt,
+        notes: sr.description,
+        createdAt: sr.createdAt,
+        updatedAt: sr.updatedAt,
+        client: sr.client,
+        category: sr.category,
+        type: 'service_request' as const
+      }));
+
+      // Transform orders to unified format (simplified for now)
+      const transformedOrders = ordersData.map(order => ({
+        id: order.id,
+        clientId: order.clientId,
+        categoryId: null, // Simplified for now
+        providerId: order.providerId,
+        status: order.status === "confirmed" ? "pending" : order.status, // Map confirmed orders to pending for provider view
+        totalAmount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: "pending", // Orders start as pending payment
+        address: order.address || "Endereço não informado",
+        cep: order.cep || "",
+        city: order.city || "",
+        state: order.state || "",
+        latitude: order.latitude,
+        longitude: order.longitude,
+        scheduledAt: order.scheduledAt,
+        notes: order.notes,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        client: order.client,
+        category: { id: 0, name: "Serviço do Catálogo" }, // Simplified for now
+        type: 'order' as const
+      }));
+
+      // Combine and sort by creation date (newest first)
+      const combined = [...transformedServiceRequests, ...transformedOrders];
+      console.log(`Combined total: ${combined.length} bookings`);
+      
+      return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+    } catch (error) {
+      console.error('Error in getProviderBookings:', error);
+      return [];
+    }
+  }
+
   async getServiceRequestsByCategories(categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
     if (categoryIds.length === 0) {
       return [];

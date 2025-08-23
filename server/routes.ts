@@ -1355,8 +1355,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Provider not found" });
       }
       
-      const requests = await storage.getServiceRequestsByProvider(provider.id);
-      res.json(requests);
+      // Use unified function that includes both service requests and orders
+      const bookings = await storage.getProviderBookings(provider.id);
+      res.json(bookings);
     } catch (error) {
       res.status(500).json({ message: "Failed to get service requests", error: error instanceof Error ? error.message : "Unknown error" });
     }
@@ -1365,28 +1366,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/service-requests/:id", authenticateToken, async (req, res) => {
     try {
       const requestId = parseInt(req.params.id);
-      const request = await storage.getServiceRequest(requestId);
       
+      // First try to find as service request
+      let request = await storage.getServiceRequest(requestId);
+      let isOrder = false;
+      
+      // If not found as service request, try as order
       if (!request) {
-        return res.status(404).json({ message: "Service request not found" });
+        const order = await storage.getOrderById(requestId);
+        if (order) {
+          request = order;
+          isOrder = true;
+        }
       }
       
-      // Check if user can update this request
+      if (!request) {
+        return res.status(404).json({ message: "Service request or order not found" });
+      }
+      
+      // Check if user can update this request/order
       let canUpdate = false;
       
-      // Client can always update their own requests
+      // Client can always update their own requests/orders
       if (request.clientId === req.user!.id) {
         canUpdate = true;
       }
-      // Admin can update any request
+      // Admin can update any request/order
       else if (req.user!.userType === "admin") {
         canUpdate = true;
       }
-      // Provider can update if they're assigned to the request
+      // Provider can update if they're assigned to the request/order
       else if (request.provider && request.provider.userId === req.user!.id) {
         canUpdate = true;
       }
-      // Provider can accept pending requests (when providerId is null and they want to accept)
+      // Provider can accept pending requests/orders (when providerId is null and they want to accept)
       else if (req.user!.userType === "provider" && !request.providerId && req.body.status === "accepted") {
         // Get provider info to set providerId
         const provider = await storage.getProviderByUserId(req.user!.id);
@@ -1408,7 +1421,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      const updatedRequest = await storage.updateServiceRequest(requestId, req.body);
+      // Update based on type
+      let updatedRequest;
+      if (isOrder) {
+        // Handle order updates
+        const updateData: any = {};
+        if (req.body.status) {
+          // Map provider statuses to order statuses
+          if (req.body.status === "accepted") {
+            updateData.status = "assigned";
+          } else {
+            updateData.status = req.body.status;
+          }
+        }
+        if (req.body.providerId) updateData.providerId = req.body.providerId;
+        if (req.body.notes) updateData.notes = req.body.notes;
+        
+        updatedRequest = await storage.updateOrder(requestId, updateData);
+        
+        // Notify client if order was accepted
+        if (req.body.status === "accepted") {
+          try {
+            const provider = await storage.getProviderByUserId(req.user!.id);
+            await storage.createNotification(request.clientId, {
+              type: 'order_accepted',
+              title: 'Pedido Aceito!',
+              message: `Prestador ${provider?.user?.name || 'desconhecido'} aceitou seu pedido #${requestId}`,
+              relatedId: requestId,
+            });
+          } catch (notificationError) {
+            console.error('Failed to notify client about order acceptance:', notificationError);
+          }
+        }
+      } else {
+        // Handle service request updates
+        updatedRequest = await storage.updateServiceRequest(requestId, req.body);
+      }
+      
       res.json(updatedRequest);
     } catch (error) {
       res.status(400).json({ message: "Failed to update service request", error: error instanceof Error ? error.message : "Unknown error" });
