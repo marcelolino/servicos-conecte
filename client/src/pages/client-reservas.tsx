@@ -133,7 +133,7 @@ export default function ClientReservas() {
 
 
   // Fetch client's service requests
-  const { data: serviceRequests, isLoading: requestsLoading } = useQuery({
+  const { data: serviceRequests, isLoading: requestsLoading } = useQuery<ServiceRequest[]>({
     queryKey: ["/api/service-requests/client"],
     enabled: !!user,
   });
@@ -712,20 +712,20 @@ export default function ClientReservas() {
             <TabsTrigger value="service-requests" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Solicitações de Serviço
-              {serviceRequests && serviceRequests.length > 0 && (
+              {serviceRequests && Array.isArray(serviceRequests) && serviceRequests.length > 0 ? (
                 <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
                   {serviceRequests.length}
                 </Badge>
-              )}
+              ) : null}
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
               Pedidos
-              {orders && orders.length > 0 && (
+              {orders && Array.isArray(orders) && orders.length > 0 ? (
                 <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
                   {orders.length}
                 </Badge>
-              )}
+              ) : null}
             </TabsTrigger>
           </TabsList>
 

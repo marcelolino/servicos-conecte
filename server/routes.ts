@@ -1271,6 +1271,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send service request notification:', notificationError);
       }
       
+      // Notify providers in the same category about new service request
+      try {
+        const user = await storage.getUser(req.user!.id);
+        const category = await storage.getServiceCategory(requestData.categoryId);
+        const providers = await storage.getProvidersByCategory(requestData.categoryId);
+        
+        console.log(`Notifying ${providers.length} providers in category ${category?.name || requestData.categoryId} about new service request`);
+        
+        // Create notification for each provider
+        for (const provider of providers) {
+          try {
+            console.log(`Creating notification for provider ${provider.userId} (${provider.user?.name})`);
+            
+            await storage.createNotification(provider.userId, {
+              type: 'new_service_request',
+              title: 'Nova Solicitação de Serviço',
+              message: `Cliente solicitou: ${serviceRequest.title || category?.name || 'Serviço'}. ${serviceRequest.city}, ${serviceRequest.state}`,
+              relatedId: serviceRequest.id,
+            });
+            
+            console.log(`Notification created successfully for provider ${provider.userId}`);
+            
+            // Send real-time notification if WebSocket is available
+            if (app.locals.broadcastToUser) {
+              app.locals.broadcastToUser(provider.userId, {
+                type: 'new_service_request',
+                title: 'Nova Solicitação de Serviço',
+                message: `Cliente solicitou: ${serviceRequest.title || category?.name || 'Serviço'}`,
+                relatedId: serviceRequest.id,
+                serviceRequestId: serviceRequest.id,
+                categoryName: category?.name || 'Serviço'
+              });
+              console.log(`Real-time notification sent to provider ${provider.userId}`);
+            } else {
+              console.log('WebSocket broadcast not available');
+            }
+            
+          } catch (providerNotificationError) {
+            console.error(`Failed to notify provider ${provider.userId}:`, providerNotificationError);
+          }
+        }
+        
+        console.log(`Notification process completed for service request ${serviceRequest.id}`);
+      } catch (providersNotificationError) {
+        console.error('Failed to send service request notifications to providers:', providersNotificationError);
+      }
+      
       res.json(serviceRequest);
     } catch (error) {
       res.status(400).json({ message: "Failed to create service request", error: error instanceof Error ? error.message : "Unknown error" });
