@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocation, Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -27,9 +27,65 @@ import {
   Play,
   XCircle,
   MessageCircle,
-  Filter
+  Filter,
+  Package,
+  Eye,
+  CreditCard,
+  ShoppingBag,
+  FileText
 } from "lucide-react";
 import type { ServiceRequest, ServiceCategory } from "@shared/schema";
+
+interface Order {
+  id: number;
+  clientId: number;
+  providerId?: number;
+  status: string;
+  subtotal: string;
+  discountAmount: string;
+  serviceAmount: string;
+  totalAmount: string;
+  couponCode?: string;
+  paymentMethod?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  scheduledAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  provider?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      city?: string;
+    };
+  };
+  items: Array<{
+    id: number;
+    quantity: number;
+    unitPrice: string;
+    totalPrice: string;
+    providerService: {
+      id: number;
+      name?: string;
+      description?: string;
+      images?: string;
+      category: {
+        id: number;
+        name: string;
+      };
+      provider: {
+        id: number;
+        user: {
+          id: number;
+          name: string;
+        };
+      };
+    };
+  }>;
+}
 
 export default function ClientReservas() {
   const { user } = useAuth();
@@ -82,6 +138,12 @@ export default function ClientReservas() {
     enabled: !!user,
   });
 
+  // Fetch client's orders
+  const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
+    queryKey: ["/api/orders"],
+    enabled: !!user,
+  });
+
 
 
   // Start service mutation
@@ -124,7 +186,7 @@ export default function ClientReservas() {
     },
   });
 
-  const getStatusColor = (status: string) => {
+  const getServiceRequestStatusColor = (status: string) => {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -141,7 +203,7 @@ export default function ClientReservas() {
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getServiceRequestStatusText = (status: string) => {
     switch (status) {
       case "pending":
         return "Pendente";
@@ -155,6 +217,57 @@ export default function ClientReservas() {
         return "Cancelada";
       default:
         return "Pendente";
+    }
+  };
+
+  const getOrderStatusColor = (status: string) => {
+    switch (status) {
+      case "pending_payment":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "confirmed":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "in_progress":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
+
+  const getOrderStatusText = (status: string) => {
+    switch (status) {
+      case "pending_payment":
+        return "Aguardando Pagamento";
+      case "confirmed":
+        return "Confirmado";
+      case "in_progress":
+        return "Em Andamento";
+      case "completed":
+        return "Concluído";
+      case "cancelled":
+        return "Cancelado";
+      default:
+        return status;
+    }
+  };
+
+  const getPaymentMethodText = (method?: string) => {
+    switch (method) {
+      case "pix":
+        return "PIX";
+      case "credit_card":
+        return "Cartão de Crédito";
+      case "debit_card":
+        return "Cartão de Débito";
+      case "cash":
+        return "Dinheiro";
+      case "digital":
+        return "Pagamento Digital";
+      default:
+        return "Não definido";
     }
   };
 
@@ -305,7 +418,7 @@ export default function ClientReservas() {
 
   const { currentItems, totalPages, totalItems } = getPaginatedRequests();
 
-  const renderRequestList = () => {
+  const renderServiceRequestsList = () => {
     if (requestsLoading) {
       return (
         <div className="space-y-4">
@@ -332,14 +445,14 @@ export default function ClientReservas() {
       return (
         <Card>
           <CardContent className="p-12 text-center">
-            <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              {activeFilter === "all" ? "Nenhuma solicitação encontrada" : `Nenhuma reserva ${getFilterStatusText(activeFilter)} encontrada`}
+              {activeFilter === "all" ? "Nenhuma solicitação encontrada" : `Nenhuma solicitação ${getFilterStatusText(activeFilter)} encontrada`}
             </h3>
             <p className="text-muted-foreground">
               {activeFilter === "all" 
                 ? "Você ainda não criou nenhuma solicitação de serviço. Acesse a página inicial para fazer uma nova solicitação."
-                : `Não há reservas com status "${getFilterStatusText(activeFilter)}" no momento.`
+                : `Não há solicitações com status "${getFilterStatusText(activeFilter)}" no momento.`
               }
             </p>
           </CardContent>
@@ -350,14 +463,14 @@ export default function ClientReservas() {
     return (
       <div className="space-y-6">
         {currentItems.map((request: ServiceRequest & { category: ServiceCategory; provider?: any }) => (
-          <div key={request.id} className="reservation-card">
-            <div className="space-y-4">
+          <Card key={request.id} className="overflow-hidden">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-foreground">{request.title || 'Sem título'}</h3>
-                    <Badge className={`px-3 py-1 rounded-full text-xs ${getStatusColor(request.status || 'pending')}`}>
-                      {getStatusText(request.status || 'pending')}
+                    <Badge className={`px-3 py-1 rounded-full text-xs ${getServiceRequestStatusColor(request.status || 'pending')}`}>
+                      {getServiceRequestStatusText(request.status || 'pending')}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
@@ -431,8 +544,151 @@ export default function ClientReservas() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderOrdersList = () => {
+    if (ordersLoading) {
+      return (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <Skeleton className="h-6 w-64 mb-2" />
+                    <Skeleton className="h-4 w-32 mb-4" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    if (!orders || orders.length === 0) {
+      return (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Nenhum pedido encontrado
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Você ainda não fez nenhum pedido.
+            </p>
+            <Link href="/services">
+              <Button>
+                Explorar Serviços
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {orders.map((order) => (
+          <Card key={order.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                    <span className="text-lg font-bold text-gray-600 dark:text-gray-400">
+                      #{order.id}
+                    </span>
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">
+                      Pedido #{order.id}
+                    </CardTitle>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'itens'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                    R$ {parseFloat(order.totalAmount).toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge className={getOrderStatusColor(order.status)}>
+                  {getOrderStatusText(order.status)}
+                </Badge>
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  {order.paymentMethod && (
+                    <div className="flex items-center gap-1">
+                      <CreditCard className="h-4 w-4" />
+                      {getPaymentMethodText(order.paymentMethod)}
+                    </div>
+                  )}
+                  {order.scheduledAt && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(order.scheduledAt).toLocaleDateString('pt-BR')}
+                    </div>
+                  )}
+                  {order.address && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {order.city}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {order.items && order.items.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-900 dark:text-white">Serviços:</h4>
+                  {order.items.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {item.providerService?.name || item.providerService?.category?.name || "Serviço"}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Prestador: {item.providerService?.provider?.user?.name || "Não informado"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {item.quantity}x R$ {parseFloat(item.unitPrice).toFixed(2)}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Total: R$ {parseFloat(item.totalPrice).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Link href={`/client-order-details/${order.id}`}>
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalhes
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
@@ -443,140 +699,165 @@ export default function ClientReservas() {
       <div className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Meu Histórico
+            Meu Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Acompanhe o status dos seus serviços solicitados
+            Gerencie suas solicitações de serviço e pedidos realizados
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Summary Header */}
-          <div className="flex items-center justify-end">
-            <div className="text-sm text-muted-foreground">
-              {totalItems > 0 && `${totalItems} solicitaç${totalItems === 1 ? 'ão' : 'ões'} encontrada${totalItems === 1 ? '' : 's'}`}
-            </div>
-          </div>
-
-          {/* Status Filter Tabs */}
-          <Tabs value={activeFilter} onValueChange={setActiveFilter} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-6 h-auto p-1">
-              <TabsTrigger value="all" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span className="hidden sm:inline">Todas Reservas</span>
-                <span className="sm:hidden">Todas</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.all > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
-                      {counts.all}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span className="hidden md:inline">Solicitações Pendentes</span>
-                <span className="md:hidden">Pendentes</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.pending > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-yellow-100 text-yellow-800">
-                      {counts.pending}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-              <TabsTrigger value="accepted" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span className="hidden md:inline">Reservas Aceitas</span>
-                <span className="md:hidden">Aceitas</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.accepted > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-blue-100 text-blue-800">
-                      {counts.accepted}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-              <TabsTrigger value="in_progress" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span className="hidden sm:inline">Em Andamento</span>
-                <span className="sm:hidden">Em Andamento</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.in_progress > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-purple-100 text-purple-800">
-                      {counts.in_progress}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span>Concluídas</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.completed > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-green-100 text-green-800">
-                      {counts.completed}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-              <TabsTrigger value="cancelled" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
-                <span>Canceladas</span>
-                {(() => {
-                  const counts = getStatusCounts();
-                  return counts.cancelled > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-red-100 text-red-800">
-                      {counts.cancelled}
-                    </Badge>
-                  );
-                })()}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Tab Contents */}
-            <TabsContent value={activeFilter} className="mt-0">
-              {/* Request List */}
-              {renderRequestList()}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  
-                  <div className="flex gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <Button
-                        key={page}
-                        variant={page === currentPage ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {page}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
+        {/* Main Tabs for Service Requests and Orders */}
+        <Tabs defaultValue="service-requests" className="w-full space-y-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="service-requests" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Solicitações de Serviço
+              {serviceRequests && serviceRequests.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
+                  {serviceRequests.length}
+                </Badge>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Pedidos
+              {orders && orders.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
+                  {orders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Service Requests Tab */}
+          <TabsContent value="service-requests" className="space-y-6">
+            <div className="space-y-6">
+              {/* Status Filter Tabs for Service Requests */}
+              <Tabs value={activeFilter} onValueChange={setActiveFilter} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-6 h-auto p-1">
+                  <TabsTrigger value="all" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span className="hidden sm:inline">Todas</span>
+                    <span className="sm:hidden">Todas</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.all > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px]">
+                          {counts.all}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span className="hidden md:inline">Pendentes</span>
+                    <span className="md:hidden">Pendentes</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.pending > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-yellow-100 text-yellow-800">
+                          {counts.pending}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                  <TabsTrigger value="accepted" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span className="hidden md:inline">Aceitas</span>
+                    <span className="md:hidden">Aceitas</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.accepted > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-blue-100 text-blue-800">
+                          {counts.accepted}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                  <TabsTrigger value="in_progress" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span className="hidden sm:inline">Em Andamento</span>
+                    <span className="sm:hidden">Em Andamento</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.in_progress > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-purple-100 text-purple-800">
+                          {counts.in_progress}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                  <TabsTrigger value="completed" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span>Concluídas</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.completed > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-green-100 text-green-800">
+                          {counts.completed}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                  <TabsTrigger value="cancelled" className="flex items-center gap-1 justify-center text-xs sm:text-sm px-2 py-2">
+                    <span>Canceladas</span>
+                    {(() => {
+                      const counts = getStatusCounts();
+                      return counts.cancelled > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-4 min-w-[16px] text-[10px] bg-red-100 text-red-800">
+                          {counts.cancelled}
+                        </Badge>
+                      );
+                    })()}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Tab Contents */}
+                <TabsContent value={activeFilter} className="mt-0">
+                  {/* Service Requests List */}
+                  {renderServiceRequestsList()}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 mt-8">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </Button>
+                      
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <Button
+                            key={page}
+                            variant={page === currentPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Próxima
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders" className="space-y-6">
+            {renderOrdersList()}
+          </TabsContent>
+        </Tabs>
 
 
       </div>
