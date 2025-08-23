@@ -473,8 +473,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProvidersByCategory(categoryId: number, latitude?: number, longitude?: number, radius?: number): Promise<(Provider & { user: User })[]> {
+    // More flexible approach: get all providers that have ANY service in the requested category
     let query = db
-      .select({
+      .selectDistinct({
         id: providers.id,
         userId: providers.userId,
         status: providers.status,
@@ -500,6 +501,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(services.categoryId, categoryId),
           eq(providers.status, "approved"),
+          eq(users.isActive, true),
           eq(providerServices.isActive, true)
         )
       );
@@ -516,8 +518,9 @@ export class DatabaseStorage implements IStorage {
         )
       ) <= ${radius}`;
       
-      const filteredQuery = query.where(distanceFilter);
-      return await filteredQuery.orderBy(desc(providers.rating));
+      return await query
+        .where(distanceFilter)
+        .orderBy(desc(providers.rating));
     }
 
     return await query.orderBy(desc(providers.rating));

@@ -50,18 +50,26 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 // Helper function to notify providers for catalog services
 async function notifyProvidersForCatalogServices(order: any, items: any[], user: any, app: Express) {
-  if (!items || items.length === 0) return;
+  if (!items || items.length === 0) {
+    console.log('No items found in order for provider notifications');
+    return;
+  }
   
-  console.log('Checking for catalog services in order:', order.id);
+  console.log('Checking for catalog services in order:', order.id, 'Items count:', items.length);
   
   for (const item of items) {
+    console.log('Processing item:', item);
+    
     if (item.catalogServiceId) {
       console.log('Found catalog service item:', item.catalogServiceId);
       
       try {
         // Get the catalog service to find its category
         const catalogService = await storage.getService(item.catalogServiceId);
-        if (!catalogService) continue;
+        if (!catalogService) {
+          console.log('Catalog service not found for ID:', item.catalogServiceId);
+          continue;
+        }
         
         console.log('Catalog service found:', catalogService.name, 'Category:', catalogService.categoryId);
         
@@ -69,15 +77,29 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
         const providers = await storage.getProvidersByCategory(catalogService.categoryId);
         console.log(`Found ${providers.length} providers in category ${catalogService.categoryId}`);
         
+        if (providers.length === 0) {
+          console.log('No providers found for category:', catalogService.categoryId);
+          continue;
+        }
+        
+        // Log provider details
+        providers.forEach(provider => {
+          console.log(`Provider found: ID=${provider.id}, UserID=${provider.userId}, Name=${provider.user?.name}`);
+        });
+        
         // Notify each provider
         for (const provider of providers) {
           try {
+            console.log(`Creating notification for provider ${provider.userId} (${provider.user?.name})`);
+            
             await storage.createNotification(provider.userId, {
               type: 'new_catalog_order',
               title: 'Nova Oportunidade de Serviço',
               message: `Cliente solicitou: ${catalogService.name}. Pedido #${order.id} - Aceite para atender!`,
               relatedId: order.id,
             });
+            
+            console.log(`Notification created successfully for provider ${provider.userId}`);
             
             // Send real-time notification if WebSocket is available
             if (app.locals.broadcastToUser) {
@@ -89,6 +111,9 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
                 orderId: order.id,
                 serviceName: catalogService.name
               });
+              console.log(`Real-time notification sent to provider ${provider.userId}`);
+            } else {
+              console.log('WebSocket broadcast not available');
             }
           } catch (error) {
             console.error(`Failed to notify provider ${provider.userId}:`, error);
@@ -97,6 +122,8 @@ async function notifyProvidersForCatalogServices(order: any, items: any[], user:
       } catch (error) {
         console.error(`Failed to process catalog service ${item.catalogServiceId}:`, error);
       }
+    } else {
+      console.log('Item has no catalogServiceId:', item);
     }
   }
 }
@@ -2983,9 +3010,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const order = await storage.createOrderFromData(orderData, req.body.items);
         console.log("Order created successfully from payment data:", order);
         
+        // Get user for notifications
+        const user = await storage.getUser(req.user!.id);
+        
         // Send notification to admins about new order
         try {
-          const user = await storage.getUser(req.user!.id);
           await storage.notifyAllAdmins({
             type: 'new_booking',
             title: 'Nova Reserva de Serviço',
