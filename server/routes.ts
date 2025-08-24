@@ -1443,7 +1443,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.body.status === "accepted") {
           try {
             const provider = await storage.getProviderByUserId(req.user!.id);
-            await storage.createNotification(request.clientId, {
+            await storage.createNotification({
+              userId: request.clientId,
               type: 'order_accepted',
               title: 'Pedido Aceito!',
               message: `Prestador ${provider?.user?.name || 'desconhecido'} aceitou seu pedido #${requestId}`,

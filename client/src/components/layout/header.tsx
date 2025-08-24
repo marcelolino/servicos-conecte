@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { ClientNotifications } from "@/components/notifications/client-notifications";
 
 export default function Header() {
   const [location] = useLocation();
@@ -172,14 +173,17 @@ export default function Header() {
                   </Button>
                 )}
                 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative hover:bg-muted"
-                >
-                  <Bell className="h-5 w-5" />
-                  <Badge className="notification-badge">2</Badge>
-                </Button>
+                {/* Notificações baseadas no tipo de usuário */}
+                {user?.userType === "client" && <ClientNotifications />}
+                {user?.userType !== "client" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative hover:bg-muted"
+                  >
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
