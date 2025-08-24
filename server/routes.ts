@@ -1429,7 +1429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.body.status) {
           // Map provider statuses to order statuses
           if (req.body.status === "accepted") {
-            updateData.status = "assigned";
+            updateData.status = "confirmed";
           } else {
             updateData.status = req.body.status;
           }
@@ -3398,7 +3398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Assign provider to order
       const updatedOrder = await storage.updateOrder(orderId, {
         providerId: provider.id,
-        status: "assigned"
+        status: "confirmed"
       });
 
       console.log(`Provider ${provider.id} accepted order ${orderId}`);

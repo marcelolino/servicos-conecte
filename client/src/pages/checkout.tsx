@@ -306,7 +306,8 @@ const CheckoutPage = () => {
         title: "Pedido criado com sucesso!",
         description: "Seu pedido foi processado e enviado aos prestadores.",
       });
-      setLocation(`/orders/${data.id}`);
+      // Redirect to order success page with order ID
+      window.location.href = `/order-success?orderId=${data.id}`;
     },
     onError: (error: any) => {
       toast({
