@@ -1449,6 +1449,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               message: `Prestador ${provider?.user?.name || 'desconhecido'} aceitou seu pedido #${requestId}`,
               relatedId: requestId,
             });
+            
+            // Send real-time notification to client
+            if (app.locals.broadcastToUser) {
+              app.locals.broadcastToUser(request.clientId, {
+                type: 'order_accepted',
+                title: 'Pedido Aceito!',
+                message: `Prestador ${provider?.user?.name || 'desconhecido'} aceitou seu pedido #${requestId}`,
+                relatedId: requestId,
+                orderId: requestId
+              });
+              console.log(`Real-time notification sent to client ${request.clientId} about order acceptance`);
+            }
           } catch (notificationError) {
             console.error('Failed to notify client about order acceptance:', notificationError);
           }
@@ -2983,6 +2995,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Service ID is required" });
       }
 
+      // Prevent duplicate rapid requests
+      const requestKey = `cart_add_${req.user!.id}_${serviceId}`;
+      if (app.locals.pendingRequests && app.locals.pendingRequests.has(requestKey)) {
+        return res.status(429).json({ message: "Request already in progress, please wait" });
+      }
+      
+      // Mark request as pending
+      if (!app.locals.pendingRequests) {
+        app.locals.pendingRequests = new Set();
+      }
+      app.locals.pendingRequests.add(requestKey);
+
       // Check if this is a provider service first
       const providerServices = await storage.getAllProviderServices();
       const providerService = providerServices.find(ps => ps.id === serviceId);
@@ -2999,6 +3023,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         const item = await storage.addItemToCart(req.user!.id, itemData);
+        
+        // Clear pending request
+        if (app.locals.pendingRequests) {
+          app.locals.pendingRequests.delete(requestKey);
+        }
+        
         res.json(item);
       } else {
         // Check if it's a catalog service
@@ -3034,6 +3064,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const addedItem = await storage.addCatalogItemToCart(req.user!.id, cartItem);
         
+        // Clear pending request
+        if (app.locals.pendingRequests) {
+          app.locals.pendingRequests.delete(requestKey);
+        }
+        
         res.json({
           type: 'cart_item',
           item: addedItem,
@@ -3042,6 +3077,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error adding item to cart:", error);
+      
+      // Clear pending request on error
+      const serviceId = parseInt(req.body.providerServiceId || req.body.serviceId);
+      const requestKey = `cart_add_${req.user!.id}_${serviceId}`;
+      if (app.locals.pendingRequests) {
+        app.locals.pendingRequests.delete(requestKey);
+      }
+      
       res.status(400).json({ 
         message: "Failed to add item to cart", 
         error: error instanceof Error ? error.message : "Unknown error" 
