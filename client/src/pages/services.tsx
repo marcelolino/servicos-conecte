@@ -118,6 +118,8 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("price");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>("");
 
   // Read URL parameters to set initial category
   useEffect(() => {
@@ -135,7 +137,15 @@ export default function ServicesPage() {
 
   // Fetch all provider services
   const { data: providerServices, isLoading: providerServicesLoading } = useQuery({
-    queryKey: ["/api/services/all"],
+    queryKey: ["/api/services/all", selectedCity, selectedState],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedCity) params.append('city', selectedCity);
+      if (selectedState) params.append('state', selectedState);
+      const queryString = params.toString();
+      return fetch(`/api/services/all${queryString ? '?' + queryString : ''}`)
+        .then(res => res.json());
+    },
   });
 
   // Fetch catalog services (services without provider)
@@ -370,7 +380,8 @@ export default function ServicesPage() {
 
       {/* Filters */}
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Search bar */}
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,17 +393,95 @@ export default function ServicesPage() {
               />
             </div>
           </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full md:w-48">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="price">Menor preço</SelectItem>
-              <SelectItem value="rating">Melhor avaliação</SelectItem>
-              <SelectItem value="name">Nome A-Z</SelectItem>
-            </SelectContent>
-          </Select>
+          
+          {/* Location and Sort filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+              <Select value={selectedState} onValueChange={setSelectedState}>
+                <SelectTrigger className="w-full md:w-48">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os estados</SelectItem>
+                  <SelectItem value="AC">Acre</SelectItem>
+                  <SelectItem value="AL">Alagoas</SelectItem>
+                  <SelectItem value="AP">Amapá</SelectItem>
+                  <SelectItem value="AM">Amazonas</SelectItem>
+                  <SelectItem value="BA">Bahia</SelectItem>
+                  <SelectItem value="CE">Ceará</SelectItem>
+                  <SelectItem value="DF">Distrito Federal</SelectItem>
+                  <SelectItem value="ES">Espírito Santo</SelectItem>
+                  <SelectItem value="GO">Goiás</SelectItem>
+                  <SelectItem value="MA">Maranhão</SelectItem>
+                  <SelectItem value="MT">Mato Grosso</SelectItem>
+                  <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                  <SelectItem value="MG">Minas Gerais</SelectItem>
+                  <SelectItem value="PA">Pará</SelectItem>
+                  <SelectItem value="PB">Paraíba</SelectItem>
+                  <SelectItem value="PR">Paraná</SelectItem>
+                  <SelectItem value="PE">Pernambuco</SelectItem>
+                  <SelectItem value="PI">Piauí</SelectItem>
+                  <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                  <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                  <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+                  <SelectItem value="RO">Rondônia</SelectItem>
+                  <SelectItem value="RR">Roraima</SelectItem>
+                  <SelectItem value="SC">Santa Catarina</SelectItem>
+                  <SelectItem value="SP">São Paulo</SelectItem>
+                  <SelectItem value="SE">Sergipe</SelectItem>
+                  <SelectItem value="TO">Tocantins</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Input
+                placeholder="Cidade..."
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full md:w-48"
+              />
+            </div>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-48">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price">Menor preço</SelectItem>
+                <SelectItem value="rating">Melhor avaliação</SelectItem>
+                <SelectItem value="name">Nome A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Active filters display */}
+          {(selectedCity || selectedState) && (
+            <div className="flex flex-wrap gap-2">
+              {selectedState && (
+                <Badge variant="secondary" className="gap-2">
+                  Estado: {selectedState}
+                  <button
+                    onClick={() => setSelectedState("")}
+                    className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+              {selectedCity && (
+                <Badge variant="secondary" className="gap-2">
+                  Cidade: {selectedCity}
+                  <button
+                    onClick={() => setSelectedCity("")}
+                    className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Services Grid */}
