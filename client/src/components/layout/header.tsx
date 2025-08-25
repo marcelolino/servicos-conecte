@@ -84,7 +84,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-background border-b sticky top-0 z-50">
+    <header className="bg-background/95 backdrop-blur-sm border-b sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -134,7 +134,7 @@ export default function Header() {
               variant="ghost"
               size="icon"
               onClick={() => window.open('/mobile', '_blank')}
-              className="hover:bg-muted"
+              className="rounded-full hover:bg-muted"
               title="App Mobile"
             >
               <Smartphone className="h-5 w-5" />
@@ -144,7 +144,7 @@ export default function Header() {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="hover:bg-muted"
+              className="rounded-full hover:bg-muted"
             >
               {theme === "light" ? (
                 <Moon className="h-5 w-5" />
@@ -159,7 +159,7 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative hover:bg-muted"
+                    className="relative rounded-full hover:bg-muted"
                     asChild
                   >
                     <Link href="/cart">
@@ -179,7 +179,7 @@ export default function Header() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative hover:bg-muted"
+                    className="relative rounded-full hover:bg-muted"
                   >
                     <Bell className="h-5 w-5" />
                   </Button>
@@ -187,7 +187,7 @@ export default function Header() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2">
+                    <Button variant="ghost" className="flex items-center space-x-2 rounded-full">
                       <User className="h-5 w-5" />
                       <span>{user?.name}</span>
                     </Button>
@@ -213,10 +213,10 @@ export default function Header() {
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="rounded-full">
                   <Link href="/login">Entrar</Link>
                 </Button>
-                <Button asChild>
+                <Button asChild className="btn-gradient rounded-full">
                   <Link href="/register">Cadastrar</Link>
                 </Button>
               </>
@@ -300,10 +300,10 @@ export default function Header() {
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" asChild>
+                    <Button variant="ghost" size="sm" asChild className="rounded-full">
                       <Link href="/login">Entrar</Link>
                     </Button>
-                    <Button size="sm" asChild>
+                    <Button size="sm" asChild className="btn-gradient rounded-full">
                       <Link href="/register">Cadastrar</Link>
                     </Button>
                   </div>

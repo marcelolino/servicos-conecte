@@ -267,28 +267,28 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800">
       <div className="desktop-container py-8">
         {/* Location Request Card */}
         <LocationCard onLocationChange={setUserLocation} />
         
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Bem-vindo ao <span className="text-blue-600">{pageSettings?.siteName || "Qserviços"}</span>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+            Bem-vindo ao <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{pageSettings?.siteName || "Qserviços"}</span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto opacity-90">
             {pageSettings?.siteDescription || "Conecte-se com os melhores profissionais da sua região"}
           </p>
           
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto relative">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <div className="max-w-2xl mx-auto relative glass-card p-2 rounded-2xl">
+            <Search className="absolute left-5 top-5 h-5 w-5 text-gray-400" />
             <Input
               placeholder="Buscar serviços (ex: Encanador, Limpeza, Pintor...)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 text-lg border-2 border-blue-200 focus:border-blue-400 rounded-xl"
+              className="pl-12 h-12 text-lg border-0 bg-white/90 dark:bg-gray-900/90 focus:ring-2 focus:ring-purple-500 rounded-xl shadow-lg"
             />
           </div>
         </div>
@@ -296,7 +296,7 @@ export default function Home() {
         {/* Featured Services */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Serviços Disponíveis
             </h2>
             
@@ -457,7 +457,7 @@ export default function Home() {
                 
                 return (
                   <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services/${service.id}`}>
-                    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 h-full">
+                    <Card className="feature-card group cursor-pointer h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img
                           src={firstImage}
@@ -975,15 +975,15 @@ export default function Home() {
         {/* Popular Providers */}
         {!providersLoading && popularProviders && (popularProviders as any[]).length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
               Profissionais Populares
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(popularProviders as any[]).slice(0, 6).map((provider: any) => (
-                <Card key={provider.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                <Card key={provider.id} className="feature-card group cursor-pointer">
                   <CardHeader>
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center">
+                      <div className="category-icon-gradient w-12 h-12">
                         <span className="text-white font-bold text-lg">
                           {provider.user.name.charAt(0)}
                         </span>
@@ -1101,12 +1101,12 @@ export default function Home() {
 
         {/* Features Section */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6 text-center">
             Por que escolher o Qserviços?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="feature-card text-center">
+              <div className="category-icon-gradient w-16 h-16 mx-auto mb-4">
                 <ShieldCheck className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -1116,8 +1116,8 @@ export default function Home() {
                 Todos os profissionais passam por verificação e aprovação
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="feature-card text-center">
+              <div className="category-icon-gradient w-16 h-16 mx-auto mb-4">
                 <Zap className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -1127,8 +1127,8 @@ export default function Home() {
                 Resposta rápida e agendamento facilitado
               </p>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="feature-card text-center">
+              <div className="category-icon-gradient w-16 h-16 mx-auto mb-4">
                 <Heart className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -1143,21 +1143,21 @@ export default function Home() {
 
         {/* Call to Action */}
         {!user && (
-          <div className="text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8">
-            <h3 className="text-2xl font-bold mb-2">
+          <div className="text-center hero-gradient text-white rounded-2xl p-8 shadow-2xl">
+            <h3 className="text-3xl font-bold mb-3">
               Comece agora mesmo!
             </h3>
-            <p className="text-lg mb-6">
+            <p className="text-lg mb-6 opacity-90">
               Cadastre-se e encontre os melhores profissionais da sua região
             </p>
             <div className="space-x-4">
               <Link to="/register">
-                <Button size="lg" variant="secondary" className="text-blue-600">
+                <Button size="lg" variant="secondary" className="bg-white text-purple-600 hover:bg-gray-100 rounded-full px-8">
                   Criar Conta
                 </Button>
               </Link>
               <Link to="/login">
-                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-600">
+                <Button size="lg" variant="outline" className="glass-card text-white border-white/30 hover:bg-white/10 rounded-full px-8">
                   Entrar
                 </Button>
               </Link>
