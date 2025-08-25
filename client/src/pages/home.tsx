@@ -48,20 +48,22 @@ export default function Home() {
   const [showMap, setShowMap] = useState(false);
   const [proximityRadius, setProximityRadius] = useState("10"); // km
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAllServices, setShowAllServices] = useState(false);
   const SERVICES_PER_PAGE = 12;
 
-  // Reset pagination when category changes
+  // Reset pagination when filters change
   useEffect(() => {
-    if (selectedCategory && selectedCategory !== "all") {
+    if (selectedCategory && selectedCategory !== "all" || selectedCity || (selectedState && selectedState !== "all")) {
       setCurrentPage(1);
       setShowAllServices(true);
     } else {
       setShowAllServices(false);
       setCurrentPage(1);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedCity, selectedState]);
 
   // Função para formatar endereços de forma segura
   const formatAddress = (address: string | any): string => {
@@ -120,9 +122,17 @@ export default function Home() {
     staleTime: 0, // Always refetch to get latest data
   });
 
-  // Query for all provider services (for category filtering)
+  // Query for all provider services (for category and location filtering)
   const { data: allServices, isLoading: servicesLoading } = useQuery<any[]>({
-    queryKey: ['/api/services/all'],
+    queryKey: ['/api/services/all', selectedCity, selectedState],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedCity) params.append('city', selectedCity);
+      if (selectedState && selectedState !== "all") params.append('state', selectedState);
+      const queryString = params.toString();
+      return fetch(`/api/services/all${queryString ? '?' + queryString : ''}`)
+        .then(res => res.json());
+    },
     enabled: true,
   });
 
@@ -290,9 +300,11 @@ export default function Home() {
               Serviços Disponíveis
             </h2>
             
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
+            {/* Filters */}
+            <div className="flex items-center gap-2 flex-wrap">
               <Filter className="h-4 w-4 text-muted-foreground" />
+              
+              {/* Category Filter */}
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filtrar por categoria" />
@@ -306,18 +318,109 @@ export default function Home() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedCategory !== "all" && (
+              
+              {/* State Filter */}
+              <Select value={selectedState} onValueChange={setSelectedState}>
+                <SelectTrigger className="w-40">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os estados</SelectItem>
+                  <SelectItem value="AC">Acre</SelectItem>
+                  <SelectItem value="AL">Alagoas</SelectItem>
+                  <SelectItem value="AP">Amapá</SelectItem>
+                  <SelectItem value="AM">Amazonas</SelectItem>
+                  <SelectItem value="BA">Bahia</SelectItem>
+                  <SelectItem value="CE">Ceará</SelectItem>
+                  <SelectItem value="DF">Distrito Federal</SelectItem>
+                  <SelectItem value="ES">Espírito Santo</SelectItem>
+                  <SelectItem value="GO">Goiás</SelectItem>
+                  <SelectItem value="MA">Maranhão</SelectItem>
+                  <SelectItem value="MT">Mato Grosso</SelectItem>
+                  <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                  <SelectItem value="MG">Minas Gerais</SelectItem>
+                  <SelectItem value="PA">Pará</SelectItem>
+                  <SelectItem value="PB">Paraíba</SelectItem>
+                  <SelectItem value="PR">Paraná</SelectItem>
+                  <SelectItem value="PE">Pernambuco</SelectItem>
+                  <SelectItem value="PI">Piauí</SelectItem>
+                  <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                  <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                  <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+                  <SelectItem value="RO">Rondônia</SelectItem>
+                  <SelectItem value="RR">Roraima</SelectItem>
+                  <SelectItem value="SC">Santa Catarina</SelectItem>
+                  <SelectItem value="SP">São Paulo</SelectItem>
+                  <SelectItem value="SE">Sergipe</SelectItem>
+                  <SelectItem value="TO">Tocantins</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* City Filter */}
+              <Input
+                placeholder="Cidade..."
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-40"
+              />
+              
+              {/* Clear Filters */}
+              {(selectedCategory !== "all" || selectedCity || (selectedState && selectedState !== "all")) && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedCategory("all")}
+                  onClick={() => {
+                    setSelectedCategory("all");
+                    setSelectedCity("");
+                    setSelectedState("all");
+                  }}
                   className="flex items-center gap-1"
                 >
                   <X className="h-3 w-3" />
-                  Limpar
+                  Limpar Filtros
                 </Button>
               )}
             </div>
+            
+            {/* Active filters display */}
+            {(selectedCity || (selectedState && selectedState !== "all") || selectedCategory !== "all") && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {selectedCategory !== "all" && (
+                  <Badge variant="secondary" className="gap-2">
+                    Categoria: {categories?.find(c => c.id.toString() === selectedCategory)?.name || selectedCategory}
+                    <button
+                      onClick={() => setSelectedCategory("all")}
+                      className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {selectedState && selectedState !== "all" && (
+                  <Badge variant="secondary" className="gap-2">
+                    Estado: {selectedState}
+                    <button
+                      onClick={() => setSelectedState("all")}
+                      className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {selectedCity && (
+                  <Badge variant="secondary" className="gap-2">
+                    Cidade: {selectedCity}
+                    <button
+                      onClick={() => setSelectedCity("")}
+                      className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
           
           {isLoadingServices ? (
