@@ -141,7 +141,7 @@ export default function ServicesPage() {
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCity) params.append('city', selectedCity);
-      if (selectedState) params.append('state', selectedState);
+      if (selectedState && selectedState !== "all") params.append('state', selectedState);
       const queryString = params.toString();
       return fetch(`/api/services/all${queryString ? '?' + queryString : ''}`)
         .then(res => res.json());
@@ -403,7 +403,7 @@ export default function ServicesPage() {
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os estados</SelectItem>
+                  <SelectItem value="all">Todos os estados</SelectItem>
                   <SelectItem value="AC">Acre</SelectItem>
                   <SelectItem value="AL">Alagoas</SelectItem>
                   <SelectItem value="AP">Amapá</SelectItem>
@@ -456,13 +456,13 @@ export default function ServicesPage() {
           </div>
           
           {/* Active filters display */}
-          {(selectedCity || selectedState) && (
+          {(selectedCity || (selectedState && selectedState !== "all")) && (
             <div className="flex flex-wrap gap-2">
-              {selectedState && (
+              {selectedState && selectedState !== "all" && (
                 <Badge variant="secondary" className="gap-2">
                   Estado: {selectedState}
                   <button
-                    onClick={() => setSelectedState("")}
+                    onClick={() => setSelectedState("all")}
                     className="ml-1 hover:bg-secondary-foreground/20 rounded-full p-0.5"
                   >
                     ×
