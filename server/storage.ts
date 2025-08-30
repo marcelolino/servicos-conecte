@@ -1291,8 +1291,23 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Getting provider bookings for provider ${providerId}`);
       
-      // Get service requests as before
-      const serviceRequestsData = await this.getServiceRequestsByProvider(providerId);
+      // Get provider's primary category
+      const provider = await db
+        .select({ categoryId: providers.categoryId })
+        .from(providers)
+        .where(eq(providers.id, providerId))
+        .limit(1);
+      
+      if (!provider.length || !provider[0].categoryId) {
+        console.log(`Provider ${providerId} has no category defined, returning empty list`);
+        return [];
+      }
+      
+      const providerCategoryId = provider[0].categoryId;
+      console.log(`Provider ${providerId} category is ${providerCategoryId}`);
+      
+      // Get service requests for provider's category only
+      const serviceRequestsData = await this.getServiceRequestsByCategoryForProvider(providerId, providerCategoryId);
       console.log(`Found ${serviceRequestsData.length} service requests`);
       
       // Get orders that are available for this provider or assigned to them
@@ -1397,6 +1412,55 @@ export class DatabaseStorage implements IStorage {
       console.error('Error in getProviderBookings:', error);
       return [];
     }
+  }
+
+  async getServiceRequestsByCategoryForProvider(providerId: number, categoryId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
+    // Get all requests in provider's category (pending ones + assigned to this provider)
+    return await db
+      .select({
+        id: serviceRequests.id,
+        clientId: serviceRequests.clientId,
+        categoryId: serviceRequests.categoryId,
+        providerId: serviceRequests.providerId,
+        title: serviceRequests.title,
+        description: serviceRequests.description,
+        address: serviceRequests.address,
+        cep: serviceRequests.cep,
+        city: serviceRequests.city,
+        state: serviceRequests.state,
+        latitude: serviceRequests.latitude,
+        longitude: serviceRequests.longitude,
+        estimatedPrice: serviceRequests.estimatedPrice,
+        finalPrice: serviceRequests.finalPrice,
+        totalAmount: serviceRequests.totalAmount,
+        paymentMethod: serviceRequests.paymentMethod,
+        paymentStatus: serviceRequests.paymentStatus,
+        status: serviceRequests.status,
+        scheduledAt: serviceRequests.scheduledAt,
+        completedAt: serviceRequests.completedAt,
+        createdAt: serviceRequests.createdAt,
+        updatedAt: serviceRequests.updatedAt,
+        client: users,
+        category: serviceCategories,
+      })
+      .from(serviceRequests)
+      .innerJoin(users, eq(serviceRequests.clientId, users.id))
+      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+      .where(
+        and(
+          eq(serviceRequests.categoryId, categoryId),
+          or(
+            // Show pending requests in provider's category
+            and(
+              eq(serviceRequests.status, "pending"),
+              isNull(serviceRequests.providerId)
+            ),
+            // Show all requests assigned to this provider
+            eq(serviceRequests.providerId, providerId)
+          )
+        )
+      )
+      .orderBy(desc(serviceRequests.createdAt));
   }
 
   async getServiceRequestsByCategories(categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {

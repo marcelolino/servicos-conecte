@@ -56,6 +56,7 @@ export const serviceCategories = pgTable("service_categories", {
 export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
+  categoryId: integer("category_id").references(() => serviceCategories.id), // Primary service category
   status: providerStatusEnum("status").default("pending"),
   // Location fields for filtering by city
   city: varchar("city", { length: 100 }),
