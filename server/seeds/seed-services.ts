@@ -405,8 +405,8 @@ export async function seedServicesCatalog(reset = false) {
   }
 }
 
-// Executar apenas se chamado diretamente
-if (require.main === module) {
+// Executar apenas se chamado diretamente (ES modules)
+if (import.meta.url === `file://${process.argv[1]}`) {
   seedServicesCatalog(process.argv.includes('--reset'))
     .then((stats) => {
       console.log('\n🎉 Seed concluído:', stats);

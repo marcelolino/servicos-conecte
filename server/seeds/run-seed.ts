@@ -99,8 +99,8 @@ async function runServicesSeed() {
   }
 }
 
-// Executar apenas se chamado diretamente
-if (require.main === module) {
+// Executar apenas se chamado diretamente (ES modules)
+if (import.meta.url === `file://${process.argv[1]}`) {
   runServicesSeed()
     .then(() => {
       console.log('🎉 Seed concluído!');
