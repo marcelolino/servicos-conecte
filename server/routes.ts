@@ -182,10 +182,17 @@ const requireProvider = (req: Request, res: Response, next: NextFunction) => {
 // Simple session-based authentication for cart operations (temporary fix)
 const authenticateSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // For now, we'll use a fixed user ID based on the logged user showing in the header
-    // This is a temporary fix until proper authentication is integrated
-    const userId = 11; // This should match the user ID from the logs showing "Elirânia"
-    req.user = { id: userId, email: "elirania@test.com", userType: "client" };
+    // Use the session-based authentication like other routes
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = await storage.getUserById(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    req.user = { id: user.id, email: user.email, userType: user.userType };
     next();
   } catch (error) {
     res.status(401).json({ message: "Authentication required" });
