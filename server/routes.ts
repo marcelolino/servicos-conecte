@@ -179,25 +179,6 @@ const requireProvider = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// Simple session-based authentication for cart operations (temporary fix)
-const authenticateSession = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Use the session-based authentication like other routes
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-    
-    const user = await storage.getUserById(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-    
-    req.user = { id: user.id, email: user.email, userType: user.userType };
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Authentication required" });
-  }
-};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   /**
@@ -2978,7 +2959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order management routes
   
   // Get client's cart
-  app.get("/api/cart", authenticateSession, async (req, res) => {
+  app.get("/api/cart", authenticateToken, async (req, res) => {
     try {
       const cart = await storage.getCartByClient(req.user!.id);
       res.json(cart || { items: [] });
@@ -2988,7 +2969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add item to cart
-  app.post("/api/cart/items", authenticateSession, async (req, res) => {
+  app.post("/api/cart/items", authenticateToken, async (req, res) => {
     try {
       // Support both providerServiceId and serviceId for compatibility
       const serviceId = parseInt(req.body.providerServiceId || req.body.serviceId);
@@ -3101,7 +3082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update cart item
-  app.put("/api/cart/items/:id", authenticateSession, async (req, res) => {
+  app.put("/api/cart/items/:id", authenticateToken, async (req, res) => {
     try {
       const itemId = parseInt(req.params.id);
       const { quantity, unitPrice } = req.body;
@@ -3119,7 +3100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remove item from cart
-  app.delete("/api/cart/items/:id", authenticateSession, async (req, res) => {
+  app.delete("/api/cart/items/:id", authenticateToken, async (req, res) => {
     try {
       const itemId = parseInt(req.params.id);
       await storage.removeCartItem(itemId);
@@ -3130,7 +3111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear cart
-  app.delete("/api/cart", authenticateSession, async (req, res) => {
+  app.delete("/api/cart", authenticateToken, async (req, res) => {
     try {
       await storage.clearCart(req.user!.id);
       res.json({ message: "Cart cleared" });
