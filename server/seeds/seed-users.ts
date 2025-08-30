@@ -22,21 +22,21 @@ const MAIN_ACCOUNTS: InsertUser[] = [
     email: 'admin@qservicos.com',
     name: 'Administrador do Sistema',
     password: '', // Será preenchido
-    role: 'admin',
+    userType: 'admin',
     isActive: true,
   },
   {
     email: 'cliente@teste.com',
     name: 'Cliente de Teste',
     password: '', // Será preenchido
-    role: 'client',
+    userType: 'client',
     isActive: true,
   },
   {
     email: 'prestador@teste.com',
     name: 'Prestador de Teste',
     password: '', // Será preenchido
-    role: 'provider',
+    userType: 'provider',
     isActive: true,
   },
 ];
@@ -47,7 +47,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'joao.silva@email.com',
       name: 'João Silva',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -65,7 +65,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'maria.santos@email.com',
       name: 'Maria Santos',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -83,7 +83,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'carlos.oliveira@email.com',
       name: 'Carlos Oliveira',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -101,7 +101,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'ana.pereira@email.com',
       name: 'Ana Pereira',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -119,7 +119,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'pedro.costa@email.com',
       name: 'Pedro Costa',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -137,7 +137,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'lucia.fernandes@email.com',
       name: 'Lúcia Fernandes',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -155,7 +155,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'roberto.machado@email.com',
       name: 'Roberto Machado',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -173,7 +173,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'fernanda.alves@email.com',
       name: 'Fernanda Alves',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -191,7 +191,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'ricardo.souza@email.com',
       name: 'Ricardo Souza',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -209,7 +209,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'claudia.lima@email.com',
       name: 'Claudia Lima',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -227,7 +227,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'marcos.rodrigues@email.com',
       name: 'Marcos Rodrigues',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -245,7 +245,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'patricia.rocha@email.com',
       name: 'Patricia Rocha',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
@@ -263,7 +263,7 @@ const PROVIDER_ACCOUNTS: Array<{user: Omit<InsertUser, 'password'>, provider: Om
     user: {
       email: 'antonio.silva@email.com',
       name: 'Antonio Silva',
-      role: 'provider',
+      userType: 'provider',
       isActive: true,
     },
     provider: {
