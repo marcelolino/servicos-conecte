@@ -5,6 +5,7 @@ import { ShoppingCart, Plus, Minus, Check } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AddToCartButtonProps {
   serviceId: number;
@@ -48,26 +49,12 @@ export function AddToCartButton({
       const priceInfo = chargingTypes.find(ct => ct.price > 0);
       const price = priceInfo?.price || (directPrice ? parseFloat(directPrice.toString()) : 0);
 
-      const response = await fetch('/api/cart/items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include session cookies
-        body: JSON.stringify({
-          providerServiceId: serviceId,
-          quantity,
-          unitPrice: price,
-          notes: `Tipo de cobrança: ${priceInfo?.chargingType || 'quote'}`
-        }),
+      return await apiRequest('POST', '/api/cart/items', {
+        providerServiceId: serviceId,
+        quantity,
+        unitPrice: price,
+        notes: `Tipo de cobrança: ${priceInfo?.chargingType || 'quote'}`
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao adicionar ao carrinho');
-      }
-
-      return response.json();
     },
     onSuccess: (data) => {
       setIsAdded(true);
