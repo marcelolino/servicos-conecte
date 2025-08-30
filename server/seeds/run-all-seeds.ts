@@ -1,0 +1,70 @@
+/**
+ * QSERVIÇOS - SEED COMPLETO
+ * Data: 30/08/2025
+ * 
+ * Script para executar todos os seeds em sequência
+ * Uso: npx tsx server/seeds/run-all-seeds.ts
+ */
+
+import { seedServicesCatalog } from './seed-services';
+import { seedUsers } from './seed-users';
+
+export async function runAllSeeds(reset = false) {
+  console.log('🚀 Iniciando seed completo do Qserviços...');
+  console.log('==========================================\n');
+
+  try {
+    // 1. Seed do catálogo de serviços
+    console.log('1️⃣ CATÁLOGO DE SERVIÇOS');
+    const servicesStats = await seedServicesCatalog(reset);
+    console.log('✅ Catálogo concluído\n');
+
+    // 2. Seed das contas de teste
+    console.log('2️⃣ CONTAS DE TESTE');
+    const usersStats = await seedUsers(reset);
+    console.log('✅ Contas concluídas\n');
+
+    // 3. Relatório final
+    console.log('==========================================');
+    console.log('🎉 SEED COMPLETO CONCLUÍDO COM SUCESSO!');
+    console.log('==========================================');
+    console.log('📊 RESUMO FINAL:');
+    console.log(`   • ${servicesStats.categoriesProcessed} categorias de serviços`);
+    console.log(`   • ${servicesStats.servicesProcessed} serviços no catálogo`);
+    console.log(`   • ${usersStats.mainAccountsProcessed} contas principais`);
+    console.log(`   • ${usersStats.providersProcessed} prestadores especializados`);
+    console.log(`   • ${usersStats.totalUsersInDb} usuários total`);
+    console.log(`   • ${usersStats.totalProvidersInDb} prestadores total`);
+    console.log('');
+    console.log('🔐 CREDENCIAIS DE ACESSO:');
+    console.log('   • Admin: admin@qservicos.com | senha: password');
+    console.log('   • Cliente: cliente@teste.com | senha: password');
+    console.log('   • Prestador: prestador@teste.com | senha: password');
+    console.log('   • Todos os prestadores usam a senha: password');
+    console.log('');
+    console.log('✨ Sistema pronto para uso!');
+
+    return {
+      success: true,
+      services: servicesStats,
+      users: usersStats,
+    };
+
+  } catch (error) {
+    console.error('❌ Erro durante o seed completo:', error);
+    throw error;
+  }
+}
+
+// Executar apenas se chamado diretamente (ES modules)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runAllSeeds(process.argv.includes('--reset'))
+    .then((stats) => {
+      console.log('🎯 Seed completo finalizado com sucesso!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('💥 Erro fatal no seed completo:', error);
+      process.exit(1);
+    });
+}
