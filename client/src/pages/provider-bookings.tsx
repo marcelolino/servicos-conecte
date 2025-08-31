@@ -116,6 +116,26 @@ export default function ProviderBookingsPage() {
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
       return apiRequest("PUT", `/api/service-requests/${id}`, { status, notes });
     },
+    onMutate: async ({ id, status }) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["/api/service-requests/provider"] });
+      
+      // Snapshot the previous value
+      const previousBookings = queryClient.getQueryData(["/api/service-requests/provider"]);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(["/api/service-requests/provider"], (old: BookingData[] | undefined) => {
+        if (!old) return old;
+        return old.map(booking => 
+          booking.id === id 
+            ? { ...booking, status: status }
+            : booking
+        );
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousBookings };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
       toast({
@@ -123,7 +143,12 @@ export default function ProviderBookingsPage() {
         description: "O status da reserva foi atualizado com sucesso.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousBookings) {
+        queryClient.setQueryData(["/api/service-requests/provider"], context.previousBookings);
+      }
+      
       const errorMessage = error?.message || "Ocorreu um erro ao atualizar a reserva.";
       
       // Check if error is about provider approval
@@ -140,6 +165,10 @@ export default function ProviderBookingsPage() {
           variant: "destructive",
         });
       }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
     },
   });
 
@@ -657,22 +686,30 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="text-green-600 hover:text-green-700"
+                            className={`text-green-600 hover:text-green-700 ${isUpdating ? 'bg-green-50 border-green-200' : ''}`}
                             title="Aceitar"
                             onClick={() => onAcceptBooking(booking.id)}
                             disabled={isUpdating}
                           >
-                            <Check className="w-4 h-4" />
+                            {isUpdating ? (
+                              <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="text-red-600 hover:text-red-700"
+                            className={`text-red-600 hover:text-red-700 ${isUpdating ? 'bg-red-50 border-red-200' : ''}`}
                             title="Ignorar/Rejeitar"
                             onClick={() => onRejectBooking(booking.id)}
                             disabled={isUpdating}
                           >
-                            <X className="w-4 h-4" />
+                            {isUpdating ? (
+                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
                           </Button>
                         </>
                       )}
