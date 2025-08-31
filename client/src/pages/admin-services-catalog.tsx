@@ -49,6 +49,10 @@ const serviceSchema = z.object({
   tags: z.string().optional(),
   requirements: z.string().optional(),
   imageUrl: z.string().optional(),
+  // Location fields
+  city: z.string().optional(),
+  state: z.string().optional(),
+  availableLocations: z.string().optional(),
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -105,6 +109,9 @@ export default function AdminServicesCatalog() {
       tags: '',
       requirements: '',
       imageUrl: 'none',
+      city: '',
+      state: '',
+      availableLocations: '',
     },
   });
 
@@ -213,6 +220,9 @@ export default function AdminServicesCatalog() {
       tags: service.tags || '',
       requirements: service.requirements || '',
       imageUrl: service.imageUrl || 'none',
+      city: (service as any).city || '',
+      state: (service as any).state || '',
+      availableLocations: (service as any).availableLocations || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -576,6 +586,67 @@ export default function AdminServicesCatalog() {
                     />
                   )}
 
+                  {/* Location fields */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="font-medium text-sm text-muted-foreground">Localização e Disponibilidade</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cidade Específica</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: São Paulo (deixe vazio para todas)" {...field} />
+                            </FormControl>
+                            <p className="text-sm text-muted-foreground">
+                              Deixe vazio se o serviço estiver disponível em todas as cidades.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estado Específico</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: SP (deixe vazio para todos)" {...field} />
+                            </FormControl>
+                            <p className="text-sm text-muted-foreground">
+                              Deixe vazio se o serviço estiver disponível em todos os estados.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="availableLocations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Regiões/Bairros Específicos</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-muted-foreground">
+                            Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -871,6 +942,67 @@ export default function AdminServicesCatalog() {
                       )}
                     />
                   )}
+
+                  {/* Location fields */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="font-medium text-sm text-muted-foreground">Localização e Disponibilidade</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cidade Específica</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: São Paulo (deixe vazio para todas)" {...field} />
+                            </FormControl>
+                            <p className="text-sm text-muted-foreground">
+                              Deixe vazio se o serviço estiver disponível em todas as cidades.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estado Específico</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: SP (deixe vazio para todos)" {...field} />
+                            </FormControl>
+                            <p className="text-sm text-muted-foreground">
+                              Deixe vazio se o serviço estiver disponível em todos os estados.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="availableLocations"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Regiões/Bairros Específicos</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-muted-foreground">
+                            Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button 
                     type="submit" 

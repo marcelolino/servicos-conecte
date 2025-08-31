@@ -111,6 +111,10 @@ export const services = pgTable("services", {
   tags: text("tags"), // JSON array of tags for better search
   requirements: text("requirements"), // What the service requires
   imageUrl: text("image_url"), // Representative service image
+  // Location fields for service availability by region
+  city: varchar("city", { length: 100 }), // Available in specific city (null = all cities)
+  state: varchar("state", { length: 50 }), // Available in specific state (null = all states)
+  availableLocations: text("available_locations"), // JSON array of specific locations/regions where service is available
   isActive: boolean("is_active").default(true),
   visibleOnHome: boolean("visible_on_home").default(false), // If the service should be visible on home page
   isOnSale: boolean("is_on_sale").default(false), // If the service is on sale/offer

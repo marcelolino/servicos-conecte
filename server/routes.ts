@@ -2971,61 +2971,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add item to cart
   app.post("/api/cart/items", authenticateToken, async (req, res) => {
     try {
-      // Support both providerServiceId and serviceId for compatibility
-      const serviceId = parseInt(req.body.providerServiceId || req.body.serviceId);
-      
       console.log('Add to cart request:', {
         body: req.body,
-        serviceId,
         userId: req.user?.id
       });
 
-      if (!serviceId || isNaN(serviceId)) {
-        return res.status(400).json({ message: "Service ID is required" });
-      }
-
-      // Prevent duplicate rapid requests
-      const requestKey = `cart_add_${req.user!.id}_${serviceId}`;
-      if (app.locals.pendingRequests && app.locals.pendingRequests.has(requestKey)) {
-        return res.status(429).json({ message: "Request already in progress, please wait" });
-      }
-      
-      // Mark request as pending
-      if (!app.locals.pendingRequests) {
-        app.locals.pendingRequests = new Set();
-      }
-      app.locals.pendingRequests.add(requestKey);
-
-      // Check if this is a provider service first
-      const providerServices = await storage.getAllProviderServices();
-      const providerService = providerServices.find(ps => ps.id === serviceId);
-      
-      if (providerService) {
-        // It's a provider service - add to cart normally
-        const itemData = {
-          orderId: 1, // Temporary orderId, will be set properly in storage
-          providerServiceId: serviceId,
-          quantity: parseInt(req.body.quantity) || 1,
-          unitPrice: req.body.unitPrice || "0.00",
-          totalPrice: req.body.unitPrice || "0.00", // Will be calculated in storage
-          notes: req.body.notes || null,
-        };
-
-        const item = await storage.addItemToCart(req.user!.id, itemData);
+      // Check if it's explicitly a catalog service
+      if (req.body.catalogServiceId) {
+        const catalogServiceId = parseInt(req.body.catalogServiceId);
         
-        // Clear pending request
-        if (app.locals.pendingRequests) {
-          app.locals.pendingRequests.delete(requestKey);
+        if (!catalogServiceId || isNaN(catalogServiceId)) {
+          return res.status(400).json({ message: "Catalog Service ID is required" });
+        }
+
+        // Prevent duplicate rapid requests
+        const requestKey = `cart_add_catalog_${req.user!.id}_${catalogServiceId}`;
+        if (app.locals.pendingRequests && app.locals.pendingRequests.has(requestKey)) {
+          return res.status(429).json({ message: "Request already in progress, please wait" });
         }
         
-        res.json(item);
-      } else {
-        // Check if it's a catalog service
-        const catalogService = await storage.getService(serviceId);
+        // Mark request as pending
+        if (!app.locals.pendingRequests) {
+          app.locals.pendingRequests = new Set();
+        }
+        app.locals.pendingRequests.add(requestKey);
+
+        // Handle catalog service
+        const catalogService = await storage.getService(catalogServiceId);
         
         if (!catalogService) {
-          console.log('Service not found:', serviceId);
-          return res.status(404).json({ message: "Service not found in provider services or catalog" });
+          console.log('Catalog service not found:', catalogServiceId);
+          if (app.locals.pendingRequests) {
+            app.locals.pendingRequests.delete(requestKey);
+          }
+          return res.status(404).json({ message: "Catalog service not found" });
         }
         
         console.log('Found catalog service:', catalogService.name);
@@ -3037,6 +3016,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (parseFloat(unitPrice) < 0) {
+          if (app.locals.pendingRequests) {
+            app.locals.pendingRequests.delete(requestKey);
+          }
           return res.status(400).json({ message: "Invalid unit price" });
         }
 
@@ -3058,11 +3040,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
           app.locals.pendingRequests.delete(requestKey);
         }
         
-        res.json({
+        return res.json({
           type: 'cart_item',
           item: addedItem,
           message: `${catalogService.name} foi adicionado ao carrinho`
         });
+      }
+
+      // Handle provider service
+      const providerServiceId = parseInt(req.body.providerServiceId || req.body.serviceId);
+      
+      if (!providerServiceId || isNaN(providerServiceId)) {
+        return res.status(400).json({ message: "Service ID is required" });
+      }
+
+      // Prevent duplicate rapid requests
+      const requestKey = `cart_add_provider_${req.user!.id}_${providerServiceId}`;
+      if (app.locals.pendingRequests && app.locals.pendingRequests.has(requestKey)) {
+        return res.status(429).json({ message: "Request already in progress, please wait" });
+      }
+      
+      // Mark request as pending
+      if (!app.locals.pendingRequests) {
+        app.locals.pendingRequests = new Set();
+      }
+      app.locals.pendingRequests.add(requestKey);
+
+      // Check if this is a provider service
+      const providerServices = await storage.getAllProviderServices();
+      const providerService = providerServices.find(ps => ps.id === providerServiceId);
+      
+      if (providerService) {
+        // It's a provider service - add to cart normally
+        const itemData = {
+          orderId: 1, // Temporary orderId, will be set properly in storage
+          providerServiceId: providerServiceId,
+          quantity: parseInt(req.body.quantity) || 1,
+          unitPrice: req.body.unitPrice || "0.00",
+          totalPrice: req.body.unitPrice || "0.00", // Will be calculated in storage
+          notes: req.body.notes || null,
+        };
+
+        const item = await storage.addItemToCart(req.user!.id, itemData);
+        
+        // Clear pending request
+        if (app.locals.pendingRequests) {
+          app.locals.pendingRequests.delete(requestKey);
+        }
+        
+        res.json(item);
+      } else {
+        // Provider service not found
+        if (app.locals.pendingRequests) {
+          app.locals.pendingRequests.delete(requestKey);
+        }
+        return res.status(404).json({ message: "Provider service not found" });
       }
     } catch (error) {
       console.error("Error adding item to cart:", error);

@@ -49,12 +49,22 @@ export function AddToCartButton({
       const priceInfo = chargingTypes.find(ct => ct.price > 0);
       const price = priceInfo?.price || (directPrice ? parseFloat(directPrice.toString()) : 0);
 
-      return await apiRequest('POST', '/api/cart/items', {
-        providerServiceId: serviceId,
+      // Send correct field based on service type
+      const requestData = {
         quantity,
         unitPrice: price,
         notes: `Tipo de cobrança: ${priceInfo?.chargingType || 'quote'}`
-      });
+      };
+
+      if (isProviderService) {
+        // It's a provider service
+        (requestData as any).providerServiceId = serviceId;
+      } else {
+        // It's a catalog service
+        (requestData as any).catalogServiceId = serviceId;
+      }
+
+      return await apiRequest('POST', '/api/cart/items', requestData);
     },
     onSuccess: (data) => {
       setIsAdded(true);
