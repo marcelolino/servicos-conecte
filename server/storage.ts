@@ -1386,7 +1386,7 @@ export class DatabaseStorage implements IStorage {
         status: order.status === "confirmed" ? "accepted" : order.status, // Map confirmed orders to accepted for provider view
         totalAmount: order.totalAmount,
         paymentMethod: order.paymentMethod,
-        paymentStatus: "pending", // Orders start as pending payment
+        paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending", // Cash payments are pending until service completion
         address: order.address || "Endereço não informado",
         cep: order.cep || "",
         city: order.city || "",

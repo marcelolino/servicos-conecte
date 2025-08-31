@@ -70,6 +70,7 @@ interface BookingData {
   scheduledAt: string;
   notes?: string;
   createdAt: string;
+  type: 'order' | 'service_request';
   client: {
     id: number;
     name: string;
@@ -583,7 +584,12 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
               {bookings.map((booking) => (
                 <TableRow key={booking.id}>
                   <TableCell className="font-medium">
-                    {booking.id.toString().padStart(5, '0')}
+                    <div className="flex flex-col">
+                      <span>{booking.id.toString().padStart(5, '0')}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {booking.type === 'order' ? 'Pedido' : 'Solicitação'}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-start gap-2">
@@ -619,12 +625,15 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       className={
                         booking.paymentStatus === 'completed'
                           ? 'bg-green-50 text-green-700 border-green-200'
+                          : booking.paymentMethod === 'cash'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : booking.paymentStatus === 'pending'
                           ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
                       {booking.paymentStatus === 'completed' ? 'Pago' : 
+                       booking.paymentMethod === 'cash' ? 'Pagamento no Local' :
                        booking.paymentStatus === 'pending' ? 'Não Pago' : 'Falhou'}
                     </Badge>
                   </TableCell>
