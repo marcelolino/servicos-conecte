@@ -1383,7 +1383,7 @@ export class DatabaseStorage implements IStorage {
         clientId: order.clientId,
         categoryId: null, // Simplified for now
         providerId: order.providerId,
-        status: order.status === "confirmed" ? "pending" : order.status, // Map confirmed orders to pending for provider view
+        status: order.status === "confirmed" ? "accepted" : order.status, // Map confirmed orders to accepted for provider view
         totalAmount: order.totalAmount,
         paymentMethod: order.paymentMethod,
         paymentStatus: "pending", // Orders start as pending payment
