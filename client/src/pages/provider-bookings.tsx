@@ -568,7 +568,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID da Reserva</TableHead>
+                <TableHead>Nº do Pedido</TableHead>
                 <TableHead>Onde o Serviço Será Prestado</TableHead>
                 <TableHead>Informações do Cliente</TableHead>
                 <TableHead>Valor Total</TableHead>
