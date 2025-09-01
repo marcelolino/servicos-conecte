@@ -2655,12 +2655,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific provider service by ID (public endpoint)
-  app.get("/api/services/provider/:id", async (req, res) => {
+  app.get("/api/provider-services/:id", async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
+      console.log(`Looking for provider service ID: ${serviceId}`);
       
+      // Use the same method as legacy endpoint for consistency
       const providerServices = await storage.getAllProviderServices();
+      console.log(`Found ${providerServices.length} provider services`);
+      console.log(`Provider service IDs: ${providerServices.map(s => s.id).join(', ')}`);
+      
       const service = providerServices.find(s => s.id === serviceId);
+      console.log(`Service found:`, !!service);
       
       if (!service) {
         return res.status(404).json({ message: "Provider service not found" });
@@ -2668,7 +2674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(service);
     } catch (error) {
-      console.error("Error in /api/services/provider/:id:", error);
+      console.error("Error in /api/provider-services/:id:", error);
       res.status(500).json({ 
         message: "Failed to get provider service", 
         error: error instanceof Error ? error.message : "Unknown error" 
@@ -2677,7 +2683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific catalog service by ID (public endpoint)
-  app.get("/api/services/catalog/:id", async (req, res) => {
+  app.get("/api/catalog-services/:id", async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
       
@@ -2688,7 +2694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(catalogService);
     } catch (error) {
-      console.error("Error in /api/services/catalog/:id:", error);
+      console.error("Error in /api/catalog-services/:id:", error);
       res.status(500).json({ 
         message: "Failed to get catalog service", 
         error: error instanceof Error ? error.message : "Unknown error" 

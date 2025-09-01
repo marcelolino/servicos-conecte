@@ -72,9 +72,9 @@ export default function ServiceDetails() {
   
   // For legacy routes, we keep the old behavior (try provider first, then catalog)
   const apiEndpoint = isCatalogService 
-    ? `/api/services/catalog/${serviceId}`
+    ? `/api/catalog-services/${serviceId}`
     : isProviderService 
-      ? `/api/services/provider/${serviceId}`
+      ? `/api/provider-services/${serviceId}`
       : `/api/services/${serviceId}`;
 
   const { data: service, isLoading, error } = useQuery<ServiceDetails>({
