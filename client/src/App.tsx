@@ -180,6 +180,8 @@ function Router() {
                 <Route path="/profile" component={Profile} />
                 <Route path="/profile/:id" component={ProviderProfile} />
                 <Route path="/services" component={Services} />
+                <Route path="/services/catalog/:id" component={ServiceDetails} />
+                <Route path="/services/provider/:id" component={ServiceDetails} />
                 <Route path="/services/:id" component={ServiceDetails} />
                 <Route path="/cart" component={Cart} />
                 <Route path="/checkout" component={Checkout} />

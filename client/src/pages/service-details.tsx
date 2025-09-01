@@ -56,17 +56,31 @@ interface ServiceDetails {
 }
 
 export default function ServiceDetails() {
-  const [, params] = useRoute("/services/:id");
   const [, setLocation] = useLocation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { toast } = useToast();
 
-  const serviceId = params?.id;
+  // Try to match the different route patterns
+  const [, catalogParams] = useRoute("/services/catalog/:id");
+  const [, providerParams] = useRoute("/services/provider/:id");
+  const [, legacyParams] = useRoute("/services/:id");
+  
+  // Determine service type and ID
+  const serviceId = catalogParams?.id || providerParams?.id || legacyParams?.id;
+  const isProviderService = !!providerParams?.id;
+  const isCatalogService = !!catalogParams?.id;
+  
+  // For legacy routes, we keep the old behavior (try provider first, then catalog)
+  const apiEndpoint = isCatalogService 
+    ? `/api/services/catalog/${serviceId}`
+    : isProviderService 
+      ? `/api/services/provider/${serviceId}`
+      : `/api/services/${serviceId}`;
 
   const { data: service, isLoading, error } = useQuery<ServiceDetails>({
-    queryKey: ["/api/services", serviceId],
+    queryKey: [apiEndpoint],
     queryFn: async () => {
-      const response = await fetch(`/api/services/${serviceId}`);
+      const response = await fetch(apiEndpoint);
       if (!response.ok) {
         throw new Error("Serviço não encontrado");
       }
@@ -134,7 +148,7 @@ export default function ServiceDetails() {
     serviceImages = ['/uploads/services/limpeza_residencial.png'];
   }
 
-  const isProviderService = !!service.provider;
+  const isProviderServiceFromData = !!service.provider;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -279,7 +293,7 @@ export default function ServiceDetails() {
             </div>
 
             {/* Provider Info */}
-            {isProviderService && service.provider && (
+            {isProviderServiceFromData && service.provider && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
@@ -385,7 +399,7 @@ export default function ServiceDetails() {
                     price: parseFloat(ct.price)
                   }))}
                   directPrice={service.price || service.suggestedMinPrice}
-                  isProviderService={isProviderService}
+                  isProviderService={isProviderServiceFromData}
                   variant="default"
                   size="lg"
                   className="w-full"

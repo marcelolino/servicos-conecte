@@ -456,7 +456,7 @@ export default function Home() {
                 const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
                 
                 return (
-                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services/${service.id}`}>
+                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services/${isCatalogService ? 'catalog' : 'provider'}/${service.id}`}>
                     <Card className="feature-card group cursor-pointer h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img

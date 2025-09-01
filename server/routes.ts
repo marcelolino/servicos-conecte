@@ -2654,7 +2654,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get a specific service by ID (public endpoint)
+  // Get a specific provider service by ID (public endpoint)
+  app.get("/api/services/provider/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      const providerServices = await storage.getAllProviderServices();
+      const service = providerServices.find(s => s.id === serviceId);
+      
+      if (!service) {
+        return res.status(404).json({ message: "Provider service not found" });
+      }
+      
+      res.json(service);
+    } catch (error) {
+      console.error("Error in /api/services/provider/:id:", error);
+      res.status(500).json({ 
+        message: "Failed to get provider service", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get a specific catalog service by ID (public endpoint)
+  app.get("/api/services/catalog/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      const catalogService = await storage.getService(serviceId);
+      if (!catalogService) {
+        return res.status(404).json({ message: "Catalog service not found" });
+      }
+      
+      res.json(catalogService);
+    } catch (error) {
+      console.error("Error in /api/services/catalog/:id:", error);
+      res.status(500).json({ 
+        message: "Failed to get catalog service", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // Get a specific service by ID (public endpoint) - Deprecated, but kept for compatibility
   app.get("/api/services/:id", async (req, res) => {
     try {
       const serviceId = parseInt(req.params.id);
