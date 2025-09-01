@@ -582,7 +582,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
             </TableHeader>
             <TableBody>
               {bookings.map((booking) => (
-                <TableRow key={booking.id}>
+                <TableRow key={`${booking.type}-${booking.id}`}>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
                       <span>{booking.id.toString().padStart(5, '0')}</span>
