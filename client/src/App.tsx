@@ -82,6 +82,7 @@ import ProviderServiceSubscriptions from "@/pages/provider-service-subscriptions
 import TestMercadoPago from "@/pages/test-mercadopago";
 import TestMercadoPagoSimple from "@/pages/test-mercadopago-simple";
 import LayoutDemo from "@/pages/admin/layout-demo";
+import ComoFunciona from "@/pages/como-funciona";
 import LegalPages, { AboutUsPage, TermsAndConditionsPage, PrivacyPolicyPage } from "@/pages/legal-pages";
 import AdminReportsTransactions from "@/pages/admin-reports-transactions";
 import AdminReportsBusiness from "@/pages/admin-reports-business";
@@ -163,6 +164,7 @@ function Router() {
             <main className="flex-1">
               <Switch>
                 <Route path="/" component={Home} />
+                <Route path="/como-funciona" component={ComoFunciona} />
                 <Route path="/login" component={Login} />
                 <Route path="/register" component={Register} />
                 <Route path="/provider-register" component={ProviderRegister} />
