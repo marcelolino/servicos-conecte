@@ -1837,65 +1837,183 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBookingsForAdmin(): Promise<(ServiceRequest & { client: User; provider?: Provider & { user: User }; category: ServiceCategory })[]> {
-    const result = await db
-      .select({
-        id: serviceRequests.id,
-        clientId: serviceRequests.clientId,
-        providerId: serviceRequests.providerId,
-        categoryId: serviceRequests.categoryId,
-        title: serviceRequests.title,
-        description: serviceRequests.description,
-        address: serviceRequests.address,
-        city: serviceRequests.city,
-        state: serviceRequests.state,
-        cep: serviceRequests.cep,
-        latitude: serviceRequests.latitude,
-        longitude: serviceRequests.longitude,
-        estimatedPrice: serviceRequests.estimatedPrice,
-        finalPrice: serviceRequests.finalPrice,
-        totalAmount: serviceRequests.totalAmount,
-        paymentMethod: serviceRequests.paymentMethod,
-        paymentStatus: serviceRequests.paymentStatus,
-        status: serviceRequests.status,
-        scheduledAt: serviceRequests.scheduledAt,
-        completedAt: serviceRequests.completedAt,
-        createdAt: serviceRequests.createdAt,
-        updatedAt: serviceRequests.updatedAt,
-        client: users,
-        provider: providers,
-        category: serviceCategories,
-      })
-      .from(serviceRequests)
-      .innerJoin(users, eq(serviceRequests.clientId, users.id))
-      .leftJoin(providers, eq(serviceRequests.providerId, providers.id))
-      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
-      .orderBy(desc(serviceRequests.createdAt));
+    try {
+      console.log('Getting all bookings for admin...');
+      
+      // Get service requests with provider category and client data
+      const serviceRequestsData = await db
+        .select({
+          id: serviceRequests.id,
+          clientId: serviceRequests.clientId,
+          categoryId: serviceRequests.categoryId,
+          providerId: serviceRequests.providerId,
+          title: serviceRequests.title,
+          description: serviceRequests.description,
+          address: serviceRequests.address,
+          cep: serviceRequests.cep,
+          city: serviceRequests.city,
+          state: serviceRequests.state,
+          latitude: serviceRequests.latitude,
+          longitude: serviceRequests.longitude,
+          estimatedPrice: serviceRequests.estimatedPrice,
+          finalPrice: serviceRequests.finalPrice,
+          totalAmount: serviceRequests.totalAmount,
+          paymentMethod: serviceRequests.paymentMethod,
+          paymentStatus: serviceRequests.paymentStatus,
+          status: serviceRequests.status,
+          scheduledAt: serviceRequests.scheduledAt,
+          completedAt: serviceRequests.completedAt,
+          createdAt: serviceRequests.createdAt,
+          updatedAt: serviceRequests.updatedAt,
+          client: users,
+          category: serviceCategories,
+        })
+        .from(serviceRequests)
+        .innerJoin(users, eq(serviceRequests.clientId, users.id))
+        .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+        .orderBy(desc(serviceRequests.createdAt));
 
-    // Buscar dados do usuário do prestador separadamente
-    const enrichedResults = await Promise.all(
-      result.map(async (booking) => {
-        let providerWithUser = null;
-        if (booking.provider) {
-          const providerUser = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, booking.provider.userId))
-            .limit(1);
-          
-          providerWithUser = {
-            ...booking.provider,
-            user: providerUser[0] || null,
+      console.log(`Found ${serviceRequestsData.length} service requests`);
+
+      // Get all orders (those without provider assignment and those with provider assignment)
+      const ordersData = await db
+        .select({
+          id: orders.id,
+          clientId: orders.clientId,
+          providerId: orders.providerId,
+          status: orders.status,
+          totalAmount: orders.totalAmount,
+          paymentMethod: orders.paymentMethod,
+          address: orders.address,
+          cep: orders.cep,
+          city: orders.city,
+          state: orders.state,
+          latitude: orders.latitude,
+          longitude: orders.longitude,
+          scheduledAt: orders.scheduledAt,
+          notes: orders.notes,
+          createdAt: orders.createdAt,
+          updatedAt: orders.updatedAt,
+          client: users,
+        })
+        .from(orders)
+        .innerJoin(users, eq(orders.clientId, users.id))
+        .orderBy(desc(orders.createdAt));
+
+      console.log(`Found ${ordersData.length} orders`);
+
+      // Transform service requests to unified format
+      const transformedServiceRequests = await Promise.all(
+        serviceRequestsData.map(async (sr) => {
+          let providerWithUser = null;
+          if (sr.providerId) {
+            const providerData = await db
+              .select()
+              .from(providers)
+              .innerJoin(users, eq(providers.userId, users.id))
+              .where(eq(providers.id, sr.providerId))
+              .limit(1);
+            
+            if (providerData[0]) {
+              providerWithUser = {
+                ...providerData[0].providers,
+                user: providerData[0].users,
+              };
+            }
+          }
+
+          return {
+            id: sr.id,
+            clientId: sr.clientId,
+            categoryId: sr.categoryId,
+            providerId: sr.providerId,
+            title: sr.title,
+            description: sr.description,
+            address: sr.address || sr.client.address || "Endereço não informado",
+            cep: sr.cep || sr.client.cep || "",
+            city: sr.city || sr.client.city || "",
+            state: sr.state || sr.client.state || "",
+            latitude: sr.latitude,
+            longitude: sr.longitude,
+            estimatedPrice: sr.estimatedPrice,
+            finalPrice: sr.finalPrice,
+            totalAmount: sr.totalAmount,
+            paymentMethod: sr.paymentMethod,
+            paymentStatus: sr.paymentStatus,
+            status: sr.status,
+            scheduledAt: sr.scheduledAt,
+            completedAt: sr.completedAt,
+            createdAt: sr.createdAt,
+            updatedAt: sr.updatedAt,
+            client: sr.client,
+            provider: providerWithUser,
+            category: sr.category,
+            type: 'service_request' as const
           };
-        }
+        })
+      );
 
-        return {
-          ...booking,
-          provider: providerWithUser,
-        };
-      })
-    );
+      // Transform orders to unified format
+      const transformedOrders = await Promise.all(
+        ordersData.map(async (order) => {
+          let providerWithUser = null;
+          if (order.providerId) {
+            const providerData = await db
+              .select()
+              .from(providers)
+              .innerJoin(users, eq(providers.userId, users.id))
+              .where(eq(providers.id, order.providerId))
+              .limit(1);
+            
+            if (providerData[0]) {
+              providerWithUser = {
+                ...providerData[0].providers,
+                user: providerData[0].users,
+              };
+            }
+          }
 
-    return enrichedResults;
+          return {
+            id: order.id,
+            clientId: order.clientId,
+            categoryId: 0, // Orders don't have categories yet
+            providerId: order.providerId,
+            title: "Pedido do Catálogo",
+            description: order.notes || "Pedido através do catálogo de serviços",
+            address: order.address || order.client.address || "Endereço não informado",
+            cep: order.cep || order.client.cep || "",
+            city: order.city || order.client.city || "",
+            state: order.state || order.client.state || "",
+            latitude: order.latitude,
+            longitude: order.longitude,
+            estimatedPrice: order.totalAmount,
+            finalPrice: order.totalAmount,
+            totalAmount: order.totalAmount,
+            paymentMethod: order.paymentMethod,
+            paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending",
+            status: order.status === "confirmed" ? "accepted" : order.status,
+            scheduledAt: order.scheduledAt,
+            completedAt: null,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+            client: order.client,
+            provider: providerWithUser,
+            category: { id: 0, name: "Serviço do Catálogo" },
+            type: 'order' as const
+          };
+        })
+      );
+
+      // Combine and sort by creation date (newest first)
+      const combined = [...transformedServiceRequests, ...transformedOrders];
+      console.log(`Combined total for admin: ${combined.length} bookings`);
+      
+      return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+    } catch (error) {
+      console.error('Error in getAllBookingsForAdmin:', error);
+      return [];
+    }
   }
 
   async createProviderEarning(serviceRequest: ServiceRequest): Promise<void> {

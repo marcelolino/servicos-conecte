@@ -90,6 +90,7 @@ interface BookingData {
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
+  type: 'order' | 'service_request';
   client: {
     id: number;
     name: string;
@@ -403,16 +404,23 @@ export default function AdminBookingsPage() {
     );
   };
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = (status: string, paymentMethod: string) => {
     return (
       <Badge 
+        variant="outline"
         className={
-          status === 'completed' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
+          status === 'completed'
+            ? 'bg-green-50 text-green-700 border-green-200'
+            : paymentMethod === 'cash'
+            ? 'bg-blue-50 text-blue-700 border-blue-200'
+            : status === 'pending'
+            ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+            : 'bg-red-50 text-red-700 border-red-200'
         }
       >
-        {status === 'completed' ? 'Pago' : 'Não Pago'}
+        {status === 'completed' ? 'Pago' : 
+         paymentMethod === 'cash' ? 'Pagamento no Local' :
+         status === 'pending' ? 'Não Pago' : 'Falhou'}
       </Badge>
     );
   };
@@ -574,12 +582,17 @@ export default function AdminBookingsPage() {
                       </TableRow>
                     ) : (
                       filteredBookings.map((booking, index) => (
-                        <TableRow key={booking.id}>
+                        <TableRow key={`${booking.type || 'booking'}-${booking.id}`}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              <span className="font-medium">{booking.id.toString().padStart(6, '0')}</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{booking.id.toString().padStart(6, '0')}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {booking.type === 'order' ? 'Pedido' : 'Solicitação'}
+                                </span>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -592,10 +605,15 @@ export default function AdminBookingsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="max-w-48">
-                              <p className="text-sm font-medium">Local do Cliente</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {booking.address}, {booking.city}
-                              </p>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                <div>
+                                  <p className="text-sm">{booking.address || 'Endereço não informado'}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {booking.city}, {booking.state} - {booking.cep}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -640,7 +658,7 @@ export default function AdminBookingsPage() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            {getPaymentStatusBadge(booking.paymentStatus)}
+                            {getPaymentStatusBadge(booking.paymentStatus, booking.paymentMethod)}
                           </TableCell>
                           <TableCell>
                             {getStatusBadge(booking.status)}
@@ -895,7 +913,7 @@ export default function AdminBookingsPage() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Status do Pagamento</Label>
-                      <div className="mt-1">{getPaymentStatusBadge(selectedBooking.paymentStatus)}</div>
+                      <div className="mt-1">{getPaymentStatusBadge(selectedBooking.paymentStatus, selectedBooking.paymentMethod)}</div>
                     </div>
                   </CardContent>
                 </Card>
