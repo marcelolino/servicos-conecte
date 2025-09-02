@@ -598,9 +598,11 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       <span className="font-medium text-sm">
                         {booking.title || booking.category.name}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {booking.category.name}
-                      </span>
+                      {booking.title && booking.title !== booking.category.name && (
+                        <span className="text-xs text-muted-foreground">
+                          {booking.category.name}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
