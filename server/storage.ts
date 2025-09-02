@@ -1457,10 +1457,20 @@ export class DatabaseStorage implements IStorage {
           createdAt: orders.createdAt,
           updatedAt: orders.updatedAt,
           client: users,
+          // Get service name from order items
+          providerServiceName: providerServices.name,
+          catalogServiceName: services.name,
+          categoryName: serviceCategories.name,
         })
         .from(orders)
         .innerJoin(users, eq(orders.clientId, users.id))
         .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+        .leftJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+        .leftJoin(services, eq(orderItems.catalogServiceId, services.id))
+        .leftJoin(serviceCategories, or(
+          eq(providerServices.categoryId, serviceCategories.id),
+          eq(services.categoryId, serviceCategories.id)
+        ))
         .where(
           or(
             // Show orders assigned to this provider (regardless of service content)
@@ -1512,7 +1522,10 @@ export class DatabaseStorage implements IStorage {
           users.userType,
           users.isActive,
           users.createdAt,
-          users.updatedAt
+          users.updatedAt,
+          providerServices.name,
+          services.name,
+          serviceCategories.name
         )
         .orderBy(desc(orders.createdAt));
 
@@ -1538,35 +1551,42 @@ export class DatabaseStorage implements IStorage {
         notes: sr.description,
         createdAt: sr.createdAt,
         updatedAt: sr.updatedAt,
+        title: sr.title, // Include the specific service request title
         client: sr.client,
         category: sr.category,
         type: 'service_request' as const
       }));
 
-      // Transform orders to unified format (simplified for now)
-      const transformedOrders = ordersData.map(order => ({
-        id: order.id,
-        clientId: order.clientId,
-        categoryId: null, // Simplified for now
-        providerId: order.providerId,
-        status: order.status === "confirmed" ? "accepted" : order.status, // Map confirmed orders to accepted for provider view
-        totalAmount: order.totalAmount,
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending", // Cash payments are pending until service completion
-        address: order.address || order.client.address || "Endereço não informado",
-        cep: order.cep || order.client.cep || "",
-        city: order.city || order.client.city || "",
-        state: order.state || order.client.state || "",
-        latitude: order.latitude,
-        longitude: order.longitude,
-        scheduledAt: order.scheduledAt,
-        notes: order.notes,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt,
-        client: order.client,
-        category: { id: 0, name: "Serviço do Catálogo" }, // Simplified for now
-        type: 'order' as const
-      }));
+      // Transform orders to unified format with specific service names
+      const transformedOrders = ordersData.map(order => {
+        const serviceName = order.providerServiceName || order.catalogServiceName || order.categoryName || "Serviço";
+        const categoryName = order.categoryName || "Catálogo";
+        
+        return {
+          id: order.id,
+          clientId: order.clientId,
+          categoryId: null, // Will be populated if needed
+          providerId: order.providerId,
+          status: order.status === "confirmed" ? "accepted" : order.status, // Map confirmed orders to accepted for provider view
+          totalAmount: order.totalAmount,
+          paymentMethod: order.paymentMethod,
+          paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending", // Cash payments are pending until service completion
+          address: order.address || order.client.address || "Endereço não informado",
+          cep: order.cep || order.client.cep || "",
+          city: order.city || order.client.city || "",
+          state: order.state || order.client.state || "",
+          latitude: order.latitude,
+          longitude: order.longitude,
+          scheduledAt: order.scheduledAt,
+          notes: order.notes,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          title: serviceName, // Use specific service name as title
+          client: order.client,
+          category: { id: 0, name: categoryName },
+          type: 'order' as const
+        };
+      });
 
       // Combine and sort by creation date (newest first)
       const combined = [...transformedServiceRequests, ...transformedOrders];
