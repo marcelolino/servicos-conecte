@@ -1403,10 +1403,8 @@ export class DatabaseStorage implements IStorage {
           users.cep,
           users.latitude,
           users.longitude,
-          users.profileImage,
           users.userType,
           users.isActive,
-          users.lastLoginAt,
           users.createdAt,
           users.updatedAt
         )
