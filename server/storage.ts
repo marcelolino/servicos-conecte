@@ -1389,17 +1389,25 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Getting provider bookings for provider ${providerId}`);
       
-      // Get all categories where this provider has services
-      const providerCategories = await db
-        .select({ categoryId: providerServices.categoryId })
-        .from(providerServices)
-        .where(eq(providerServices.providerId, providerId))
-        .groupBy(providerServices.categoryId);
+      // First try to get categories from the new providerCategories table
+      let providerCategoryRecords = await db
+        .select({ categoryId: providerCategories.categoryId })
+        .from(providerCategories)
+        .where(eq(providerCategories.providerId, providerId));
       
-      const categoryIds = providerCategories.map(pc => pc.categoryId);
+      // If no categories found in providerCategories table, fall back to deriving from services
+      if (providerCategoryRecords.length === 0) {
+        providerCategoryRecords = await db
+          .select({ categoryId: providerServices.categoryId })
+          .from(providerServices)
+          .where(eq(providerServices.providerId, providerId))
+          .groupBy(providerServices.categoryId);
+      }
+      
+      const categoryIds = providerCategoryRecords.map(pc => pc.categoryId);
       
       if (categoryIds.length === 0) {
-        console.log(`Provider ${providerId} has no services defined, returning empty list`);
+        console.log(`Provider ${providerId} has no categories defined, returning empty list`);
         return [];
       }
       
