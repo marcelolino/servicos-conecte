@@ -126,6 +126,10 @@ const menuData = {
           title: "Tipos de Cobrança",
           url: "/meus-servicos",
         },
+        {
+          title: "Gerenciar Categorias",
+          url: "/provider-categories",
+        },
       ],
     },
   ],

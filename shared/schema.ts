@@ -169,6 +169,15 @@ export const serviceChargingTypes = pgTable("service_charging_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Provider categories table - many-to-many relationship between providers and categories
+export const providerCategories = pgTable("provider_categories", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id).notNull(),
+  categoryId: integer("category_id").references(() => serviceCategories.id).notNull(),
+  isPrimary: boolean("is_primary").default(false), // Mark the primary category
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Provider service requests (for admin approval)
 export const providerServiceRequests = pgTable("provider_service_requests", {
   id: serial("id").primaryKey(),
@@ -571,6 +580,7 @@ export const providersRelations = relations(providers, ({ one, many }) => ({
   withdrawalRequests: many(withdrawalRequests),
   bankAccounts: many(providerBankAccounts),
   pixKeys: many(providerPixKeys),
+  categories: many(providerCategories),
 }));
 
 export const serviceCategoriesRelations = relations(serviceCategories, ({ one, many }) => ({
@@ -584,6 +594,7 @@ export const serviceCategoriesRelations = relations(serviceCategories, ({ one, m
   services: many(services),
   providerServices: many(providerServices),
   serviceRequests: many(serviceRequests),
+  providers: many(providerCategories),
 }));
 
 export const servicesRelations = relations(services, ({ one, many }) => ({
@@ -815,6 +826,17 @@ export const pageConfigurationsRelations = relations(pageConfigurations, ({ many
   // Add relations as needed
 }));
 
+export const providerCategoriesRelations = relations(providerCategories, ({ one }) => ({
+  provider: one(providers, {
+    fields: [providerCategories.providerId],
+    references: [providers.id],
+  }),
+  category: one(serviceCategories, {
+    fields: [providerCategories.categoryId],
+    references: [serviceCategories.id],
+  }),
+}));
+
 export const providerServiceRequestsRelations = relations(providerServiceRequests, ({ one }) => ({
   provider: one(providers, {
     fields: [providerServiceRequests.providerId],
@@ -854,6 +876,11 @@ export const insertProviderServiceSchema = createInsertSchema(providerServices).
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertProviderCategorySchema = createInsertSchema(providerCategories).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertServiceChargingTypeSchema = createInsertSchema(serviceChargingTypes).omit({
@@ -1019,6 +1046,8 @@ export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type ProviderService = typeof providerServices.$inferSelect;
 export type InsertProviderService = z.infer<typeof insertProviderServiceSchema>;
+export type ProviderCategory = typeof providerCategories.$inferSelect;
+export type InsertProviderCategory = z.infer<typeof insertProviderCategorySchema>;
 export type ServiceChargingType = typeof serviceChargingTypes.$inferSelect;
 export type InsertServiceChargingType = z.infer<typeof insertServiceChargingTypeSchema>;
 export type ProviderServiceRequest = typeof providerServiceRequests.$inferSelect;

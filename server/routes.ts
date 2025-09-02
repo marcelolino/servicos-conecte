@@ -754,6 +754,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Provider categories routes
+  app.get("/api/providers/:id/categories", authenticateToken, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const provider = await storage.getProvider(providerId);
+      
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Check if user owns this provider or is admin
+      if (provider.userId !== req.user!.id && req.user!.userType !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const categories = await storage.getProviderCategories(providerId);
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get provider categories", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.post("/api/providers/:id/categories", authenticateToken, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const { categoryId, isPrimary } = req.body;
+      
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Check if user owns this provider or is admin
+      if (provider.userId !== req.user!.id && req.user!.userType !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const providerCategory = await storage.addProviderCategory(providerId, categoryId, isPrimary);
+      res.json(providerCategory);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add provider category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.delete("/api/providers/:id/categories/:categoryId", authenticateToken, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const categoryId = parseInt(req.params.categoryId);
+      
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Check if user owns this provider or is admin
+      if (provider.userId !== req.user!.id && req.user!.userType !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.removeProviderCategory(providerId, categoryId);
+      res.json({ message: "Category removed successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to remove provider category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.put("/api/providers/:id/categories/primary", authenticateToken, async (req, res) => {
+    try {
+      const providerId = parseInt(req.params.id);
+      const { categoryId } = req.body;
+      
+      const provider = await storage.getProvider(providerId);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      // Check if user owns this provider or is admin
+      if (provider.userId !== req.user!.id && req.user!.userType !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.updateProviderPrimaryCategory(providerId, categoryId);
+      res.json({ message: "Primary category updated successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update primary category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.get("/api/providers/category/:categoryId", async (req, res) => {
     try {
       const categoryId = parseInt(req.params.categoryId);

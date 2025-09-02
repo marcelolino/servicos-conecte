@@ -5,6 +5,7 @@ import {
   services,
   providerServices,
   serviceChargingTypes,
+  providerCategories,
   serviceRequests,
   providerServiceRequests,
   reviews,
@@ -33,6 +34,8 @@ import {
   type InsertProviderService,
   type ServiceChargingType,
   type InsertServiceChargingType,
+  type ProviderCategory,
+  type InsertProviderCategory,
   type ServiceRequest,
   type InsertServiceRequest,
   type ProviderServiceRequest,
@@ -125,6 +128,12 @@ export interface IStorage {
   getServiceCategory(id: number): Promise<ServiceCategory | undefined>;
   createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory>;
   updateServiceCategory(id: number, category: Partial<InsertServiceCategory>): Promise<ServiceCategory>;
+  
+  // Provider categories management
+  getProviderCategories(providerId: number): Promise<(ProviderCategory & { category: ServiceCategory })[]>;
+  addProviderCategory(providerId: number, categoryId: number, isPrimary?: boolean): Promise<ProviderCategory>;
+  removeProviderCategory(providerId: number, categoryId: number): Promise<void>;
+  updateProviderPrimaryCategory(providerId: number, categoryId: number): Promise<void>;
   
   // Global services catalog
   getServices(): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory })[]>;
@@ -575,6 +584,87 @@ export class DatabaseStorage implements IStorage {
       .where(eq(serviceCategories.id, id))
       .returning();
     return updatedCategory;
+  }
+
+  // Provider categories management
+  async getProviderCategories(providerId: number): Promise<(ProviderCategory & { category: ServiceCategory })[]> {
+    const results = await db
+      .select({
+        providerCategory: providerCategories,
+        category: serviceCategories,
+      })
+      .from(providerCategories)
+      .innerJoin(serviceCategories, eq(providerCategories.categoryId, serviceCategories.id))
+      .where(and(
+        eq(providerCategories.providerId, providerId),
+        eq(serviceCategories.isActive, true)
+      ))
+      .orderBy(desc(providerCategories.isPrimary), asc(serviceCategories.name));
+
+    return results.map(r => ({
+      ...r.providerCategory,
+      category: r.category,
+    }));
+  }
+
+  async addProviderCategory(providerId: number, categoryId: number, isPrimary: boolean = false): Promise<ProviderCategory> {
+    // Check if provider-category relationship already exists
+    const existing = await db
+      .select()
+      .from(providerCategories)
+      .where(and(
+        eq(providerCategories.providerId, providerId),
+        eq(providerCategories.categoryId, categoryId)
+      ));
+
+    if (existing.length > 0) {
+      throw new Error('Prestador já está associado a esta categoria');
+    }
+
+    // If setting as primary, unset other primary categories
+    if (isPrimary) {
+      await db
+        .update(providerCategories)
+        .set({ isPrimary: false })
+        .where(eq(providerCategories.providerId, providerId));
+    }
+
+    const [newProviderCategory] = await db
+      .insert(providerCategories)
+      .values({
+        providerId,
+        categoryId,
+        isPrimary,
+      })
+      .returning();
+
+    return newProviderCategory;
+  }
+
+  async removeProviderCategory(providerId: number, categoryId: number): Promise<void> {
+    await db
+      .delete(providerCategories)
+      .where(and(
+        eq(providerCategories.providerId, providerId),
+        eq(providerCategories.categoryId, categoryId)
+      ));
+  }
+
+  async updateProviderPrimaryCategory(providerId: number, categoryId: number): Promise<void> {
+    // First, unset all primary categories for this provider
+    await db
+      .update(providerCategories)
+      .set({ isPrimary: false })
+      .where(eq(providerCategories.providerId, providerId));
+
+    // Then set the new primary category
+    await db
+      .update(providerCategories)
+      .set({ isPrimary: true })
+      .where(and(
+        eq(providerCategories.providerId, providerId),
+        eq(providerCategories.categoryId, categoryId)
+      ));
   }
 
   // Global services catalog
@@ -1227,14 +1317,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getServiceRequestsByProvider(providerId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
-    // Get provider's service categories through services table
-    const providerServicesList = await db
-      .select({ categoryId: services.categoryId })
-      .from(providerServices)
-      .innerJoin(services, eq(providerServices.serviceId, services.id))
-      .where(eq(providerServices.providerId, providerId));
+    // First try to get categories from the new providerCategories table
+    let providerCategoryRecords = await db
+      .select({ categoryId: providerCategories.categoryId })
+      .from(providerCategories)
+      .where(eq(providerCategories.providerId, providerId));
     
-    const categoryIds = providerServicesList.map(ps => ps.categoryId);
+    // If no categories found in providerCategories table, fall back to deriving from services
+    if (providerCategoryRecords.length === 0) {
+      providerCategoryRecords = await db
+        .select({ categoryId: services.categoryId })
+        .from(providerServices)
+        .innerJoin(services, eq(providerServices.serviceId, services.id))
+        .where(eq(providerServices.providerId, providerId));
+    }
+    
+    const categoryIds = providerCategoryRecords.map(ps => ps.categoryId);
     
     if (categoryIds.length === 0) {
       return [];
