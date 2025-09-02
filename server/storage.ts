@@ -1291,23 +1291,24 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Getting provider bookings for provider ${providerId}`);
       
-      // Get provider's primary category
-      const provider = await db
-        .select({ categoryId: providers.categoryId })
-        .from(providers)
-        .where(eq(providers.id, providerId))
-        .limit(1);
+      // Get all categories where this provider has services
+      const providerCategories = await db
+        .select({ categoryId: providerServices.categoryId })
+        .from(providerServices)
+        .where(eq(providerServices.providerId, providerId))
+        .groupBy(providerServices.categoryId);
       
-      if (!provider.length || !provider[0].categoryId) {
-        console.log(`Provider ${providerId} has no category defined, returning empty list`);
+      const categoryIds = providerCategories.map(pc => pc.categoryId);
+      
+      if (categoryIds.length === 0) {
+        console.log(`Provider ${providerId} has no services defined, returning empty list`);
         return [];
       }
       
-      const providerCategoryId = provider[0].categoryId;
-      console.log(`Provider ${providerId} category is ${providerCategoryId}`);
+      console.log(`Provider ${providerId} has services in categories: ${categoryIds.join(', ')}`);
       
-      // Get service requests for provider's category only
-      const serviceRequestsData = await this.getServiceRequestsByCategoryForProvider(providerId, providerCategoryId);
+      // Get service requests for ALL categories where provider has services
+      const serviceRequestsData = await this.getServiceRequestsByProviderCategories(providerId, categoryIds);
       console.log(`Found ${serviceRequestsData.length} service requests`);
       
       // Get this provider's services to filter relevant orders
@@ -1318,11 +1319,11 @@ export class DatabaseStorage implements IStorage {
       
       const providerServiceIdList = providerServiceIds.map(ps => ps.id);
       
-      // Get catalog services in provider's category
+      // Get catalog services in provider's categories
       const catalogServiceIds = await db
         .select({ id: services.id })
         .from(services)
-        .where(eq(services.categoryId, providerCategoryId));
+        .where(inArray(services.categoryId, categoryIds));
       
       const catalogServiceIdList = catalogServiceIds.map(cs => cs.id);
       
@@ -1473,6 +1474,55 @@ export class DatabaseStorage implements IStorage {
       console.error('Error in getProviderBookings:', error);
       return [];
     }
+  }
+
+  async getServiceRequestsByProviderCategories(providerId: number, categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
+    // Get all requests in provider's categories (pending ones + assigned to this provider)
+    return await db
+      .select({
+        id: serviceRequests.id,
+        clientId: serviceRequests.clientId,
+        categoryId: serviceRequests.categoryId,
+        providerId: serviceRequests.providerId,
+        title: serviceRequests.title,
+        description: serviceRequests.description,
+        address: serviceRequests.address,
+        cep: serviceRequests.cep,
+        city: serviceRequests.city,
+        state: serviceRequests.state,
+        latitude: serviceRequests.latitude,
+        longitude: serviceRequests.longitude,
+        estimatedPrice: serviceRequests.estimatedPrice,
+        finalPrice: serviceRequests.finalPrice,
+        totalAmount: serviceRequests.totalAmount,
+        paymentMethod: serviceRequests.paymentMethod,
+        paymentStatus: serviceRequests.paymentStatus,
+        status: serviceRequests.status,
+        scheduledAt: serviceRequests.scheduledAt,
+        completedAt: serviceRequests.completedAt,
+        createdAt: serviceRequests.createdAt,
+        updatedAt: serviceRequests.updatedAt,
+        client: users,
+        category: serviceCategories,
+      })
+      .from(serviceRequests)
+      .innerJoin(users, eq(serviceRequests.clientId, users.id))
+      .innerJoin(serviceCategories, eq(serviceRequests.categoryId, serviceCategories.id))
+      .where(
+        and(
+          inArray(serviceRequests.categoryId, categoryIds),
+          or(
+            // Show pending requests in provider's categories
+            and(
+              eq(serviceRequests.status, "pending"),
+              isNull(serviceRequests.providerId)
+            ),
+            // Show all requests assigned to this provider
+            eq(serviceRequests.providerId, providerId)
+          )
+        )
+      )
+      .orderBy(desc(serviceRequests.createdAt));
   }
 
   async getServiceRequestsByCategoryForProvider(providerId: number, categoryId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
