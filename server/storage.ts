@@ -1310,7 +1310,23 @@ export class DatabaseStorage implements IStorage {
       const serviceRequestsData = await this.getServiceRequestsByCategoryForProvider(providerId, providerCategoryId);
       console.log(`Found ${serviceRequestsData.length} service requests`);
       
-      // Get orders that are available for this provider or assigned to them
+      // Get this provider's services to filter relevant orders
+      const providerServiceIds = await db
+        .select({ id: providerServices.id })
+        .from(providerServices)
+        .where(eq(providerServices.providerId, providerId));
+      
+      const providerServiceIdList = providerServiceIds.map(ps => ps.id);
+      
+      // Get catalog services in provider's category
+      const catalogServiceIds = await db
+        .select({ id: services.id })
+        .from(services)
+        .where(eq(services.categoryId, providerCategoryId));
+      
+      const catalogServiceIdList = catalogServiceIds.map(cs => cs.id);
+      
+      // Get orders that contain services this provider can handle OR are assigned to them
       const ordersData = await db
         .select({
           id: orders.id,
@@ -1337,16 +1353,61 @@ export class DatabaseStorage implements IStorage {
         })
         .from(orders)
         .innerJoin(users, eq(orders.clientId, users.id))
+        .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
         .where(
           or(
-            // Show orders confirmed without provider assigned (available for acceptance)
+            // Show orders assigned to this provider (regardless of service content)
+            eq(orders.providerId, providerId),
+            // Show confirmed orders without provider assigned that contain services this provider can handle
             and(
               eq(orders.status, "confirmed"),
-              isNull(orders.providerId)
-            ),
-            // Show orders assigned to this provider
-            eq(orders.providerId, providerId)
+              isNull(orders.providerId),
+              or(
+                // Orders containing provider's own services
+                providerServiceIdList.length > 0 ? inArray(orderItems.providerServiceId, providerServiceIdList) : sql`false`,
+                // Orders containing catalog services in provider's category
+                catalogServiceIdList.length > 0 ? inArray(orderItems.catalogServiceId, catalogServiceIdList) : sql`false`
+              )
+            )
           )
+        )
+        .groupBy(
+          orders.id,
+          orders.clientId,
+          orders.providerId,
+          orders.status,
+          orders.subtotal,
+          orders.discountAmount,
+          orders.serviceAmount,
+          orders.totalAmount,
+          orders.couponCode,
+          orders.paymentMethod,
+          orders.address,
+          orders.cep,
+          orders.city,
+          orders.state,
+          orders.latitude,
+          orders.longitude,
+          orders.scheduledAt,
+          orders.notes,
+          orders.createdAt,
+          orders.updatedAt,
+          users.id,
+          users.name,
+          users.email,
+          users.phone,
+          users.address,
+          users.city,
+          users.state,
+          users.cep,
+          users.latitude,
+          users.longitude,
+          users.profileImage,
+          users.userType,
+          users.isActive,
+          users.lastLoginAt,
+          users.createdAt,
+          users.updatedAt
         )
         .orderBy(desc(orders.createdAt));
 
