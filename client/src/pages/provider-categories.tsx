@@ -76,7 +76,7 @@ export default function ProviderCategories() {
   const addCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, isPrimary }: { categoryId: number; isPrimary: boolean }) => {
       if (!provider) throw new Error('Provider not found');
-      return apiRequest(`/api/providers/${provider.id}/categories`, 'POST', {
+      return apiRequest('POST', `/api/providers/${provider.id}/categories`, {
         categoryId,
         isPrimary,
       });
@@ -104,7 +104,7 @@ export default function ProviderCategories() {
   const removeCategoryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
       if (!provider) throw new Error('Provider not found');
-      return apiRequest(`/api/providers/${provider.id}/categories/${categoryId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/providers/${provider.id}/categories/${categoryId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/providers/${provider?.id}/categories`] });
@@ -126,7 +126,7 @@ export default function ProviderCategories() {
   const setPrimaryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
       if (!provider) throw new Error('Provider not found');
-      return apiRequest(`/api/providers/${provider.id}/categories/primary`, 'PUT', {
+      return apiRequest('PUT', `/api/providers/${provider.id}/categories/primary`, {
         categoryId,
       });
     },
