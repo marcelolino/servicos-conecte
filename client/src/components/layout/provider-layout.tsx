@@ -90,6 +90,7 @@ const menuItems: MenuSection[] = [
         href: "/meus-servicos",
         subItems: [
           { label: "Gerenciar Preços", href: "/meus-servicos" },
+          { label: "Gerenciar Categorias", href: "/provider-categories" },
         ]
       },
     ]

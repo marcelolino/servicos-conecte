@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { apiRequest } from '@/lib/queryClient';
+import { ProviderLayout } from '@/components/layout/provider-layout';
 
 interface ServiceCategory {
   id: number;
@@ -41,6 +42,12 @@ interface ProviderCategory {
   category: ServiceCategory;
 }
 
+interface Provider {
+  id: number;
+  userId: number;
+  status: string;
+}
+
 export default function ProviderCategories() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -50,24 +57,25 @@ export default function ProviderCategories() {
   const [isPrimary, setIsPrimary] = useState(false);
 
   // Get provider info
-  const { data: provider } = useQuery({
+  const { data: provider } = useQuery<Provider>({
     queryKey: ['/api/providers/me'],
   });
 
   // Get provider categories
-  const { data: providerCategories = [], isLoading } = useQuery({
+  const { data: providerCategories = [], isLoading } = useQuery<ProviderCategory[]>({
     queryKey: [`/api/providers/${provider?.id}/categories`],
     enabled: !!provider?.id,
   });
 
   // Get all available categories
-  const { data: allCategories = [] } = useQuery({
+  const { data: allCategories = [] } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
   });
 
   // Add category mutation
   const addCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, isPrimary }: { categoryId: number; isPrimary: boolean }) => {
+      if (!provider) throw new Error('Provider not found');
       return apiRequest(`/api/providers/${provider.id}/categories`, 'POST', {
         categoryId,
         isPrimary,
@@ -95,6 +103,7 @@ export default function ProviderCategories() {
   // Remove category mutation
   const removeCategoryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
+      if (!provider) throw new Error('Provider not found');
       return apiRequest(`/api/providers/${provider.id}/categories/${categoryId}`, 'DELETE');
     },
     onSuccess: () => {
@@ -116,6 +125,7 @@ export default function ProviderCategories() {
   // Set primary category mutation
   const setPrimaryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
+      if (!provider) throw new Error('Provider not found');
       return apiRequest(`/api/providers/${provider.id}/categories/primary`, 'PUT', {
         categoryId,
       });
@@ -182,7 +192,8 @@ export default function ProviderCategories() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProviderLayout>
+      <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Gerenciar Categorias</h1>
@@ -367,6 +378,7 @@ export default function ProviderCategories() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </ProviderLayout>
   );
 }
