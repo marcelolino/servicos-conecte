@@ -70,6 +70,7 @@ interface BookingData {
   scheduledAt: string;
   notes?: string;
   createdAt: string;
+  title?: string;
   type: 'order' | 'service_request';
   client: {
     id: number;
@@ -570,6 +571,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
             <TableHeader>
               <TableRow>
                 <TableHead>Nº do Pedido</TableHead>
+                <TableHead>Nome do Serviço</TableHead>
                 <TableHead>Onde o Serviço Será Prestado</TableHead>
                 <TableHead>Informações do Cliente</TableHead>
                 <TableHead>Valor Total</TableHead>
@@ -588,6 +590,16 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       <span>{booking.id.toString().padStart(5, '0')}</span>
                       <span className="text-xs text-muted-foreground">
                         {booking.type === 'order' ? 'Pedido' : 'Solicitação'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">
+                        {booking.title || booking.category.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {booking.category.name}
                       </span>
                     </div>
                   </TableCell>
