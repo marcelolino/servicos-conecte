@@ -21,7 +21,6 @@ import {
   Bell,
   User,
   LogOut,
-  ShoppingCart,
   Calendar,
   Smartphone
 } from "lucide-react";
@@ -31,24 +30,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { ClientNotifications } from "@/components/notifications/client-notifications";
 
 export default function Header() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
-  const { user, logout, isAuthenticated, isLoggingOut } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Fetch cart data for authenticated clients (but not during logout)
-  const { data: cart } = useQuery({
-    queryKey: ["/api/cart"],
-    enabled: isAuthenticated && user?.userType === "client" && !isLoggingOut,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const cartItemCount = (cart && typeof cart === 'object' && 'items' in cart && Array.isArray(cart.items)) ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   // Fetch page settings for dynamic site name
   const { data: pageSettings } = useQuery<PageSettings>({
@@ -155,24 +144,6 @@ export default function Header() {
 
             {isAuthenticated ? (
               <>
-                {user?.userType === "client" && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative rounded-full hover:bg-muted"
-                    asChild
-                  >
-                    <Link href="/cart">
-                      <ShoppingCart className="h-5 w-5" />
-                      {cartItemCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground">
-                          {cartItemCount}
-                        </Badge>
-                      )}
-                    </Link>
-                  </Button>
-                )}
-                
                 {/* Notificações baseadas no tipo de usuário */}
                 {user?.userType === "client" && <ClientNotifications />}
                 {user?.userType !== "client" && (

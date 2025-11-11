@@ -30,14 +30,9 @@ const sidebarItems: SidebarItem[] = [
     path: "/client-dashboard",
   },
   {
-    label: "Reservas",
+    label: "Minhas Solicitações",
     icon: Calendar,
     path: "/client-reservas",
-  },
-  {
-    label: "Meu Histórico de Reservas",
-    icon: Package,
-    path: "/client-orders",
   },
   {
     label: "Mensagens",
@@ -45,7 +40,7 @@ const sidebarItems: SidebarItem[] = [
     path: "/client-chat",
   },
   {
-    label: "Ofertas",
+    label: "Ofertas Recebidas",
     icon: Gift,
     path: "/client-offers",
   }

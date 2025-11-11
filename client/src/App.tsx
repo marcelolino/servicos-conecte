@@ -60,19 +60,9 @@ import TestProfile from "@/pages/test-profile";
 import Profile from "@/pages/profile";
 import Services from "@/pages/services";
 import ServiceDetails from "@/pages/service-details";
-import Cart from "@/pages/cart";
-import Checkout from "@/pages/checkout";
-import CheckoutStep1 from "@/pages/checkout-step1";
-import CheckoutStep2 from "@/pages/checkout-step2";
-import CheckoutStep3 from "@/pages/checkout-step3";
-import OrderSuccess from "@/pages/order-success";
-import Orders from "@/pages/orders";
-import OrderDetails from "@/pages/order-details";
 import ClientBookingDetails from "@/pages/client-booking-details";
 import ClientReservas from "@/pages/client-reservas";
 import ClientOffers from "@/pages/client-offers";
-import ClientOrders from "@/pages/client-orders";
-import ClientOrderDetails from "@/pages/client-order-details";
 import ProviderChat from "@/pages/provider-chat";
 import ClientChat from "@/pages/client-chat";
 import ProviderRegister from "@/pages/provider-register";
@@ -174,8 +164,6 @@ function Router() {
                 <Route path="/client-reservas" component={ClientReservas} />
                 <Route path="/client-booking-details/:id" component={ClientBookingDetails} />
                 <Route path="/client-offers" component={ClientOffers} />
-                <Route path="/client-orders" component={ClientOrders} />
-                <Route path="/client-order-details/:id" component={ClientOrderDetails} />
                 <Route path="/client-chat" component={ClientChat} />
                 <Route path="/service-management" component={ServiceManagement} />
                 <Route path="/media-management" component={MediaManagement} />
@@ -187,15 +175,6 @@ function Router() {
                 <Route path="/services/catalog/:id" component={ServiceDetails} />
                 <Route path="/services/provider/:id" component={ServiceDetails} />
                 <Route path="/services/:id" component={ServiceDetails} />
-                <Route path="/cart" component={Cart} />
-                <Route path="/checkout" component={Checkout} />
-                <Route path="/checkout/scheduling" component={CheckoutStep1} />
-                <Route path="/checkout/payment" component={CheckoutStep2} />
-                <Route path="/checkout/confirmation" component={CheckoutStep3} />
-                <Route path="/order-success" component={OrderSuccess} />
-                <Route path="/orders" component={Orders} />
-                <Route path="/orders/:id" component={OrderDetails} />
-                <Route path="/order-success/:id" component={OrderSuccess} />
                 <Route path="/test-mercadopago" component={TestMercadoPago} />
                 <Route path="/test-mercadopago-simple" component={TestMercadoPagoSimple} />
                 <Route path="/legal/:pageKey" component={LegalPages} />
