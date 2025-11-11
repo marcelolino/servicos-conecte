@@ -368,6 +368,7 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").references(() => users.id).notNull(),
   providerId: integer("provider_id").references(() => providers.id),
+  serviceRequestId: integer("service_request_id").references(() => serviceRequests.id), // Link to original service request if converted
   status: orderStatusEnum("status").default("cart"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default("0.00"),
   discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
@@ -642,6 +643,7 @@ export const serviceRequestsRelations = relations(serviceRequests, ({ one, many 
     references: [serviceCategories.id],
   }),
   reviews: many(reviews),
+  orders: many(orders),
 }));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
@@ -718,6 +720,10 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   provider: one(providers, {
     fields: [orders.providerId],
     references: [providers.id],
+  }),
+  serviceRequest: one(serviceRequests, {
+    fields: [orders.serviceRequestId],
+    references: [serviceRequests.id],
   }),
   items: many(orderItems),
   payment: one(payments, {

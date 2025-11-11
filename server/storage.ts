@@ -1384,7 +1384,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(serviceRequests.createdAt));
   }
 
-  // NEW: Unified function for provider bookings (ServiceRequests + Orders)
+  // Provider bookings - returns orders + service_requests (with deduplication)
   async getProviderBookings(providerId: number): Promise<any[]> {
     try {
       console.log(`Getting provider bookings for provider ${providerId}`);
@@ -1551,7 +1551,7 @@ export class DatabaseStorage implements IStorage {
         notes: sr.description,
         createdAt: sr.createdAt,
         updatedAt: sr.updatedAt,
-        title: sr.title, // Include the specific service request title
+        title: sr.title,
         client: sr.client,
         category: sr.category,
         type: 'service_request' as const
@@ -1565,12 +1565,12 @@ export class DatabaseStorage implements IStorage {
         return {
           id: order.id,
           clientId: order.clientId,
-          categoryId: null, // Will be populated if needed
+          categoryId: null,
           providerId: order.providerId,
-          status: order.status === "confirmed" ? "accepted" : order.status, // Map confirmed orders to accepted for provider view
+          status: order.status === "confirmed" ? "accepted" : order.status,
           totalAmount: order.totalAmount,
           paymentMethod: order.paymentMethod,
-          paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending", // Cash payments are pending until service completion
+          paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending",
           address: order.address || order.client.address || "Endereço não informado",
           cep: order.cep || order.client.cep || "",
           city: order.city || order.client.city || "",
@@ -1581,16 +1581,17 @@ export class DatabaseStorage implements IStorage {
           notes: order.notes,
           createdAt: order.createdAt,
           updatedAt: order.updatedAt,
-          title: serviceName, // Use specific service name as title
+          title: serviceName,
           client: order.client,
           category: { id: 0, name: categoryName },
           type: 'order' as const
         };
       });
 
-      // Combine and sort by creation date (newest first)
+      // DEDUPLICATION: Service requests with linked orders were already filtered out in the query
+      // So we can safely combine service_requests + orders without manual dedup
       const combined = [...transformedServiceRequests, ...transformedOrders];
-      console.log(`Combined total: ${combined.length} bookings`);
+      console.log(`Combined total: ${combined.length} bookings (${transformedServiceRequests.length} service requests, ${transformedOrders.length} orders)`);
       
       return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
@@ -1601,8 +1602,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getServiceRequestsByProviderCategories(providerId: number, categoryIds: number[]): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
-    // Get all requests in provider's categories (pending ones + assigned to this provider)
-    return await db
+    // Show pending requests in provider's categories + all requests assigned to this provider
+    const results = await db
       .select({
         id: serviceRequests.id,
         clientId: serviceRequests.clientId,
@@ -1647,6 +1648,8 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(serviceRequests.createdAt));
+    
+    return results as any;
   }
 
   async getServiceRequestsByCategoryForProvider(providerId: number, categoryId: number): Promise<(ServiceRequest & { client: User; category: ServiceCategory })[]> {
