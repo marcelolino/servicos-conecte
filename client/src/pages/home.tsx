@@ -424,8 +424,15 @@ export default function Home() {
                 // Use catalog service image
                 const firstImage = service.imageUrl || '/uploads/services/limpeza_residencial.png';
                 
+                // Build URL with query params for location filters
+                const params = new URLSearchParams();
+                if (selectedCity) params.append('city', selectedCity);
+                if (selectedState && selectedState !== 'all') params.append('state', selectedState);
+                const queryString = params.toString();
+                const serviceUrl = `/services/catalog/${service.id}${queryString ? `?${queryString}` : ''}`;
+                
                 return (
-                  <Link key={`catalog-${service.id}`} to={`/services/catalog/${service.id}`} data-testid={`service-card-${service.id}`}>
+                  <Link key={`catalog-${service.id}`} to={serviceUrl} data-testid={`service-card-${service.id}`}>
                     <Card className="feature-card group cursor-pointer h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img
