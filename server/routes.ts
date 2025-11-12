@@ -730,6 +730,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all services (across all categories) with available providers by region
+  app.get("/api/services-catalog/all-with-providers", async (req, res) => {
+    try {
+      const { city, state } = req.query;
+      
+      const services = await storage.getAllServicesWithProviders(
+        city as string | undefined,
+        state as string | undefined
+      );
+      
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get all services with providers", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Provider routes
   app.post("/api/providers", authenticateToken, async (req, res) => {
     try {

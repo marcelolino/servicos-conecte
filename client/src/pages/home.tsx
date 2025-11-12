@@ -114,26 +114,42 @@ export default function Home() {
     enabled: true,
   });
 
-  // Query for home visible services (from catalog)
+  // Query for home visible services (from catalog) - used for featured/default view
   const { data: homeVisibleServices, isLoading: homeServicesLoading } = useQuery<any[]>({
     queryKey: ['/api/services-catalog/home'],
-    enabled: true,
+    enabled: selectedCategory === "all" && !selectedCity && (!selectedState || selectedState === "all"),
     refetchOnMount: true,
     staleTime: 0, // Always refetch to get latest data
   });
 
-  // Query for all provider services (for category and location filtering)
-  const { data: allServices, isLoading: servicesLoading } = useQuery<any[]>({
-    queryKey: ['/api/services/all', selectedCity, selectedState],
+  // Query for services by category with providers (new system)
+  const { data: categoryServices, isLoading: categoryServicesLoading } = useQuery<any[]>({
+    queryKey: ['/api/services-catalog/category', selectedCategory, selectedCity, selectedState],
+    queryFn: () => {
+      if (selectedCategory === "all") return Promise.resolve([]);
+      
+      const params = new URLSearchParams();
+      if (selectedCity) params.append('city', selectedCity);
+      if (selectedState && selectedState !== "all") params.append('state', selectedState);
+      const queryString = params.toString();
+      return fetch(`/api/services-catalog/category/${selectedCategory}/with-providers${queryString ? '?' + queryString : ''}`)
+        .then(res => res.json());
+    },
+    enabled: selectedCategory !== "all",
+  });
+
+  // Query for all services with providers when category is "all" but location filters are active
+  const { data: allServicesWithProviders, isLoading: allServicesLoading } = useQuery<any[]>({
+    queryKey: ['/api/services-catalog/all-with-providers', selectedCity, selectedState],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCity) params.append('city', selectedCity);
       if (selectedState && selectedState !== "all") params.append('state', selectedState);
       const queryString = params.toString();
-      return fetch(`/api/services/all${queryString ? '?' + queryString : ''}`)
+      return fetch(`/api/services-catalog/all-with-providers${queryString ? '?' + queryString : ''}`)
         .then(res => res.json());
     },
-    enabled: true,
+    enabled: selectedCategory === "all" && (!!selectedCity || (!!selectedState && selectedState !== "all")),
   });
 
   // Query for nearby providers based on user location
@@ -162,86 +178,55 @@ export default function Home() {
 
   // Function to get the services to display based on current filters
   const getServicesToDisplay = () => {
-    // If there's a search term, show filtered provider services + filtered catalog services
-    if (searchTerm.trim()) {
-      const filteredProviderServices = allServices?.filter((service: any) => 
-        service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      ) || [];
-      
-      const filteredCatalogServices = homeVisibleServices?.filter((service: any) => 
-        service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      ) || [];
-      
-      // Use same deduplication logic for search
-      const searchServicesById: Record<string, any> = {};
-      
-      // Add catalog services first
-      filteredCatalogServices.forEach(service => {
-        searchServicesById[service.name] = service;
-      });
-      
-      // Add or replace with provider services
-      filteredProviderServices.forEach(service => {
-        searchServicesById[service.name] = service;
-      });
-      
-      return Object.values(searchServicesById);
-    }
-
-    // If a specific category is selected, show provider services + catalog services from that category
+    // If a specific category is selected, use category services with providers
     if (selectedCategory && selectedCategory !== "all") {
-      const categoryProviderServices = allServices?.filter((service: any) => 
-        service.categoryId === parseInt(selectedCategory)
-      ) || [];
+      const services = categoryServices || [];
       
-      const categoryCatalogServices = homeVisibleServices?.filter((service: any) => 
-        service.categoryId === parseInt(selectedCategory)
-      ) || [];
+      // Filter by search term if present
+      if (searchTerm.trim()) {
+        return services.filter((service: any) => 
+          service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
       
-      // Use same deduplication logic for categories
-      const categoryServicesById: Record<string, any> = {};
-      
-      // Add catalog services first
-      categoryCatalogServices.forEach(service => {
-        categoryServicesById[service.name] = service;
-      });
-      
-      // Add or replace with provider services
-      categoryProviderServices.forEach(service => {
-        categoryServicesById[service.name] = service;
-      });
-      
-      return Object.values(categoryServicesById);
+      return services;
     }
 
-    // Default: show ALL provider services + catalog services marked as visible on home
-    // Remove duplicates more intelligently - show catalog services even if no provider adopted them
-    const providerServices = allServices || [];
-    const catalogServices = homeVisibleServices || [];
+    // If category is "all" but location filters are active, use allServicesWithProviders
+    if (selectedCity || (selectedState && selectedState !== "all")) {
+      const services = allServicesWithProviders || [];
+      
+      // Filter by search term if present
+      if (searchTerm.trim()) {
+        return services.filter((service: any) => 
+          service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      return services;
+    }
+
+    // Default: show catalog services (home visible)
+    const services = homeVisibleServices || [];
     
-    // Create a simple object to track services by name
-    const servicesById: Record<string, any> = {};
+    // Filter by search term if present
+    if (searchTerm.trim()) {
+      return services.filter((service: any) => 
+        service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
     
-    // Add catalog services first (as base)
-    catalogServices.forEach(service => {
-      servicesById[service.name] = service;
-    });
-    
-    // Add or replace with provider services (they have more details like provider info)
-    providerServices.forEach(service => {
-      servicesById[service.name] = service;
-    });
-    
-    // Return all unique services as array
-    return Object.values(servicesById);
+    return services;
   };
 
   const allServicesList = getServicesToDisplay();
-  const isLoadingServices = servicesLoading || homeServicesLoading;
+  const isLoadingServices = categoryServicesLoading || homeServicesLoading || allServicesLoading;
   
   // Calculate pagination
   const totalServices = allServicesList.length;
@@ -432,31 +417,15 @@ export default function Home() {
           ) : servicesToDisplay && servicesToDisplay.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {servicesToDisplay.map((service: any) => {
-                // Determine if this is a catalog service or provider service
-                const isCatalogService = !service.provider;
+                // All services are now catalog-based with providers array
+                const hasProviders = service.providers && service.providers.length > 0;
+                const providerCount = service.providerCount || service.providers?.length || 0;
                 
-                // Handle images differently for catalog vs provider services
-                let serviceImages: string[] = [];
-                let firstImage = '/uploads/services/limpeza_residencial.png';
-                
-                if (isCatalogService) {
-                  // For catalog services, use imageUrl directly
-                  firstImage = service.imageUrl || '/uploads/services/limpeza_residencial.png';
-                } else {
-                  // For provider services, parse images JSON
-                  try {
-                    serviceImages = service.images ? JSON.parse(service.images) : [];
-                  } catch (e) {
-                    serviceImages = [];
-                  }
-                  firstImage = serviceImages[0] || service.service?.imageUrl || '/uploads/services/limpeza_residencial.png';
-                }
-                
-                const chargingTypesWithPrice = service.chargingTypes?.filter((ct: any) => ct.price) || [];
-                const hasQuoteOnly = service.chargingTypes?.some((ct: any) => !ct.price) && chargingTypesWithPrice.length === 0;
+                // Use catalog service image
+                const firstImage = service.imageUrl || '/uploads/services/limpeza_residencial.png';
                 
                 return (
-                  <Link key={`${isCatalogService ? 'catalog' : 'provider'}-${service.id}`} to={`/services/${isCatalogService ? 'catalog' : 'provider'}/${service.id}`}>
+                  <Link key={`catalog-${service.id}`} to={`/services/catalog/${service.id}`} data-testid={`service-card-${service.id}`}>
                     <Card className="feature-card group cursor-pointer h-full">
                       <div className="relative overflow-hidden rounded-t-lg">
                         <img
@@ -468,22 +437,15 @@ export default function Home() {
                           }}
                         />
                         <div className="absolute top-2 right-2 flex flex-col gap-1">
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs" data-testid={`service-category-${service.id}`}>
                             {service.category?.name}
                           </Badge>
-                          {isCatalogService && service.isOnSale && service.salePercentage && (
+                          {service.isOnSale && service.salePercentage && (
                             <Badge variant="destructive" className="text-xs animate-pulse">
                               🔥 {service.salePercentage}% OFF
                             </Badge>
                           )}
                         </div>
-                        {!isCatalogService && serviceImages.length > 1 && (
-                          <div className="absolute bottom-2 right-2">
-                            <Badge variant="outline" className="text-xs bg-white/80">
-                              +{serviceImages.length - 1} fotos
-                            </Badge>
-                          </div>
-                        )}
                       </div>
                       
                       <CardHeader className="pb-3">
@@ -496,46 +458,23 @@ export default function Home() {
                       </CardHeader>
                       
                       <CardContent className="space-y-3">
-                        {/* Provider Info - only show for provider services */}
-                        {!isCatalogService && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                        {/* Provider Count - show how many providers offer this service */}
+                        {providerCount > 0 && (
+                          <div className="flex items-center space-x-2 text-sm font-medium text-blue-600 dark:text-blue-400" data-testid={`provider-count-${service.id}`}>
                             <Users className="h-4 w-4" />
-                            <span>{service.provider?.user?.name}</span>
+                            <span>{providerCount} {providerCount === 1 ? 'prestador disponível' : 'prestadores disponíveis'}</span>
                           </div>
                         )}
                         
                         {/* Location */}
                         <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                           <MapPin className="h-4 w-4" />
-                          <span>{isCatalogService ? "Disponível na região" : (service.provider?.user?.city || "Região")}</span>
+                          <span>Disponível na região</span>
                         </div>
                         
                         {/* Pricing */}
                         <div className="space-y-2">
-                          {chargingTypesWithPrice.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {chargingTypesWithPrice.slice(0, 2).map((ct: any, index: number) => {
-                                const chargingTypeInfo = chargingTypes?.find(type => type.key === ct.chargingType);
-                                const typeName = chargingTypeInfo?.name || ct.chargingType;
-                                
-                                return (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {typeName}: R$ {ct.price}
-                                    {ct.chargingType === 'hourly' || ct.chargingType.includes('hour') ? '/h' : ''}
-                                  </Badge>
-                                );
-                              })}
-                              {chargingTypesWithPrice.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{chargingTypesWithPrice.length - 2} preços
-                                </Badge>
-                              )}
-                            </div>
-                          ) : hasQuoteOnly ? (
-                            <Badge variant="outline" className="text-xs">
-                              Sob consulta
-                            </Badge>
-                          ) : isCatalogService && service.suggestedMinPrice ? (
+                          {service.suggestedMinPrice ? (
                             <div className="flex flex-wrap gap-1">
                               {service.isOnSale && service.salePercentage ? (
                                 <div className="flex items-center gap-2">
@@ -552,15 +491,11 @@ export default function Home() {
                                   </div>
                                 </div>
                               ) : (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs" data-testid={`service-price-${service.id}`}>
                                   A partir de R$ {service.suggestedMinPrice}
                                 </Badge>
                               )}
                             </div>
-                          ) : service.service?.suggestedMinPrice ? (
-                            <Badge variant="outline" className="text-xs">
-                              A partir de R$ {service.service.suggestedMinPrice}
-                            </Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">
                               Preço sob consulta
@@ -570,13 +505,13 @@ export default function Home() {
                         
                         {/* Duration and features */}
                         <div className="space-y-1">
-                          {service.service?.estimatedDuration && (
+                          {service.estimatedDuration && (
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {service.service.estimatedDuration}
+                              {service.estimatedDuration} {service.durationType === 'hours' ? 'horas' : service.durationType === 'days' ? 'dias' : 'visitas'}
                             </div>
                           )}
-                          {service.service?.materialsIncluded && (
+                          {service.materialsIncluded && (
                             <div className="text-xs text-green-600 flex items-center gap-1">
                               <ShieldCheck className="h-3 w-3" />
                               Materiais incluídos
@@ -584,19 +519,17 @@ export default function Home() {
                           )}
                         </div>
                         
-                        {/* Add to Cart Button */}
+                        {/* View Providers Button */}
                         <div className="pt-3 border-t">
-                          <AddToCartButton
-                            serviceId={service.id}
-                            serviceName={service.name}
-                            providerId={service.providerId}
-                            chargingTypes={service.chargingTypes || []}
-                            directPrice={service.price || service.suggestedMinPrice || service.service?.suggestedMinPrice}
-                            isProviderService={!isCatalogService}
+                          <Button
                             variant="default"
                             size="sm"
                             className="w-full"
-                          />
+                            data-testid={`view-providers-${service.id}`}
+                            asChild
+                          >
+                            <span>Ver Prestadores</span>
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

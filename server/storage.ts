@@ -158,6 +158,7 @@ export interface IStorage {
   
   // Category-based service distribution
   getServicesByCategoryWithProviders(categoryId: number, city?: string, state?: string): Promise<Array<Service & { category: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }>>;
+  getAllServicesWithProviders(city?: string, state?: string): Promise<Array<Service & { category: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }>>;
   getProvidersByCategoryAndRegion(categoryId: number, city?: string, state?: string): Promise<(Provider & { user: User })[]>;
   getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }) | null>
   
@@ -1121,7 +1122,63 @@ export class DatabaseStorage implements IStorage {
       })
     );
     
-    return servicesWithProviders;
+    // Filter out services with no providers in the selected region
+    return servicesWithProviders.filter(service => service.providerCount > 0);
+  }
+
+  async getAllServicesWithProviders(city?: string, state?: string): Promise<Array<Service & { category: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }>> {
+    // Get all active services from the catalog
+    const allServices = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(eq(services.isActive, true));
+    
+    // For each service, find providers who have adopted it
+    const servicesWithProviders = await Promise.all(
+      allServices.map(async ({ service, category }) => {
+        // Build conditions for provider filtering
+        const providerConditions: any[] = [
+          eq(providerServices.serviceId, service.id),
+          eq(providerServices.isActive, true),
+          eq(providers.status, 'approved')
+        ];
+        
+        if (city) {
+          providerConditions.push(eq(providers.city, city));
+        }
+        
+        if (state) {
+          providerConditions.push(eq(providers.state, state));
+        }
+        
+        // Get providers who adopted this specific service
+        const providersForService = await db
+          .select({
+            provider: providers,
+            user: users,
+          })
+          .from(providerServices)
+          .innerJoin(providers, eq(providerServices.providerId, providers.id))
+          .innerJoin(users, eq(providers.userId, users.id))
+          .where(and(...providerConditions));
+        
+        const providerList = providersForService.map(r => ({ ...r.provider, user: r.user }));
+        
+        return {
+          ...service,
+          category,
+          providers: providerList,
+          providerCount: providerList.length
+        };
+      })
+    );
+    
+    // Filter out services with no providers in the selected region
+    return servicesWithProviders.filter(service => service.providerCount > 0);
   }
 
   async getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }) | null> {
