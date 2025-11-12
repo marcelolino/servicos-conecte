@@ -35,6 +35,11 @@ const sidebarItems: SidebarItem[] = [
     path: "/client-reservas",
   },
   {
+    label: "Meus Pedidos",
+    icon: Package,
+    path: "/client-orders",
+  },
+  {
     label: "Mensagens",
     icon: MessageCircle,
     path: "/client-chat",
