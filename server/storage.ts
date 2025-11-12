@@ -1181,7 +1181,7 @@ export class DatabaseStorage implements IStorage {
     return servicesWithProviders.filter(service => service.providerCount > 0);
   }
 
-  async getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }) | null> {
+  async getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: any[]; providerCount: number }) | null> {
     // Get the service
     const service = await this.getService(serviceId);
     
@@ -1207,6 +1207,7 @@ export class DatabaseStorage implements IStorage {
     // Get providers who adopted this specific service
     const providersForService = await db
       .select({
+        providerService: providerServices,
         provider: providers,
         user: users,
       })
@@ -1215,7 +1216,25 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(providers.userId, users.id))
       .where(and(...providerConditions));
     
-    const providerList = providersForService.map(r => ({ ...r.provider, user: r.user }));
+    // Get charging types for each provider service
+    const providerList = await Promise.all(
+      providersForService.map(async (r) => {
+        const chargingTypes = await this.getServiceChargingTypes(r.providerService.id);
+        return {
+          ...r.provider,
+          user: r.user,
+          providerServiceId: r.providerService.id,
+          businessName: r.providerService.customName || r.user.name,
+          chargingTypes: chargingTypes.map(ct => ({
+            id: ct.id,
+            chargingType: ct.chargingType,
+            price: ct.price,
+            description: ct.description
+          })),
+          serviceZone: r.providerService.serviceZone
+        };
+      })
+    );
     
     return {
       ...service,

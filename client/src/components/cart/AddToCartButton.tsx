@@ -45,24 +45,21 @@ export function AddToCartButton({
         throw new Error("Login necessário");
       }
 
+      if (!isProviderService) {
+        throw new Error("Apenas serviços de prestadores podem ser adicionados ao carrinho");
+      }
+
       // Determine the price - use charging types first, then directPrice
       const priceInfo = chargingTypes.find(ct => ct.price > 0);
       const price = priceInfo?.price || (directPrice ? parseFloat(directPrice.toString()) : 0);
 
-      // Send correct field based on service type
+      // Send provider service data
       const requestData = {
+        providerServiceId: serviceId,
         quantity,
         unitPrice: price,
         notes: `Tipo de cobrança: ${priceInfo?.chargingType || 'quote'}`
       };
-
-      if (isProviderService) {
-        // It's a provider service
-        (requestData as any).providerServiceId = serviceId;
-      } else {
-        // It's a catalog service
-        (requestData as any).catalogServiceId = serviceId;
-      }
 
       return await apiRequest('POST', '/api/cart/items', requestData);
     },

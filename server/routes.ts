@@ -3201,82 +3201,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user?.id
       });
 
-      // Check if it's explicitly a catalog service
+      // Reject catalog service requests
       if (req.body.catalogServiceId) {
-        const catalogServiceId = parseInt(req.body.catalogServiceId);
-        
-        if (!catalogServiceId || isNaN(catalogServiceId)) {
-          return res.status(400).json({ message: "Catalog Service ID is required" });
-        }
-
-        // Prevent duplicate rapid requests
-        const requestKey = `cart_add_catalog_${req.user!.id}_${catalogServiceId}`;
-        if (app.locals.pendingRequests && app.locals.pendingRequests.has(requestKey)) {
-          return res.status(429).json({ message: "Request already in progress, please wait" });
-        }
-        
-        // Mark request as pending
-        if (!app.locals.pendingRequests) {
-          app.locals.pendingRequests = new Set();
-        }
-        app.locals.pendingRequests.add(requestKey);
-
-        // Handle catalog service
-        const catalogService = await storage.getService(catalogServiceId);
-        
-        if (!catalogService) {
-          console.log('Catalog service not found:', catalogServiceId);
-          if (app.locals.pendingRequests) {
-            app.locals.pendingRequests.delete(requestKey);
-          }
-          return res.status(404).json({ message: "Catalog service not found" });
-        }
-        
-        console.log('Found catalog service:', catalogService.name);
-
-        // Validate unitPrice
-        let unitPrice = req.body.unitPrice;
-        if (!unitPrice || unitPrice === 0) {
-          unitPrice = catalogService.suggestedMinPrice || "0.00";
-        }
-        
-        if (parseFloat(unitPrice) < 0) {
-          if (app.locals.pendingRequests) {
-            app.locals.pendingRequests.delete(requestKey);
-          }
-          return res.status(400).json({ message: "Invalid unit price" });
-        }
-
-        // Add catalog service to cart
-        const cartItem = {
-          catalogServiceId: catalogService.id,
-          quantity: parseInt(req.body.quantity) || 1,
-          unitPrice: unitPrice.toString(),
-          notes: req.body.notes || `Serviço do catálogo: ${catalogService.name}`,
-          chargingType: req.body.chargingType || "visit"
-        };
-
-        console.log('Adding catalog item to cart:', cartItem);
-
-        const addedItem = await storage.addCatalogItemToCart(req.user!.id, cartItem);
-        
-        // Clear pending request
-        if (app.locals.pendingRequests) {
-          app.locals.pendingRequests.delete(requestKey);
-        }
-        
-        return res.json({
-          type: 'cart_item',
-          item: addedItem,
-          message: `${catalogService.name} foi adicionado ao carrinho`
+        return res.status(400).json({ 
+          message: "Serviços do catálogo não podem ser adicionados diretamente ao carrinho. Selecione um prestador." 
         });
       }
 
-      // Handle provider service
+      // Handle provider service only
       const providerServiceId = parseInt(req.body.providerServiceId || req.body.serviceId);
       
       if (!providerServiceId || isNaN(providerServiceId)) {
-        return res.status(400).json({ message: "Service ID is required" });
+        return res.status(400).json({ message: "Provider Service ID is required" });
       }
 
       // Prevent duplicate rapid requests

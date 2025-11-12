@@ -27,6 +27,7 @@ interface ServiceWithProviders {
   providerCount: number;
   providers: Array<{
     id: number;
+    providerServiceId: number;
     businessName: string;
     rating: string;
     totalReviews: number;
@@ -41,8 +42,10 @@ interface ServiceWithProviders {
       avatar: string;
     };
     chargingTypes?: Array<{
+      id: number;
       chargingType: string;
       price: string;
+      description?: string;
     }>;
     serviceZone?: string;
   }>;
@@ -393,7 +396,16 @@ export default function ServiceDetails() {
                   <CardTitle>Adicionar ao Carrinho</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {!selectedProvider ? (
+                  {service.providerCount === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Ainda não há prestador (vinculado)
+                      </p>
+                      <Button disabled className="w-full" data-testid="no-provider-available">
+                        Nenhum prestador disponível
+                      </Button>
+                    </div>
+                  ) : !selectedProvider ? (
                     <div className="text-center py-4">
                       <p className="text-sm text-muted-foreground mb-4">
                         Selecione um prestador para continuar
@@ -424,15 +436,15 @@ export default function ServiceDetails() {
                       <Separator />
 
                       <AddToCartButton
-                        serviceId={service.id}
+                        serviceId={selectedProviderData?.providerServiceId || 0}
                         serviceName={service.name}
                         providerId={selectedProvider}
                         chargingTypes={(selectedProviderData?.chargingTypes || []).map(ct => ({
                           chargingType: ct.chargingType,
-                          price: parseFloat(ct.price)
+                          price: parseFloat(ct.price || '0')
                         }))}
                         directPrice={service.suggestedMinPrice}
-                        isProviderService={false}
+                        isProviderService={true}
                         variant="default"
                         size="lg"
                         className="w-full"
