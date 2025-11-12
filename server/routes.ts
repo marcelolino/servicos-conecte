@@ -3434,6 +3434,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get provider's orders (catalog services available for the provider)
+  app.get("/api/orders/provider", authenticateToken, requireProvider, async (req, res) => {
+    try {
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider not found" });
+      }
+      
+      const orders = await storage.getProviderOrders(provider.id);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get provider orders", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Get specific order
   app.get("/api/orders/:id", authenticateToken, async (req, res) => {
     try {

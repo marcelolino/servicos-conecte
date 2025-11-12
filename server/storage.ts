@@ -283,6 +283,7 @@ export interface IStorage {
   getCartByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[] }) | undefined>;
   getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined>;
   getOrdersByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; provider?: Provider })[]>;
+  getProviderOrders(providerId: number): Promise<any[]>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order>;
   addItemToCart(clientId: number, item: InsertOrderItem): Promise<OrderItem>;
@@ -3014,6 +3015,143 @@ export class DatabaseStorage implements IStorage {
     );
 
     return ordersWithItems;
+  }
+
+  async getProviderOrders(providerId: number): Promise<any[]> {
+    try {
+      console.log(`Getting provider orders for provider ${providerId}`);
+      
+      // Get provider's categories
+      let providerCategoryRecords = await db
+        .select({ categoryId: providerCategories.categoryId })
+        .from(providerCategories)
+        .where(eq(providerCategories.providerId, providerId));
+      
+      // Fallback to deriving from services if no categories in providerCategories
+      if (providerCategoryRecords.length === 0) {
+        providerCategoryRecords = await db
+          .select({ categoryId: providerServices.categoryId })
+          .from(providerServices)
+          .where(eq(providerServices.providerId, providerId))
+          .groupBy(providerServices.categoryId);
+      }
+      
+      const categoryIds = providerCategoryRecords.map(pc => pc.categoryId);
+      
+      if (categoryIds.length === 0) {
+        return [];
+      }
+      
+      // Get catalog services in provider's categories
+      const catalogServiceIds = await db
+        .select({ id: services.id })
+        .from(services)
+        .where(inArray(services.categoryId, categoryIds));
+      
+      const catalogServiceIdList = catalogServiceIds.map(cs => cs.id);
+      
+      if (catalogServiceIdList.length === 0) {
+        return [];
+      }
+      
+      // Get orders with catalog services in provider's categories that don't have a provider assigned yet
+      const ordersData = await db
+        .select({
+          id: orders.id,
+          clientId: orders.clientId,
+          providerId: orders.providerId,
+          status: orders.status,
+          subtotal: orders.subtotal,
+          discountAmount: orders.discountAmount,
+          serviceAmount: orders.serviceAmount,
+          totalAmount: orders.totalAmount,
+          paymentMethod: orders.paymentMethod,
+          address: orders.address,
+          cep: orders.cep,
+          city: orders.city,
+          state: orders.state,
+          latitude: orders.latitude,
+          longitude: orders.longitude,
+          scheduledAt: orders.scheduledAt,
+          notes: orders.notes,
+          createdAt: orders.createdAt,
+          client: users,
+          catalogServiceName: services.name,
+          categoryName: serviceCategories.name,
+        })
+        .from(orders)
+        .innerJoin(users, eq(orders.clientId, users.id))
+        .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+        .innerJoin(services, eq(orderItems.catalogServiceId, services.id))
+        .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+        .where(
+          or(
+            // Orders assigned to this provider
+            eq(orders.providerId, providerId),
+            // Confirmed orders without provider that contain catalog services this provider can handle
+            and(
+              eq(orders.status, "confirmed"),
+              isNull(orders.providerId),
+              inArray(orderItems.catalogServiceId, catalogServiceIdList)
+            )
+          )
+        )
+        .groupBy(
+          orders.id,
+          orders.clientId,
+          orders.providerId,
+          orders.status,
+          orders.subtotal,
+          orders.discountAmount,
+          orders.serviceAmount,
+          orders.totalAmount,
+          orders.paymentMethod,
+          orders.address,
+          orders.cep,
+          orders.city,
+          orders.state,
+          orders.latitude,
+          orders.longitude,
+          orders.scheduledAt,
+          orders.notes,
+          orders.createdAt,
+          users.id,
+          users.name,
+          users.email,
+          users.phone,
+          services.name,
+          serviceCategories.name
+        )
+        .orderBy(desc(orders.createdAt));
+
+      console.log(`Found ${ordersData.length} orders for provider`);
+
+      // Transform to unified format
+      return ordersData.map(order => ({
+        id: order.id,
+        clientId: order.clientId,
+        categoryId: 0,
+        providerId: order.providerId,
+        status: order.status,
+        totalAmount: order.totalAmount || "0.00",
+        paymentMethod: order.paymentMethod || "cash",
+        paymentStatus: "completed",
+        address: order.address || "",
+        cep: order.cep || "",
+        city: order.city || "",
+        state: order.state || "",
+        scheduledAt: order.scheduledAt,
+        notes: order.notes,
+        createdAt: order.createdAt,
+        title: order.catalogServiceName || order.categoryName || "Pedido",
+        type: 'order' as const,
+        client: order.client,
+        category: { id: 0, name: order.categoryName || "" }
+      }));
+    } catch (error) {
+      console.error('Error in getProviderOrders:', error);
+      return [];
+    }
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
