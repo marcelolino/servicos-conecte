@@ -3334,9 +3334,11 @@ export class DatabaseStorage implements IStorage {
               cep: orderData.cep || "",
               city: orderData.city || "",
               state: orderData.state || "",
-              scheduledAt: orderData.scheduledAt,
+              scheduledAt: orderData.scheduledAt || null,
               status: "pending",
               price: parseFloat(item.totalPrice) || 0,
+              paymentMethod: orderData.paymentMethod,
+              paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
               notes: orderData.notes,
             });
           }
@@ -3352,9 +3354,11 @@ export class DatabaseStorage implements IStorage {
             cep: orderData.cep || "",
             city: orderData.city || "",
             state: orderData.state || "",
-            scheduledAt: orderData.scheduledAt,
+            scheduledAt: orderData.scheduledAt || null,
             status: "pending",
             price: parseFloat(item.totalPrice) || 0,
+            paymentMethod: orderData.paymentMethod,
+            paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
             notes: orderData.notes,
           });
         }
@@ -3410,13 +3414,11 @@ export class DatabaseStorage implements IStorage {
             finalPrice: null,
             totalAmount: item.totalPrice,
             paymentMethod: orderData.paymentMethod,
-            paymentStatus: "completed",
+            paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
             notes: orderData.notes,
             status: "pending",
-            scheduledAt: orderData.scheduledAt,
+            scheduledAt: orderData.scheduledAt || null,
             completedAt: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
           });
         }
       } else if (item.providerServiceId && item.providerService.provider.id !== 0) {
@@ -3437,13 +3439,11 @@ export class DatabaseStorage implements IStorage {
           finalPrice: null,
           totalAmount: item.totalPrice,
           paymentMethod: orderData.paymentMethod,
-          paymentStatus: "completed",
+          paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
           notes: orderData.notes,
           status: "pending",
-          scheduledAt: orderData.scheduledAt,
+          scheduledAt: orderData.scheduledAt || null,
           completedAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         });
       }
     }
