@@ -657,6 +657,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category-based service distribution - Get services with available providers
+  app.get("/api/services-catalog/category/:categoryId/with-providers", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      
+      if (isNaN(categoryId) || categoryId <= 0) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+      
+      const { city, state } = req.query;
+      
+      const services = await storage.getServicesByCategoryWithProviders(
+        categoryId,
+        city as string | undefined,
+        state as string | undefined
+      );
+      
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get services with providers", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get specific service with available providers by region
+  app.get("/api/services-catalog/:id/providers", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      if (isNaN(serviceId) || serviceId <= 0) {
+        return res.status(400).json({ message: "Invalid service ID" });
+      }
+      
+      const { city, state } = req.query;
+      
+      const service = await storage.getServiceWithProviders(
+        serviceId,
+        city as string | undefined,
+        state as string | undefined
+      );
+      
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get service with providers", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Get providers by category and region
+  app.get("/api/providers/category/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      
+      if (isNaN(categoryId) || categoryId <= 0) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+      
+      const { city, state } = req.query;
+      
+      const providers = await storage.getProvidersByCategoryAndRegion(
+        categoryId,
+        city as string | undefined,
+        state as string | undefined
+      );
+      
+      res.json(providers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get providers by category", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Provider routes
   app.post("/api/providers", authenticateToken, async (req, res) => {
     try {

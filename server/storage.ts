@@ -156,6 +156,11 @@ export interface IStorage {
   adoptServiceFromCatalog(providerId: number, serviceId: number, serviceData: Partial<InsertProviderService>): Promise<ProviderService>;
   getAvailableServicesForProvider(providerId: number): Promise<Service[]>; // Services not yet adopted by this provider
   
+  // Category-based service distribution
+  getServicesByCategoryWithProviders(categoryId: number, city?: string, state?: string): Promise<Array<Service & { category: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }>>;
+  getProvidersByCategoryAndRegion(categoryId: number, city?: string, state?: string): Promise<(Provider & { user: User })[]>;
+  getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }) | null>
+  
   // Service charging types
   getServiceChargingTypes(providerServiceId: number): Promise<ServiceChargingType[]>;
   createServiceChargingType(chargingType: InsertServiceChargingType): Promise<ServiceChargingType>;
@@ -1019,6 +1024,147 @@ export class DatabaseStorage implements IStorage {
     
     // Filter out already adopted services
     return allServices.filter(service => !adoptedServiceIds.includes(service.id));
+  }
+
+  // Category-based service distribution methods
+  async getProvidersByCategoryAndRegion(categoryId: number, city?: string, state?: string): Promise<(Provider & { user: User })[]> {
+    // Get all provider IDs that have this category
+    const providerCategoriesResult = await db
+      .select({ providerId: providerCategories.providerId })
+      .from(providerCategories)
+      .where(eq(providerCategories.categoryId, categoryId));
+    
+    const providerIds = providerCategoriesResult.map(pc => pc.providerId);
+    
+    if (providerIds.length === 0) {
+      return [];
+    }
+    
+    // Build the where conditions for filtering
+    const conditions: any[] = [
+      inArray(providers.id, providerIds),
+      eq(providers.status, 'approved')
+    ];
+    
+    if (city) {
+      conditions.push(eq(providers.city, city));
+    }
+    
+    if (state) {
+      conditions.push(eq(providers.state, state));
+    }
+    
+    // Get providers with user data
+    const result = await db
+      .select({
+        provider: providers,
+        user: users,
+      })
+      .from(providers)
+      .innerJoin(users, eq(providers.userId, users.id))
+      .where(and(...conditions));
+    
+    return result.map(r => ({ ...r.provider, user: r.user }));
+  }
+
+  async getServicesByCategoryWithProviders(categoryId: number, city?: string, state?: string): Promise<Array<Service & { category: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }>> {
+    // Get all services in this category
+    const categoryServices = await db
+      .select({
+        service: services,
+        category: serviceCategories,
+      })
+      .from(services)
+      .innerJoin(serviceCategories, eq(services.categoryId, serviceCategories.id))
+      .where(and(
+        eq(services.categoryId, categoryId),
+        eq(services.isActive, true)
+      ));
+    
+    // For each service, find providers who have adopted it
+    const servicesWithProviders = await Promise.all(
+      categoryServices.map(async ({ service, category }) => {
+        // Build conditions for provider filtering
+        const providerConditions: any[] = [
+          eq(providerServices.serviceId, service.id),
+          eq(providerServices.isActive, true),
+          eq(providers.status, 'approved')
+        ];
+        
+        if (city) {
+          providerConditions.push(eq(providers.city, city));
+        }
+        
+        if (state) {
+          providerConditions.push(eq(providers.state, state));
+        }
+        
+        // Get providers who adopted this specific service
+        const providersForService = await db
+          .select({
+            provider: providers,
+            user: users,
+          })
+          .from(providerServices)
+          .innerJoin(providers, eq(providerServices.providerId, providers.id))
+          .innerJoin(users, eq(providers.userId, users.id))
+          .where(and(...providerConditions));
+        
+        const providerList = providersForService.map(r => ({ ...r.provider, user: r.user }));
+        
+        return {
+          ...service,
+          category,
+          providers: providerList,
+          providerCount: providerList.length
+        };
+      })
+    );
+    
+    return servicesWithProviders;
+  }
+
+  async getServiceWithProviders(serviceId: number, city?: string, state?: string): Promise<(Service & { category: ServiceCategory; subcategory?: ServiceCategory; providers: (Provider & { user: User })[]; providerCount: number }) | null> {
+    // Get the service
+    const service = await this.getService(serviceId);
+    
+    if (!service) {
+      return null;
+    }
+    
+    // Build conditions for provider filtering
+    const providerConditions: any[] = [
+      eq(providerServices.serviceId, serviceId),
+      eq(providerServices.isActive, true),
+      eq(providers.status, 'approved')
+    ];
+    
+    if (city) {
+      providerConditions.push(eq(providers.city, city));
+    }
+    
+    if (state) {
+      providerConditions.push(eq(providers.state, state));
+    }
+    
+    // Get providers who adopted this specific service
+    const providersForService = await db
+      .select({
+        provider: providers,
+        user: users,
+      })
+      .from(providerServices)
+      .innerJoin(providers, eq(providerServices.providerId, providers.id))
+      .innerJoin(users, eq(providers.userId, users.id))
+      .where(and(...providerConditions));
+    
+    const providerList = providersForService.map(r => ({ ...r.provider, user: r.user }));
+    
+    return {
+      ...service,
+      providers: providerList,
+      providerCount: providerList.length
+    };
   }
 
   // Service charging types methods
