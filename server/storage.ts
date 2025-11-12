@@ -1385,18 +1385,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(serviceRequests.createdAt));
   }
 
-  // Provider bookings - returns orders + service_requests (with deduplication)
+  // Provider bookings - returns only service requests (open requests where providers make proposals)
+  // Orders from catalog are now fetched separately via getProviderOrders()
   async getProviderBookings(providerId: number): Promise<any[]> {
     try {
-      console.log(`Getting provider bookings for provider ${providerId}`);
+      console.log(`Getting provider service requests for provider ${providerId}`);
       
-      // First try to get categories from the new providerCategories table
+      // Get provider's categories
       let providerCategoryRecords = await db
         .select({ categoryId: providerCategories.categoryId })
         .from(providerCategories)
         .where(eq(providerCategories.providerId, providerId));
       
-      // If no categories found in providerCategories table, fall back to deriving from services
+      // Fallback to deriving from services if no categories in providerCategories
       if (providerCategoryRecords.length === 0) {
         providerCategoryRecords = await db
           .select({ categoryId: providerServices.categoryId })
@@ -1414,126 +1415,12 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`Provider ${providerId} has services in categories: ${categoryIds.join(', ')}`);
       
-      // Get service requests for ALL categories where provider has services
+      // Get service requests for categories where provider has services
       const serviceRequestsData = await this.getServiceRequestsByProviderCategories(providerId, categoryIds);
       console.log(`Found ${serviceRequestsData.length} service requests`);
       
-      // Get this provider's services to filter relevant orders
-      const providerServiceIds = await db
-        .select({ id: providerServices.id })
-        .from(providerServices)
-        .where(eq(providerServices.providerId, providerId));
-      
-      const providerServiceIdList = providerServiceIds.map(ps => ps.id);
-      
-      // Get catalog services in provider's categories
-      const catalogServiceIds = await db
-        .select({ id: services.id })
-        .from(services)
-        .where(inArray(services.categoryId, categoryIds));
-      
-      const catalogServiceIdList = catalogServiceIds.map(cs => cs.id);
-      
-      // Get orders that contain services this provider can handle OR are assigned to them
-      const ordersData = await db
-        .select({
-          id: orders.id,
-          clientId: orders.clientId,
-          providerId: orders.providerId,
-          status: orders.status,
-          subtotal: orders.subtotal,
-          discountAmount: orders.discountAmount,
-          serviceAmount: orders.serviceAmount,
-          totalAmount: orders.totalAmount,
-          couponCode: orders.couponCode,
-          paymentMethod: orders.paymentMethod,
-          address: orders.address,
-          cep: orders.cep,
-          city: orders.city,
-          state: orders.state,
-          latitude: orders.latitude,
-          longitude: orders.longitude,
-          scheduledAt: orders.scheduledAt,
-          notes: orders.notes,
-          createdAt: orders.createdAt,
-          updatedAt: orders.updatedAt,
-          client: users,
-          // Get service name from order items
-          providerServiceName: providerServices.name,
-          catalogServiceName: services.name,
-          categoryName: serviceCategories.name,
-        })
-        .from(orders)
-        .innerJoin(users, eq(orders.clientId, users.id))
-        .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
-        .leftJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
-        .leftJoin(services, eq(orderItems.catalogServiceId, services.id))
-        .leftJoin(serviceCategories, or(
-          eq(providerServices.categoryId, serviceCategories.id),
-          eq(services.categoryId, serviceCategories.id)
-        ))
-        .where(
-          or(
-            // Show orders assigned to this provider (regardless of service content)
-            eq(orders.providerId, providerId),
-            // Show confirmed orders without provider assigned that contain services this provider can handle
-            and(
-              eq(orders.status, "confirmed"),
-              isNull(orders.providerId),
-              or(
-                // Orders containing provider's own services
-                providerServiceIdList.length > 0 ? inArray(orderItems.providerServiceId, providerServiceIdList) : sql`false`,
-                // Orders containing catalog services in provider's category
-                catalogServiceIdList.length > 0 ? inArray(orderItems.catalogServiceId, catalogServiceIdList) : sql`false`
-              )
-            )
-          )
-        )
-        .groupBy(
-          orders.id,
-          orders.clientId,
-          orders.providerId,
-          orders.status,
-          orders.subtotal,
-          orders.discountAmount,
-          orders.serviceAmount,
-          orders.totalAmount,
-          orders.couponCode,
-          orders.paymentMethod,
-          orders.address,
-          orders.cep,
-          orders.city,
-          orders.state,
-          orders.latitude,
-          orders.longitude,
-          orders.scheduledAt,
-          orders.notes,
-          orders.createdAt,
-          orders.updatedAt,
-          users.id,
-          users.name,
-          users.email,
-          users.phone,
-          users.address,
-          users.city,
-          users.state,
-          users.cep,
-          users.latitude,
-          users.longitude,
-          users.userType,
-          users.isActive,
-          users.createdAt,
-          users.updatedAt,
-          providerServices.name,
-          services.name,
-          serviceCategories.name
-        )
-        .orderBy(desc(orders.createdAt));
-
-      console.log(`Found ${ordersData.length} orders`);
-
-      // Transform service requests to unified format
-      const transformedServiceRequests = serviceRequestsData.map(sr => ({
+      // Transform to unified format
+      return serviceRequestsData.map(sr => ({
         id: sr.id,
         clientId: sr.clientId,
         categoryId: sr.categoryId,
@@ -1557,44 +1444,6 @@ export class DatabaseStorage implements IStorage {
         category: sr.category,
         type: 'service_request' as const
       }));
-
-      // Transform orders to unified format with specific service names
-      const transformedOrders = ordersData.map(order => {
-        const serviceName = order.providerServiceName || order.catalogServiceName || order.categoryName || "Serviço";
-        const categoryName = order.categoryName || "Catálogo";
-        
-        return {
-          id: order.id,
-          clientId: order.clientId,
-          categoryId: null,
-          providerId: order.providerId,
-          status: order.status === "confirmed" ? "accepted" : order.status,
-          totalAmount: order.totalAmount,
-          paymentMethod: order.paymentMethod,
-          paymentStatus: order.paymentMethod === "cash" ? "pending" : "pending",
-          address: order.address || order.client.address || "Endereço não informado",
-          cep: order.cep || order.client.cep || "",
-          city: order.city || order.client.city || "",
-          state: order.state || order.client.state || "",
-          latitude: order.latitude,
-          longitude: order.longitude,
-          scheduledAt: order.scheduledAt,
-          notes: order.notes,
-          createdAt: order.createdAt,
-          updatedAt: order.updatedAt,
-          title: serviceName,
-          client: order.client,
-          category: { id: 0, name: categoryName },
-          type: 'order' as const
-        };
-      });
-
-      // DEDUPLICATION: Service requests with linked orders were already filtered out in the query
-      // So we can safely combine service_requests + orders without manual dedup
-      const combined = [...transformedServiceRequests, ...transformedOrders];
-      console.log(`Combined total: ${combined.length} bookings (${transformedServiceRequests.length} service requests, ${transformedOrders.length} orders)`);
-      
-      return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
     } catch (error) {
       console.error('Error in getProviderBookings:', error);
@@ -3456,50 +3305,6 @@ export class DatabaseStorage implements IStorage {
           notes: item.notes || null,
           chargingType: item.chargingType || null,
         });
-
-        // If it's a catalog service, create service request for relevant providers
-        if (item.catalogServiceId && !item.providerServiceId) {
-          // Get the catalog service to find its category
-          const catalogService = await this.getService(item.catalogServiceId);
-          if (catalogService) {
-            await db.insert(serviceRequests).values({
-              clientId: orderData.clientId,
-              providerId: null, // Will be assigned when provider accepts
-              categoryId: catalogService.categoryId,
-              title: catalogService.name,
-              description: catalogService.description || "Serviço solicitado do catálogo",
-              address: orderData.address || "",
-              cep: orderData.cep || "",
-              city: orderData.city || "",
-              state: orderData.state || "",
-              scheduledAt: orderData.scheduledAt || null,
-              status: "pending",
-              price: parseFloat(item.totalPrice) || 0,
-              paymentMethod: orderData.paymentMethod,
-              paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
-              notes: orderData.notes,
-            });
-          }
-        } else if (item.providerServiceId) {
-          // For provider services, create targeted service request
-          await db.insert(serviceRequests).values({
-            clientId: orderData.clientId,
-            providerId: item.providerId || null,
-            categoryId: item.categoryId || 1,
-            title: item.name || "Solicitação de Serviço",
-            description: item.description || "Serviço solicitado",
-            address: orderData.address || "",
-            cep: orderData.cep || "",
-            city: orderData.city || "",
-            state: orderData.state || "",
-            scheduledAt: orderData.scheduledAt || null,
-            status: "pending",
-            price: parseFloat(item.totalPrice) || 0,
-            paymentMethod: orderData.paymentMethod,
-            paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
-            notes: orderData.notes,
-          });
-        }
       }
     }
 
@@ -3529,62 +3334,6 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(orders.id, cart.id))
       .returning();
-
-    // Process items and create service requests
-    for (const item of cart.items) {
-      if (item.type === 'catalog' && item.catalogServiceId) {
-        // Catalog service item - create service request for any provider in the category
-        const catalogService = await this.getService(item.catalogServiceId);
-        if (catalogService) {
-          await db.insert(serviceRequests).values({
-            clientId,
-            categoryId: catalogService.categoryId,
-            providerId: null, // Will be assigned when provider accepts
-            title: catalogService.name,
-            description: catalogService.description || "Serviço solicitado do catálogo",
-            address: orderData.address || '',
-            cep: orderData.cep || '',
-            city: orderData.city || '',
-            state: orderData.state || '',
-            latitude: orderData.latitude,
-            longitude: orderData.longitude,
-            estimatedPrice: item.totalPrice,
-            finalPrice: null,
-            totalAmount: item.totalPrice,
-            paymentMethod: orderData.paymentMethod,
-            paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
-            notes: orderData.notes,
-            status: "pending",
-            scheduledAt: orderData.scheduledAt || null,
-            completedAt: null,
-          });
-        }
-      } else if (item.providerServiceId && item.providerService.provider.id !== 0) {
-        // Real provider service item - create targeted service request
-        await db.insert(serviceRequests).values({
-          clientId,
-          categoryId: item.providerService.category.id,
-          providerId: item.providerService.provider.id,
-          title: `${item.providerService.name} - Pedido #${updatedOrder.id}`,
-          description: `${item.quantity}x ${item.providerService.name}${orderData.notes ? ` - ${orderData.notes}` : ''}`,
-          address: orderData.address || '',
-          cep: orderData.cep || '',
-          city: orderData.city || '',
-          state: orderData.state || '',
-          latitude: orderData.latitude,
-          longitude: orderData.longitude,
-          estimatedPrice: item.totalPrice,
-          finalPrice: null,
-          totalAmount: item.totalPrice,
-          paymentMethod: orderData.paymentMethod,
-          paymentStatus: orderData.paymentMethod === 'cash' ? 'pending' : 'completed',
-          notes: orderData.notes,
-          status: "pending",
-          scheduledAt: orderData.scheduledAt || null,
-          completedAt: null,
-        });
-      }
-    }
 
     return updatedOrder;
   }

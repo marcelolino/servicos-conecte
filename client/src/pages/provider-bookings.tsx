@@ -109,37 +109,75 @@ export default function ProviderBookingsPage() {
   
   const selectedTab = getSelectedTab();
   
-  const { data: bookings, isLoading } = useQuery<BookingData[]>({
+  // Fetch service requests (open requests where providers make proposals)
+  const { data: serviceRequests, isLoading: isLoadingRequests } = useQuery<BookingData[]>({
     queryKey: ["/api/service-requests/provider"],
   });
 
+  // Fetch catalog orders (orders from catalog that need a provider)
+  const { data: catalogOrders, isLoading: isLoadingOrders } = useQuery<BookingData[]>({
+    queryKey: ["/api/orders/provider"],
+  });
+
+  // Merge both data sources
+  const bookings = [
+    ...(serviceRequests || []),
+    ...(catalogOrders || [])
+  ];
+  
+  const isLoading = isLoadingRequests || isLoadingOrders;
+
   // Mutation for accepting/rejecting bookings
   const updateBookingMutation = useMutation({
-    mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
+    mutationFn: async ({ id, status, notes, type }: { id: number; status: string; notes?: string; type?: 'order' | 'service_request' }) => {
+      // For catalog orders, use the orders endpoint
+      if (type === 'order') {
+        if (status === 'accepted') {
+          return apiRequest("PUT", `/api/orders/${id}/accept-catalog-service`, {});
+        } else {
+          // For rejecting/cancelling orders, update order status
+          return apiRequest("PUT", `/api/orders/${id}`, { status, notes });
+        }
+      }
+      // For service requests, use the service-requests endpoint
       return apiRequest("PUT", `/api/service-requests/${id}`, { status, notes });
     },
-    onMutate: async ({ id, status }) => {
+    onMutate: async ({ id, status, type }) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ["/api/service-requests/provider"] });
+      await queryClient.cancelQueries({ queryKey: ["/api/orders/provider"] });
       
-      // Snapshot the previous value
-      const previousBookings = queryClient.getQueryData(["/api/service-requests/provider"]);
+      // Snapshot the previous values
+      const previousServiceRequests = queryClient.getQueryData(["/api/service-requests/provider"]);
+      const previousOrders = queryClient.getQueryData(["/api/orders/provider"]);
       
-      // Optimistically update to the new value
-      queryClient.setQueryData(["/api/service-requests/provider"], (old: BookingData[] | undefined) => {
-        if (!old) return old;
-        return old.map(booking => 
-          booking.id === id 
-            ? { ...booking, status: status }
-            : booking
-        );
-      });
+      // Optimistically update the correct query based on type
+      if (type === 'order') {
+        queryClient.setQueryData(["/api/orders/provider"], (old: BookingData[] | undefined) => {
+          if (!old) return old;
+          return old.map(booking => 
+            booking.id === id 
+              ? { ...booking, status: status }
+              : booking
+          );
+        });
+      } else {
+        queryClient.setQueryData(["/api/service-requests/provider"], (old: BookingData[] | undefined) => {
+          if (!old) return old;
+          return old.map(booking => 
+            booking.id === id 
+              ? { ...booking, status: status }
+              : booking
+          );
+        });
+      }
       
-      // Return a context object with the snapshotted value
-      return { previousBookings };
+      // Return a context object with the snapshotted values
+      return { previousServiceRequests, previousOrders };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/provider"] });
       toast({
         title: "Reserva atualizada",
         description: "O status da reserva foi atualizado com sucesso.",
@@ -147,8 +185,11 @@ export default function ProviderBookingsPage() {
     },
     onError: (error: any, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousBookings) {
-        queryClient.setQueryData(["/api/service-requests/provider"], context.previousBookings);
+      if (context?.previousServiceRequests) {
+        queryClient.setQueryData(["/api/service-requests/provider"], context.previousServiceRequests);
+      }
+      if (context?.previousOrders) {
+        queryClient.setQueryData(["/api/orders/provider"], context.previousOrders);
       }
       
       const errorMessage = error?.message || "Ocorreu um erro ao atualizar a reserva.";
@@ -171,15 +212,16 @@ export default function ProviderBookingsPage() {
     onSettled: () => {
       // Always refetch after error or success to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/provider"] });
     },
   });
 
-  const handleAcceptBooking = (bookingId: number) => {
-    updateBookingMutation.mutate({ id: bookingId, status: 'accepted' });
+  const handleAcceptBooking = (bookingId: number, bookingType?: 'order' | 'service_request') => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'accepted', type: bookingType });
   };
 
-  const handleRejectBooking = (bookingId: number) => {
-    updateBookingMutation.mutate({ id: bookingId, status: 'cancelled', notes: 'Rejeitado pelo provedor' });
+  const handleRejectBooking = (bookingId: number, bookingType?: 'order' | 'service_request') => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'cancelled', notes: 'Rejeitado pelo provedor', type: bookingType });
   };
 
   if (isLoading) {
@@ -477,8 +519,8 @@ export default function ProviderBookingsPage() {
 
 interface BookingsTableProps {
   bookings: BookingData[];
-  onAcceptBooking: (id: number) => void;
-  onRejectBooking: (id: number) => void;
+  onAcceptBooking: (id: number, type?: 'order' | 'service_request') => void;
+  onRejectBooking: (id: number, type?: 'order' | 'service_request') => void;
   isUpdating: boolean;
   navigate: (path: string) => void;
 }
@@ -711,8 +753,9 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             variant="outline"
                             className={`text-green-600 hover:text-green-700 ${isUpdating ? 'bg-green-50 border-green-200' : ''}`}
                             title="Aceitar"
-                            onClick={() => onAcceptBooking(booking.id)}
+                            onClick={() => onAcceptBooking(booking.id, booking.type)}
                             disabled={isUpdating}
+                            data-testid={`button-accept-${booking.id}`}
                           >
                             {isUpdating ? (
                               <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
@@ -725,8 +768,9 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             variant="outline"
                             className={`text-red-600 hover:text-red-700 ${isUpdating ? 'bg-red-50 border-red-200' : ''}`}
                             title="Ignorar/Rejeitar"
-                            onClick={() => onRejectBooking(booking.id)}
+                            onClick={() => onRejectBooking(booking.id, booking.type)}
                             disabled={isUpdating}
+                            data-testid={`button-reject-${booking.id}`}
                           >
                             {isUpdating ? (
                               <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
