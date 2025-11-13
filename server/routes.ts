@@ -3589,33 +3589,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "This order has already been accepted by another provider" });
       }
 
+      // Check if order contains catalog services
       const orderItems = order.items;
+      const hasCatalogServices = orderItems.some(item => item.catalogServiceId);
       
-      // Verify provider can serve these services
-      const providerServices = await storage.getProviderServicesByProvider(provider.id);
-      const providerServiceIds = providerServices.map(ps => ps.id);
-      const providerCategoryIds = providerServices.map(ps => ps.categoryId);
+      if (!hasCatalogServices) {
+        return res.status(400).json({ message: "This order does not contain catalog services" });
+      }
 
-      // Check each order item
-      for (const item of orderItems) {
-        // If it's a provider service, check if it's from this provider
-        if (item.providerServiceId) {
-          if (!providerServiceIds.includes(item.providerServiceId)) {
-            return res.status(403).json({ 
-              message: "This order contains services you don't offer" 
-            });
-          }
-        }
-        // If it's a catalog service, check if provider offers services in this category
-        else if (item.catalogServiceId) {
-          const catalogService = await storage.getService(item.catalogServiceId);
-          if (!catalogService) continue;
-          
-          if (!providerCategoryIds.includes(catalogService.categoryId)) {
-            return res.status(403).json({ 
-              message: `You don't offer services in the ${catalogService.category?.name || 'required'} category` 
-            });
-          }
+      // Verify provider can serve in this category
+      const catalogItems = orderItems.filter(item => item.catalogServiceId);
+      for (const item of catalogItems) {
+        if (!item.catalogServiceId) continue;
+        
+        const catalogService = await storage.getService(item.catalogServiceId);
+        if (!catalogService) continue;
+        
+        // Check if provider offers services in this category
+        const providerServices = await storage.getProviderServicesByProvider(provider.id);
+        const hasServiceInCategory = providerServices.some(ps => ps.categoryId === catalogService.categoryId);
+        
+        if (!hasServiceInCategory) {
+          return res.status(403).json({ 
+            message: `You don't offer services in the ${catalogService.category?.name || 'required'} category` 
+          });
         }
       }
 
@@ -3654,26 +3651,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Notify other providers in the same categories that this order is no longer available
       try {
-        // Get unique categories from order items
-        const categoryIds = new Set<number>();
-        
-        for (const item of orderItems) {
-          if (item.catalogServiceId) {
-            const catalogService = await storage.getService(item.catalogServiceId);
-            if (catalogService) {
-              categoryIds.add(catalogService.categoryId);
-            }
-          } else if (item.providerServiceId) {
-            const providerService = await storage.getProviderServiceById(item.providerServiceId);
-            if (providerService && providerService.categoryId) {
-              categoryIds.add(providerService.categoryId);
-            }
-          }
-        }
-        
-        // Notify providers in these categories
-        for (const categoryId of categoryIds) {
-          const otherProviders = await storage.getProvidersByCategory(categoryId);
+        for (const item of catalogItems) {
+          if (!item.catalogServiceId) continue;
+          
+          const catalogService = await storage.getService(item.catalogServiceId);
+          if (!catalogService) continue;
+          
+          const otherProviders = await storage.getProvidersByCategory(catalogService.categoryId);
           
           for (const otherProvider of otherProviders) {
             if (otherProvider.id === provider.id) continue; // Skip the provider who accepted
@@ -3682,7 +3666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createNotification(otherProvider.userId, {
                 type: 'order_taken',
                 title: 'Oportunidade Perdida',
-                message: `O pedido #${orderId} foi aceito por outro prestador`,
+                message: `O pedido #${orderId} para ${catalogService.name} foi aceito por outro prestador`,
                 relatedId: orderId,
               });
 
