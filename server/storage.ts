@@ -3627,6 +3627,28 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Cart not found");
     }
 
+    // Resolve provider ID from cart items
+    let resolvedProviderId: number | null = null;
+    const providerIds = new Set<number>();
+    
+    for (const item of cart.items) {
+      if (item.providerServiceId) {
+        // Fetch the provider service to get the providerId
+        const providerService = await this.getProviderService(item.providerServiceId);
+        if (providerService) {
+          providerIds.add(providerService.providerId);
+        }
+      }
+    }
+    
+    // Check if all items belong to the same provider
+    if (providerIds.size === 1) {
+      resolvedProviderId = Array.from(providerIds)[0];
+    } else if (providerIds.size > 1) {
+      throw new Error("Carrinho contém serviços de múltiplos provedores. Por favor, finalize pedidos separados para cada provedor.");
+    }
+    // If providerIds.size === 0, it's a catalog-only order, so providerId remains null
+
     // Calculate totals
     const subtotal = cart.items.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
     const serviceAmount = subtotal * 0.1; // 10% service fee
@@ -3640,6 +3662,7 @@ export class DatabaseStorage implements IStorage {
       .update(orders)
       .set({
         ...orderData,
+        providerId: resolvedProviderId,
         status: initialStatus,
         subtotal: subtotal.toString(),
         serviceAmount: serviceAmount.toString(),
