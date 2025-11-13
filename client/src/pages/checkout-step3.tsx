@@ -68,7 +68,6 @@ const CheckoutStep3 = () => {
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
     queryKey: ['/api/cart'],
-    queryFn: () => apiRequest('GET', '/api/cart')
   });
 
   const cartItems = cartData?.items || [];

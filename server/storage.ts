@@ -3255,18 +3255,26 @@ export class DatabaseStorage implements IStorage {
           serviceCategories.name
         );
 
-      // Combine both queries and remove duplicates
-      const allOrders = [...catalogOrders, ...providerOrders];
+      // Combine both queries, remove duplicates, and maintain ordering by creation date
       const uniqueOrdersMap = new Map();
-      allOrders.forEach(order => {
+      
+      // Add catalog orders first
+      catalogOrders.forEach(order => {
+        uniqueOrdersMap.set(order.id, order);
+      });
+      
+      // Add provider orders (will overwrite if duplicate, but keep all unique)
+      providerOrders.forEach(order => {
         if (!uniqueOrdersMap.has(order.id)) {
           uniqueOrdersMap.set(order.id, order);
         }
       });
+      
+      // Convert to array and sort by creation date (newest first)
       const ordersData = Array.from(uniqueOrdersMap.values())
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      console.log(`Found ${ordersData.length} orders for provider`);
+      console.log(`Found ${ordersData.length} orders for provider (${catalogOrders.length} catalog + ${providerOrders.length} provider)`);
 
       // Transform to unified format
       return ordersData.map(order => ({

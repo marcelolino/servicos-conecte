@@ -44,7 +44,8 @@ import {
   Printer,
   Check,
   X,
-  MessageCircle
+  MessageCircle,
+  Settings
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -720,39 +721,31 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                     <div className="flex items-center gap-1">
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => navigate(`/provider-bookings/details/${booking.id}`)}
                         title="Visualizar Detalhes"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        data-testid={`button-view-${booking.id}`}
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </Button>
                       <Button 
                         size="sm" 
-                        variant="outline"
-                        onClick={() => window.print()}
-                        title="Imprimir"
+                        variant="ghost"
+                        onClick={() => navigate(`/provider-bookings/details/${booking.id}`)}
+                        title="Gerenciar Reserva"
+                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        data-testid={`button-manage-${booking.id}`}
                       >
-                        <Printer className="w-4 h-4" />
+                        <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </Button>
-                      {(booking.status === 'accepted' || booking.status === 'in_progress' || booking.status === 'completed') && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Conversar com Cliente"
-                          onClick={() => handleStartChat(booking.clientId, booking.id)}
-                          disabled={createChatMutation.isPending}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {booking.status === 'pending' && (
+                      {booking.status === 'pending' ? (
                         <>
                           <Button 
                             size="sm" 
-                            variant="outline"
-                            className={`text-green-600 hover:text-green-700 ${isUpdating ? 'bg-green-50 border-green-200' : ''}`}
-                            title="Aceitar"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-900/20"
+                            title="Aceitar Reserva"
                             onClick={() => onAcceptBooking(booking.id, booking.type)}
                             disabled={isUpdating}
                             data-testid={`button-accept-${booking.id}`}
@@ -760,13 +753,13 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             {isUpdating ? (
                               <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
                             ) : (
-                              <Check className="w-4 h-4" />
+                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                             )}
                           </Button>
                           <Button 
                             size="sm" 
-                            variant="outline"
-                            className={`text-red-600 hover:text-red-700 ${isUpdating ? 'bg-red-50 border-red-200' : ''}`}
+                            variant="ghost"
+                            className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
                             title="Ignorar/Rejeitar"
                             onClick={() => onRejectBooking(booking.id, booking.type)}
                             disabled={isUpdating}
@@ -775,10 +768,21 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             {isUpdating ? (
                               <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                             ) : (
-                              <X className="w-4 h-4" />
+                              <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                             )}
                           </Button>
                         </>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => window.print()}
+                          title="Imprimir"
+                          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          data-testid={`button-print-${booking.id}`}
+                        >
+                          <Printer className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </Button>
                       )}
                     </div>
                   </TableCell>
