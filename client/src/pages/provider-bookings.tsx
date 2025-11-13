@@ -111,6 +111,11 @@ export default function ProviderBookingsPage() {
   
   const selectedTab = getSelectedTab();
   
+  // Fetch current provider data
+  const { data: provider } = useQuery({
+    queryKey: ["/api/providers/me"],
+  });
+  
   // Fetch service requests (open requests where providers make proposals)
   const { data: serviceRequests, isLoading: isLoadingRequests } = useQuery<BookingData[]>({
     queryKey: ["/api/service-requests/provider"],
@@ -470,6 +475,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
           
@@ -480,6 +486,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
           
@@ -490,6 +497,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
           
@@ -500,6 +508,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
           
@@ -510,6 +519,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
           
@@ -520,6 +530,7 @@ export default function ProviderBookingsPage() {
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
               navigate={navigate}
+              currentProviderId={provider?.id}
             />
           </TabsContent>
         </Tabs>
@@ -534,9 +545,10 @@ interface BookingsTableProps {
   onRejectBooking: (id: number, type?: 'order' | 'service_request', isCatalogOrder?: boolean) => void;
   isUpdating: boolean;
   navigate: (path: string) => void;
+  currentProviderId?: number;
 }
 
-function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating, navigate }: BookingsTableProps) {
+function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating, navigate, currentProviderId }: BookingsTableProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
