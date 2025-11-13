@@ -760,7 +760,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             size="sm" 
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            title="Ignorar/Rejeitar"
+                            title="Rejeitar Reserva"
                             onClick={() => onRejectBooking(booking.id, booking.type)}
                             disabled={isUpdating}
                             data-testid={`button-reject-${booking.id}`}
@@ -776,12 +776,13 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                         <Button 
                           size="sm" 
                           variant="ghost"
-                          onClick={() => window.print()}
-                          title="Imprimir"
-                          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          data-testid={`button-print-${booking.id}`}
+                          onClick={() => handleStartChat(booking.clientId, booking.id)}
+                          title="Iniciar Conversa"
+                          className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          disabled={createChatMutation.isPending}
+                          data-testid={`button-chat-${booking.id}`}
                         >
-                          <Printer className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          <MessageCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         </Button>
                       )}
                     </div>
