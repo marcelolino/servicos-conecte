@@ -3156,9 +3156,12 @@ export class DatabaseStorage implements IStorage {
           or(
             // Orders assigned to this provider
             eq(orders.providerId, providerId),
-            // Confirmed orders without provider that contain catalog services this provider can handle
+            // Confirmed or pending_payment orders without provider that contain catalog services this provider can handle
             and(
-              eq(orders.status, "confirmed"),
+              or(
+                eq(orders.status, "confirmed"),
+                eq(orders.status, "pending_payment")
+              ),
               isNull(orders.providerId),
               inArray(orderItems.catalogServiceId, catalogServiceIdList)
             )
@@ -3223,7 +3226,10 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
         .where(
           and(
-            eq(orders.status, "confirmed"),
+            or(
+              eq(orders.status, "confirmed"),
+              eq(orders.status, "pending_payment")
+            ),
             isNull(orders.providerId),
             inArray(providerServices.categoryId, categoryIds)
           )
