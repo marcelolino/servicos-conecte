@@ -3156,9 +3156,10 @@ export class DatabaseStorage implements IStorage {
           or(
             // Orders assigned to this provider
             eq(orders.providerId, providerId),
-            // Confirmed or pending_payment orders without provider that contain catalog services this provider can handle
+            // Confirmed, pending, or pending_payment orders without provider that contain catalog services this provider can handle
             and(
               or(
+                eq(orders.status, "pending"),
                 eq(orders.status, "confirmed"),
                 eq(orders.status, "pending_payment")
               ),
@@ -3227,6 +3228,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             or(
+              eq(orders.status, "pending"),
               eq(orders.status, "confirmed"),
               eq(orders.status, "pending_payment")
             ),
@@ -3629,11 +3631,15 @@ export class DatabaseStorage implements IStorage {
     const serviceAmount = subtotal * 0.1; // 10% service fee
     const totalAmount = subtotal + serviceAmount - parseFloat(orderData.discountAmount || "0");
 
+    // Orders start as pending and require provider acceptance
+    // Only set as confirmed if payment method requires it (like online payment)
+    const initialStatus = orderData.paymentMethod === 'cash' ? 'pending' : 'pending';
+
     const [updatedOrder] = await db
       .update(orders)
       .set({
         ...orderData,
-        status: "confirmed",
+        status: initialStatus,
         subtotal: subtotal.toString(),
         serviceAmount: serviceAmount.toString(),
         totalAmount: totalAmount.toString(),

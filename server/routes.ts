@@ -3707,6 +3707,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reject order (for providers)
+  app.put("/api/orders/:id/reject", authenticateToken, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      
+      // Get provider info
+      const provider = await storage.getProviderByUserId(req.user!.id);
+      if (!provider) {
+        return res.status(404).json({ message: "Provider profile not found" });
+      }
+
+      if (provider.status !== "approved") {
+        return res.status(403).json({ 
+          message: "Your provider profile must be approved before rejecting orders"
+        });
+      }
+
+      // Get order details
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Check if provider can reject this order
+      // 1. If provider is assigned to order, they can reject
+      // 2. If order is pending and has catalog services in provider's categories, they can reject
+      let canReject = false;
+      
+      if (order.providerId === provider.id) {
+        canReject = true;
+      } else if (order.status === 'pending' || order.status === 'pending_payment') {
+        // Verify provider can serve in this category
+        const hasCatalogServices = order.items.some(item => item.catalogServiceId);
+        if (hasCatalogServices) {
+          const providerServices = await storage.getProviderServicesByProvider(provider.id);
+          const providerCategoryIds = providerServices.map(ps => ps.categoryId);
+          
+          for (const item of order.items) {
+            if (item.catalogServiceId) {
+              const catalogService = await storage.getService(item.catalogServiceId);
+              if (catalogService && providerCategoryIds.includes(catalogService.categoryId)) {
+                canReject = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (!canReject) {
+        return res.status(403).json({ message: "You don't have permission to reject this order" });
+      }
+
+      // Reject the order
+      const updatedOrder = await storage.updateOrder(orderId, {
+        status: "cancelled",
+        providerId: order.providerId === provider.id ? null : order.providerId
+      });
+
+      console.log(`Provider ${provider.id} rejected order ${orderId}`);
+
+      // Notify client about order rejection
+      try {
+        await storage.createNotification(order.clientId, {
+          type: 'order_rejected',
+          title: 'Pedido Recusado',
+          message: `O prestador ${provider.user.name} recusou seu pedido #${orderId}`,
+          relatedId: orderId,
+        });
+
+        // Send real-time notification to client
+        if (app.locals.broadcastToUser) {
+          app.locals.broadcastToUser(order.clientId, {
+            type: 'order_rejected',
+            title: 'Pedido Recusado',
+            message: `O prestador ${provider.user.name} recusou seu pedido #${orderId}`,
+            relatedId: orderId,
+            orderId: orderId,
+            providerName: provider.user.name
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to notify client about order rejection:', notificationError);
+      }
+
+      res.json({
+        message: "Order rejected successfully",
+        order: updatedOrder
+      });
+
+    } catch (error) {
+      console.error("Failed to reject order:", error);
+      res.status(500).json({ 
+        message: "Failed to reject order", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Placeholder image route
   app.get("/api/placeholder/:width/:height", (req, res) => {
     const width = parseInt(req.params.width) || 400;

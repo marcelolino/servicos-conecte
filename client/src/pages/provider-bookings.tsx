@@ -133,10 +133,13 @@ export default function ProviderBookingsPage() {
     mutationFn: async ({ id, status, notes, type }: { id: number; status: string; notes?: string; type?: 'order' | 'service_request' }) => {
       // For catalog orders, use the orders endpoint
       if (type === 'order') {
-        if (status === 'accepted') {
+        if (status === 'accepted' || status === 'confirmed') {
           return apiRequest("PUT", `/api/orders/${id}/accept-catalog-service`, {});
+        } else if (status === 'cancelled') {
+          // For rejecting orders, use the reject endpoint
+          return apiRequest("PUT", `/api/orders/${id}/reject`, {});
         } else {
-          // For rejecting/cancelling orders, update order status
+          // For other status updates, use the general update endpoint
           return apiRequest("PUT", `/api/orders/${id}`, { status, notes });
         }
       }
@@ -270,11 +273,16 @@ export default function ProviderBookingsPage() {
 
   const getBookingsByStatus = (status: string) => {
     if (status === "all") return filteredBookings;
+    if (status === "pending_payment") {
+      // Include both pending and pending_payment in the pending tab
+      return filteredBookings.filter(booking => booking.status === 'pending' || booking.status === 'pending_payment');
+    }
     return filteredBookings.filter(booking => booking.status === status);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending':
       case 'pending_payment':
         return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
       case 'confirmed':
@@ -292,6 +300,7 @@ export default function ProviderBookingsPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'pending':
       case 'pending_payment':
         return 'Pendente';
       case 'confirmed':
@@ -325,7 +334,7 @@ export default function ProviderBookingsPage() {
   };
 
   const totalBookings = filteredBookings.length;
-  const pendingBookings = filteredBookings.filter(b => b.status === 'pending_payment').length;
+  const pendingBookings = filteredBookings.filter(b => b.status === 'pending' || b.status === 'pending_payment').length;
   const acceptedBookings = filteredBookings.filter(b => b.status === 'confirmed').length;
   const completedBookings = filteredBookings.filter(b => b.status === 'completed').length;
 
@@ -562,6 +571,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending':
       case 'pending_payment':
         return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
       case 'confirmed':
@@ -579,6 +589,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'pending':
       case 'pending_payment':
         return 'Pendente';
       case 'confirmed':
@@ -739,7 +750,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       >
                         <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </Button>
-                      {booking.status === 'pending_payment' ? (
+                      {(booking.status === 'pending' || booking.status === 'pending_payment') ? (
                         <>
                           <Button 
                             size="sm" 
