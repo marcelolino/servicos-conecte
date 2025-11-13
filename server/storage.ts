@@ -3227,7 +3227,7 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
         .where(
           and(
-            eq(orders.providerId, providerId),
+            eq(providerServices.providerId, providerId),
             or(
               eq(orders.status, "pending"),
               eq(orders.status, "confirmed"),
