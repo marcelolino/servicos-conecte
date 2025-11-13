@@ -3195,7 +3195,7 @@ export class DatabaseStorage implements IStorage {
           serviceCategories.name
         ) : [];
 
-      // Query 2: Orders with providerServiceId (cart-based orders)
+      // Query 2: Orders with providerServiceId that are already assigned to this provider
       const providerOrders = await db
         .select({
           id: orders.id,
@@ -3227,13 +3227,13 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
         .where(
           and(
+            eq(orders.providerId, providerId),
             or(
               eq(orders.status, "pending"),
               eq(orders.status, "confirmed"),
-              eq(orders.status, "pending_payment")
-            ),
-            isNull(orders.providerId),
-            inArray(providerServices.categoryId, categoryIds)
+              eq(orders.status, "pending_payment"),
+              eq(orders.status, "in_progress")
+            )
           )
         )
         .groupBy(
@@ -3268,13 +3268,13 @@ export class DatabaseStorage implements IStorage {
       
       // Add catalog orders first
       catalogOrders.forEach(order => {
-        uniqueOrdersMap.set(order.id, order);
+        uniqueOrdersMap.set(order.id, { ...order, isCatalogOrder: true });
       });
       
       // Add provider orders (will overwrite if duplicate, but keep all unique)
       providerOrders.forEach(order => {
         if (!uniqueOrdersMap.has(order.id)) {
-          uniqueOrdersMap.set(order.id, order);
+          uniqueOrdersMap.set(order.id, { ...order, isCatalogOrder: false });
         }
       });
       
@@ -3303,6 +3303,7 @@ export class DatabaseStorage implements IStorage {
         createdAt: order.createdAt,
         title: order.catalogServiceName || order.categoryName || "Pedido",
         type: 'order' as const,
+        isCatalogOrder: order.isCatalogOrder,
         client: order.client,
         category: { id: 0, name: order.categoryName || "" }
       }));

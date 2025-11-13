@@ -73,6 +73,7 @@ interface BookingData {
   createdAt: string;
   title?: string;
   type: 'order' | 'service_request';
+  isCatalogOrder?: boolean;
   client: {
     id: number;
     name: string;
@@ -130,16 +131,16 @@ export default function ProviderBookingsPage() {
 
   // Mutation for accepting/rejecting bookings
   const updateBookingMutation = useMutation({
-    mutationFn: async ({ id, status, notes, type }: { id: number; status: string; notes?: string; type?: 'order' | 'service_request' }) => {
-      // For catalog orders, use the orders endpoint
+    mutationFn: async ({ id, status, notes, type, isCatalogOrder }: { id: number; status: string; notes?: string; type?: 'order' | 'service_request'; isCatalogOrder?: boolean }) => {
+      // For catalog orders, use the accept-catalog-service endpoint
       if (type === 'order') {
-        if (status === 'accepted' || status === 'confirmed') {
+        if ((status === 'accepted' || status === 'confirmed') && isCatalogOrder) {
           return apiRequest("PUT", `/api/orders/${id}/accept-catalog-service`, {});
         } else if (status === 'cancelled') {
           // For rejecting orders, use the reject endpoint
           return apiRequest("PUT", `/api/orders/${id}/reject`, {});
         } else {
-          // For other status updates, use the general update endpoint
+          // For other status updates and non-catalog orders, use the general update endpoint
           return apiRequest("PUT", `/api/orders/${id}`, { status, notes });
         }
       }
@@ -220,12 +221,12 @@ export default function ProviderBookingsPage() {
     },
   });
 
-  const handleAcceptBooking = (bookingId: number, bookingType?: 'order' | 'service_request') => {
-    updateBookingMutation.mutate({ id: bookingId, status: 'accepted', type: bookingType });
+  const handleAcceptBooking = (bookingId: number, bookingType?: 'order' | 'service_request', isCatalogOrder?: boolean) => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'accepted', type: bookingType, isCatalogOrder });
   };
 
-  const handleRejectBooking = (bookingId: number, bookingType?: 'order' | 'service_request') => {
-    updateBookingMutation.mutate({ id: bookingId, status: 'cancelled', notes: 'Rejeitado pelo provedor', type: bookingType });
+  const handleRejectBooking = (bookingId: number, bookingType?: 'order' | 'service_request', isCatalogOrder?: boolean) => {
+    updateBookingMutation.mutate({ id: bookingId, status: 'cancelled', notes: 'Rejeitado pelo provedor', type: bookingType, isCatalogOrder });
   };
 
   if (isLoading) {
@@ -529,8 +530,8 @@ export default function ProviderBookingsPage() {
 
 interface BookingsTableProps {
   bookings: BookingData[];
-  onAcceptBooking: (id: number, type?: 'order' | 'service_request') => void;
-  onRejectBooking: (id: number, type?: 'order' | 'service_request') => void;
+  onAcceptBooking: (id: number, type?: 'order' | 'service_request', isCatalogOrder?: boolean) => void;
+  onRejectBooking: (id: number, type?: 'order' | 'service_request', isCatalogOrder?: boolean) => void;
   isUpdating: boolean;
   navigate: (path: string) => void;
 }
@@ -757,7 +758,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-900/20"
                             title="Aceitar Reserva"
-                            onClick={() => onAcceptBooking(booking.id, booking.type)}
+                            onClick={() => onAcceptBooking(booking.id, booking.type, booking.isCatalogOrder)}
                             disabled={isUpdating}
                             data-testid={`button-accept-${booking.id}`}
                           >
@@ -772,7 +773,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
                             title="Rejeitar Reserva"
-                            onClick={() => onRejectBooking(booking.id, booking.type)}
+                            onClick={() => onRejectBooking(booking.id, booking.type, booking.isCatalogOrder)}
                             disabled={isUpdating}
                             data-testid={`button-reject-${booking.id}`}
                           >
