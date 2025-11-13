@@ -3521,6 +3521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         canUpdate = true;
       } else {
         // Allow providers to update pending orders with catalog services in their categories
+        // OR orders that contain their own provider services
         const provider = await storage.getProviderByUserId(req.user!.id);
         if (provider && provider.status === "approved" && !order.providerId) {
           // Check if order has catalog services in provider's categories
@@ -3540,6 +3541,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           }
+          
+          // Also check if order contains this provider's own services
+          if (!canUpdate) {
+            const hasProviderServices = order.items.some(item => {
+              return item.providerService && item.providerService.providerId === provider.id;
+            });
+            if (hasProviderServices) {
+              canUpdate = true;
+            }
+          }
         }
       }
 
@@ -3553,6 +3564,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.providerId) updateData.providerId = req.body.providerId;
       if (req.body.scheduledAt) updateData.scheduledAt = new Date(req.body.scheduledAt);
       if (req.body.notes) updateData.notes = req.body.notes;
+
+      // If provider is accepting the order (status = accepted/confirmed) and order contains their services,
+      // automatically assign the provider to the order
+      if ((req.body.status === 'accepted' || req.body.status === 'confirmed') && !order.providerId) {
+        const provider = await storage.getProviderByUserId(req.user!.id);
+        if (provider) {
+          const hasProviderServices = order.items.some(item => {
+            return item.providerService && item.providerService.providerId === provider.id;
+          });
+          if (hasProviderServices) {
+            updateData.providerId = provider.id;
+          }
+        }
+      }
 
       const updatedOrder = await storage.updateOrder(orderId, updateData);
       res.json(updatedOrder);
