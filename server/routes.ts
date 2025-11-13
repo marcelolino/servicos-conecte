@@ -3519,6 +3519,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         canUpdate = true;
       } else if (order.provider && order.provider.userId === req.user!.id) {
         canUpdate = true;
+      } else {
+        // Allow providers to update pending orders with catalog services in their categories
+        const provider = await storage.getProviderByUserId(req.user!.id);
+        if (provider && provider.status === "approved" && !order.providerId) {
+          // Check if order has catalog services in provider's categories
+          const hasCatalogServices = order.items.some(item => item.catalogServiceId);
+          if (hasCatalogServices) {
+            const providerServices = await storage.getProviderServicesByProvider(provider.id);
+            const providerCategoryIds = providerServices.map(ps => ps.categoryId);
+            
+            // Check if any order item is in provider's categories
+            for (const item of order.items) {
+              if (item.catalogServiceId) {
+                const catalogService = await storage.getService(item.catalogServiceId);
+                if (catalogService && providerCategoryIds.includes(catalogService.categoryId)) {
+                  canUpdate = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
       }
 
       if (!canUpdate) {
@@ -3568,7 +3590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if order contains catalog services
-      const orderItems = await storage.getOrderItems(orderId);
+      const orderItems = order.items;
       const hasCatalogServices = orderItems.some(item => item.catalogServiceId);
       
       if (!hasCatalogServices) {
