@@ -3323,9 +3323,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!cart && req.body.items) {
         // Create order directly from provided data (after payment)
+        // For cash payments, order needs provider acceptance, so set as pending_payment
+        const initialStatus: "pending_payment" | "confirmed" = req.body.paymentMethod === 'cash' ? 'pending_payment' : 'confirmed';
+        
         const orderData = {
           clientId: req.user!.id,
-          status: "confirmed" as const,
+          status: initialStatus,
           subtotal: req.body.subtotal || "0.00",
           serviceAmount: req.body.serviceAmount || "0.00", 
           totalAmount: req.body.totalAmount || "0.00",
