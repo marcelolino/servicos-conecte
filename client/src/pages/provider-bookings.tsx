@@ -276,17 +276,17 @@ export default function ProviderBookingsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
       case 'accepted':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
       case 'in_progress':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+        return 'bg-orange-500 text-white dark:bg-orange-600 dark:text-white';
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        return 'bg-green-500 text-white dark:bg-green-600 dark:text-white';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        return 'bg-red-500 text-white dark:bg-red-600 dark:text-white';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        return 'bg-gray-500 text-white dark:bg-gray-600 dark:text-white';
     }
   };
 
@@ -563,17 +563,17 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
       case 'accepted':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
       case 'in_progress':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+        return 'bg-orange-500 text-white dark:bg-orange-600 dark:text-white';
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        return 'bg-green-500 text-white dark:bg-green-600 dark:text-white';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        return 'bg-red-500 text-white dark:bg-red-600 dark:text-white';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+        return 'bg-gray-500 text-white dark:bg-gray-600 dark:text-white';
     }
   };
 
