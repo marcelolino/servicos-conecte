@@ -54,6 +54,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth";
+import type { Provider } from "@shared/schema";
 
 interface BookingData {
   id: number;
@@ -112,7 +113,7 @@ export default function ProviderBookingsPage() {
   const selectedTab = getSelectedTab();
   
   // Fetch current provider data
-  const { data: provider } = useQuery({
+  const { data: provider } = useQuery<Provider>({
     queryKey: ["/api/providers/me"],
   });
   
@@ -780,21 +781,23 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                               <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                             )}
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            title="Rejeitar Reserva"
-                            onClick={() => onRejectBooking(booking.id, booking.type, booking.isCatalogOrder)}
-                            disabled={isUpdating}
-                            data-testid={`button-reject-${booking.id}`}
-                          >
-                            {isUpdating ? (
-                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <X className="w-4 h-4 text-red-600 dark:text-red-400" />
-                            )}
-                          </Button>
+                          {(booking.providerId === currentProviderId || booking.type === 'service_request') && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Rejeitar Reserva"
+                              onClick={() => onRejectBooking(booking.id, booking.type, booking.isCatalogOrder)}
+                              disabled={isUpdating}
+                              data-testid={`button-reject-${booking.id}`}
+                            >
+                              {isUpdating ? (
+                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              )}
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <Button 
