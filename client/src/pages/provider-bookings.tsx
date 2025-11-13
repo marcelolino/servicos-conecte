@@ -100,8 +100,8 @@ export default function ProviderBookingsPage() {
   
   // Determine selected tab based on URL
   const getSelectedTab = () => {
-    if (location.includes('/pending')) return 'pending';
-    if (location.includes('/accepted')) return 'accepted';
+    if (location.includes('/pending')) return 'pending_payment';
+    if (location.includes('/accepted')) return 'confirmed';
     if (location.includes('/ongoing')) return 'in_progress';
     if (location.includes('/completed')) return 'completed';
     if (location.includes('/cancelled')) return 'cancelled';
@@ -275,9 +275,9 @@ export default function ProviderBookingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'pending_payment':
         return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
-      case 'accepted':
+      case 'confirmed':
         return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
       case 'in_progress':
         return 'bg-orange-500 text-white dark:bg-orange-600 dark:text-white';
@@ -292,9 +292,9 @@ export default function ProviderBookingsPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'pending_payment':
         return 'Pendente';
-      case 'accepted':
+      case 'confirmed':
         return 'Aceita';
       case 'in_progress':
         return 'Em Andamento';
@@ -325,8 +325,8 @@ export default function ProviderBookingsPage() {
   };
 
   const totalBookings = filteredBookings.length;
-  const pendingBookings = filteredBookings.filter(b => b.status === 'pending').length;
-  const acceptedBookings = filteredBookings.filter(b => b.status === 'accepted').length;
+  const pendingBookings = filteredBookings.filter(b => b.status === 'pending_payment').length;
+  const acceptedBookings = filteredBookings.filter(b => b.status === 'confirmed').length;
   const completedBookings = filteredBookings.filter(b => b.status === 'completed').length;
 
   return (
@@ -414,8 +414,8 @@ export default function ProviderBookingsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="accepted">Aceita</SelectItem>
+              <SelectItem value="pending_payment">Pendente</SelectItem>
+              <SelectItem value="confirmed">Aceita</SelectItem>
               <SelectItem value="in_progress">Em Andamento</SelectItem>
               <SelectItem value="completed">Concluída</SelectItem>
               <SelectItem value="cancelled">Cancelada</SelectItem>
@@ -436,8 +436,8 @@ export default function ProviderBookingsPage() {
           // Navigate to corresponding URL
           const urlMap: Record<string, string> = {
             'all': '/provider-bookings',
-            'pending': '/provider-bookings/pending',
-            'accepted': '/provider-bookings/accepted',
+            'pending_payment': '/provider-bookings/pending',
+            'confirmed': '/provider-bookings/accepted',
             'in_progress': '/provider-bookings/ongoing',
             'completed': '/provider-bookings/completed',
             'cancelled': '/provider-bookings/cancelled'
@@ -446,8 +446,8 @@ export default function ProviderBookingsPage() {
         }}>
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">Todas Reservas</TabsTrigger>
-            <TabsTrigger value="pending">Solicitações Pendentes</TabsTrigger>
-            <TabsTrigger value="accepted">Reservas Aceitas</TabsTrigger>
+            <TabsTrigger value="pending_payment">Solicitações Pendentes</TabsTrigger>
+            <TabsTrigger value="confirmed">Reservas Aceitas</TabsTrigger>
             <TabsTrigger value="in_progress">Em Andamento</TabsTrigger>
             <TabsTrigger value="completed">Concluídas</TabsTrigger>
             <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
@@ -463,9 +463,9 @@ export default function ProviderBookingsPage() {
             />
           </TabsContent>
           
-          <TabsContent value="pending" className="mt-6">
+          <TabsContent value="pending_payment" className="mt-6">
             <BookingsTable 
-              bookings={getBookingsByStatus('pending')} 
+              bookings={getBookingsByStatus('pending_payment')} 
               onAcceptBooking={handleAcceptBooking}
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
@@ -473,9 +473,9 @@ export default function ProviderBookingsPage() {
             />
           </TabsContent>
           
-          <TabsContent value="accepted" className="mt-6">
+          <TabsContent value="confirmed" className="mt-6">
             <BookingsTable 
-              bookings={getBookingsByStatus('accepted')} 
+              bookings={getBookingsByStatus('confirmed')} 
               onAcceptBooking={handleAcceptBooking}
               onRejectBooking={handleRejectBooking}
               isUpdating={updateBookingMutation.isPending}
@@ -562,9 +562,9 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'pending_payment':
         return 'bg-yellow-500 text-white dark:bg-yellow-600 dark:text-white';
-      case 'accepted':
+      case 'confirmed':
         return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
       case 'in_progress':
         return 'bg-orange-500 text-white dark:bg-orange-600 dark:text-white';
@@ -579,9 +579,9 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'pending_payment':
         return 'Pendente';
-      case 'accepted':
+      case 'confirmed':
         return 'Aceita';
       case 'in_progress':
         return 'Em Andamento';
@@ -739,7 +739,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                       >
                         <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </Button>
-                      {booking.status === 'pending' ? (
+                      {booking.status === 'pending_payment' ? (
                         <>
                           <Button 
                             size="sm" 
