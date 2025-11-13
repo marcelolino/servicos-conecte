@@ -3432,9 +3432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Notify providers for all services (from cart conversion)
         try {
-          // Get cart items to check for services
-          const cartItems = await storage.getCartItems(req.user!.id);
-          await notifyProvidersForOrders(order, cartItems, user, app);
+          const user = await storage.getUser(req.user!.id);
+          await notifyProvidersForOrders(order, cart.items, user, app);
         } catch (providerNotificationError) {
           console.error('Failed to send provider notifications:', providerNotificationError);
         }

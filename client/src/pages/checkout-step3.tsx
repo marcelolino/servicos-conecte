@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ const CheckoutStep3 = () => {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -107,6 +108,10 @@ const CheckoutStep3 = () => {
       localStorage.removeItem('checkout_notes');
       localStorage.removeItem('checkout_payment_method');
       localStorage.removeItem('checkout_card_data');
+
+      // Invalidate cart cache to reflect the cleared cart
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
 
       toast({
         title: "Pedido criado com sucesso!",
