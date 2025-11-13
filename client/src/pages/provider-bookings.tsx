@@ -222,7 +222,7 @@ export default function ProviderBookingsPage() {
   });
 
   const handleAcceptBooking = (bookingId: number, bookingType?: 'order' | 'service_request', isCatalogOrder?: boolean) => {
-    updateBookingMutation.mutate({ id: bookingId, status: 'accepted', type: bookingType, isCatalogOrder });
+    updateBookingMutation.mutate({ id: bookingId, status: 'confirmed', type: bookingType, isCatalogOrder });
   };
 
   const handleRejectBooking = (bookingId: number, bookingType?: 'order' | 'service_request', isCatalogOrder?: boolean) => {
