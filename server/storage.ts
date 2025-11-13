@@ -3108,6 +3108,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       const categoryIds = providerCategoryRecords.map(pc => pc.categoryId);
+      console.log(`Provider ${providerId} has services in categories: ${categoryIds.join(', ')}`);
       
       if (categoryIds.length === 0) {
         return [];
@@ -3121,12 +3122,8 @@ export class DatabaseStorage implements IStorage {
       
       const catalogServiceIdList = catalogServiceIds.map(cs => cs.id);
       
-      if (catalogServiceIdList.length === 0) {
-        return [];
-      }
-      
-      // Get orders with catalog services in provider's categories that don't have a provider assigned yet
-      const ordersData = await db
+      // Query 1: Orders with catalogServiceId (catalog-based orders)
+      const catalogOrders = catalogServiceIdList.length > 0 ? await db
         .select({
           id: orders.id,
           clientId: orders.clientId,
@@ -3192,8 +3189,82 @@ export class DatabaseStorage implements IStorage {
           users.phone,
           services.name,
           serviceCategories.name
+        ) : [];
+
+      // Query 2: Orders with providerServiceId (cart-based orders)
+      const providerOrders = await db
+        .select({
+          id: orders.id,
+          clientId: orders.clientId,
+          providerId: orders.providerId,
+          status: orders.status,
+          subtotal: orders.subtotal,
+          discountAmount: orders.discountAmount,
+          serviceAmount: orders.serviceAmount,
+          totalAmount: orders.totalAmount,
+          paymentMethod: orders.paymentMethod,
+          address: orders.address,
+          cep: orders.cep,
+          city: orders.city,
+          state: orders.state,
+          latitude: orders.latitude,
+          longitude: orders.longitude,
+          scheduledAt: orders.scheduledAt,
+          notes: orders.notes,
+          createdAt: orders.createdAt,
+          client: users,
+          catalogServiceName: providerServices.name,
+          categoryName: serviceCategories.name,
+        })
+        .from(orders)
+        .innerJoin(users, eq(orders.clientId, users.id))
+        .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+        .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
+        .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
+        .where(
+          and(
+            eq(orders.status, "confirmed"),
+            isNull(orders.providerId),
+            inArray(providerServices.categoryId, categoryIds)
+          )
         )
-        .orderBy(desc(orders.createdAt));
+        .groupBy(
+          orders.id,
+          orders.clientId,
+          orders.providerId,
+          orders.status,
+          orders.subtotal,
+          orders.discountAmount,
+          orders.serviceAmount,
+          orders.totalAmount,
+          orders.paymentMethod,
+          orders.address,
+          orders.cep,
+          orders.city,
+          orders.state,
+          orders.latitude,
+          orders.longitude,
+          orders.scheduledAt,
+          orders.notes,
+          orders.createdAt,
+          users.id,
+          users.name,
+          users.email,
+          users.phone,
+          providerServices.name,
+          serviceCategories.name
+        );
+
+      // Combine both queries and remove duplicates
+      const allOrders = [...catalogOrders, ...providerOrders];
+      const uniqueOrdersMap = new Map();
+      allOrders.forEach(order => {
+        if (!uniqueOrdersMap.has(order.id)) {
+          uniqueOrdersMap.set(order.id, order);
+        }
+      });
+      const ordersData = Array.from(uniqueOrdersMap.values())
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       console.log(`Found ${ordersData.length} orders for provider`);
 
