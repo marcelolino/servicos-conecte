@@ -3634,7 +3634,7 @@ export class DatabaseStorage implements IStorage {
     for (const item of cart.items) {
       if (item.providerServiceId) {
         // Fetch the provider service to get the providerId
-        const providerService = await this.getProviderService(item.providerServiceId);
+        const providerService = await this.getProviderServiceById(item.providerServiceId);
         if (providerService) {
           providerIds.add(providerService.providerId);
         }
