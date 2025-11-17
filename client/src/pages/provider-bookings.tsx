@@ -555,11 +555,12 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
   const { toast } = useToast();
 
   const createChatMutation = useMutation({
-    mutationFn: async ({ participantId, serviceRequestId }: { participantId: number; serviceRequestId: number }) => {
+    mutationFn: async ({ participantId, serviceRequestId, orderId, bookingId }: { participantId: number; serviceRequestId?: number; orderId?: number; bookingId: number }) => {
       return apiRequest('POST', '/api/chat/conversations', { 
         participantId, 
         serviceRequestId,
-        title: `Serviço #${serviceRequestId}`
+        orderId,
+        title: `Reserva #${bookingId}`
       });
     },
     onSuccess: (conversation) => {
@@ -579,8 +580,13 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
     },
   });
 
-  const handleStartChat = (clientId: number, serviceRequestId: number) => {
-    createChatMutation.mutate({ participantId: clientId, serviceRequestId });
+  const handleStartChat = (clientId: number, bookingId: number, bookingType: 'order' | 'service_request') => {
+    createChatMutation.mutate({ 
+      participantId: clientId, 
+      bookingId,
+      serviceRequestId: bookingType === 'service_request' ? bookingId : undefined,
+      orderId: bookingType === 'order' ? bookingId : undefined
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -803,7 +809,7 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                         <Button 
                           size="sm" 
                           variant="ghost"
-                          onClick={() => handleStartChat(booking.clientId, booking.id)}
+                          onClick={() => handleStartChat(booking.clientId, booking.id, booking.type)}
                           title="Iniciar Conversa"
                           className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           disabled={createChatMutation.isPending}
