@@ -705,17 +705,17 @@ function BookingsTable({ bookings, onAcceptBooking, onRejectBooking, isUpdating,
                     <Badge
                       variant="outline"
                       className={
-                        booking.paymentStatus === 'completed'
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : booking.paymentMethod === 'cash'
+                        booking.paymentMethod === 'cash'
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : booking.paymentStatus === 'completed'
+                          ? 'bg-green-50 text-green-700 border-green-200'
                           : booking.paymentStatus === 'pending'
                           ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                           : 'bg-red-50 text-red-700 border-red-200'
                       }
                     >
-                      {booking.paymentStatus === 'completed' ? 'Pago' : 
-                       booking.paymentMethod === 'cash' ? 'Pagamento no Local' :
+                      {booking.paymentMethod === 'cash' ? 'Pagamento no Local' :
+                       booking.paymentStatus === 'completed' ? 'Pago' : 
                        booking.paymentStatus === 'pending' ? 'Não Pago' : 'Falhou'}
                     </Badge>
                   </TableCell>
