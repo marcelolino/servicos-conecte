@@ -2933,6 +2933,7 @@ export class DatabaseStorage implements IStorage {
 
   async getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined> {
     const clientAlias = alias(users, 'client');
+    const orderProviderAlias = alias(providers, 'order_provider');
     const providerUserAlias = alias(users, 'provider_user');
     
     const [orderData] = await db
@@ -2958,18 +2959,19 @@ export class DatabaseStorage implements IStorage {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         client: clientAlias,
-        providerData: providers,
+        providerData: orderProviderAlias,
         providerUser: providerUserAlias,
       })
       .from(orders)
       .innerJoin(clientAlias, eq(orders.clientId, clientAlias.id))
-      .leftJoin(providers, eq(orders.providerId, providers.id))
-      .leftJoin(providerUserAlias, eq(providers.userId, providerUserAlias.id))
+      .leftJoin(orderProviderAlias, eq(orders.providerId, orderProviderAlias.id))
+      .leftJoin(providerUserAlias, eq(orderProviderAlias.userId, providerUserAlias.id))
       .where(eq(orders.id, id))
       .limit(1);
 
     if (!orderData) return undefined;
 
+    const itemProviderAlias = alias(providers, 'item_provider');
     const itemUserAlias = alias(users, 'item_user');
     
     const items = await db
@@ -3000,11 +3002,11 @@ export class DatabaseStorage implements IStorage {
           updatedAt: providerServices.updatedAt,
           category: serviceCategories,
           provider: {
-            id: providers.id,
-            userId: providers.userId,
-            status: providers.status,
-            city: providers.city,
-            state: providers.state,
+            id: itemProviderAlias.id,
+            userId: itemProviderAlias.userId,
+            status: itemProviderAlias.status,
+            city: itemProviderAlias.city,
+            state: itemProviderAlias.state,
             user: itemUserAlias,
           },
         },
@@ -3012,8 +3014,8 @@ export class DatabaseStorage implements IStorage {
       .from(orderItems)
       .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
       .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
-      .innerJoin(providers, eq(providerServices.providerId, providers.id))
-      .innerJoin(itemUserAlias, eq(providers.userId, itemUserAlias.id))
+      .innerJoin(itemProviderAlias, eq(providerServices.providerId, itemProviderAlias.id))
+      .innerJoin(itemUserAlias, eq(itemProviderAlias.userId, itemUserAlias.id))
       .where(eq(orderItems.orderId, orderData.id));
 
     // Build provider object if it exists
