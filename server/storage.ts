@@ -3052,6 +3052,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrdersByClient(clientId: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; provider?: Provider })[]> {
+    const orderProviderAlias = alias(providers, 'order_provider');
+    
     const ordersList = await db
       .select({
         id: orders.id,
@@ -3074,16 +3076,19 @@ export class DatabaseStorage implements IStorage {
         notes: orders.notes,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        provider: providers,
+        provider: orderProviderAlias,
       })
       .from(orders)
-      .leftJoin(providers, eq(orders.providerId, providers.id))
+      .leftJoin(orderProviderAlias, eq(orders.providerId, orderProviderAlias.id))
       .where(and(eq(orders.clientId, clientId), sql`${orders.status} != 'cart'`))
       .orderBy(desc(orders.createdAt));
 
     // Get items for each order
     const ordersWithItems = await Promise.all(
       ordersList.map(async (order) => {
+        const itemProviderAlias = alias(providers, 'item_provider');
+        const itemUserAlias = alias(users, 'item_user');
+        
         const items = await db
           .select({
             id: orderItems.id,
@@ -3112,20 +3117,20 @@ export class DatabaseStorage implements IStorage {
               updatedAt: providerServices.updatedAt,
               category: serviceCategories,
               provider: {
-                id: providers.id,
-                userId: providers.userId,
-                status: providers.status,
-                city: providers.city,
-                state: providers.state,
-                user: users,
+                id: itemProviderAlias.id,
+                userId: itemProviderAlias.userId,
+                status: itemProviderAlias.status,
+                city: itemProviderAlias.city,
+                state: itemProviderAlias.state,
+                user: itemUserAlias,
               },
             },
           })
           .from(orderItems)
           .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
           .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
-          .innerJoin(providers, eq(providerServices.providerId, providers.id))
-          .innerJoin(users, eq(providers.userId, users.id))
+          .innerJoin(itemProviderAlias, eq(providerServices.providerId, itemProviderAlias.id))
+          .innerJoin(itemUserAlias, eq(itemProviderAlias.userId, itemUserAlias.id))
           .where(eq(orderItems.orderId, order.id));
 
         return {
