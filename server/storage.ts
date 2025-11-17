@@ -3068,13 +3068,21 @@ export class DatabaseStorage implements IStorage {
               createdAt: providerServices.createdAt,
               updatedAt: providerServices.updatedAt,
               category: serviceCategories,
-              provider: providers,
+              provider: {
+                id: providers.id,
+                userId: providers.userId,
+                status: providers.status,
+                city: providers.city,
+                state: providers.state,
+                user: users,
+              },
             },
           })
           .from(orderItems)
           .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
           .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
           .innerJoin(providers, eq(providerServices.providerId, providers.id))
+          .innerJoin(users, eq(providers.userId, users.id))
           .where(eq(orderItems.orderId, order.id));
 
         return {
