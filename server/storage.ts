@@ -101,6 +101,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, sql, isNull, count, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import bcrypt from "bcrypt";
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import QRCode from 'qrcode';
