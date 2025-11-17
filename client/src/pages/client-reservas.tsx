@@ -1,17 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { ModernClientLayout } from "@/components/layout/modern-client-layout";
 import { 
   Package,
   Eye,
   CreditCard,
   Calendar,
-  MapPin
+  MapPin,
+  Play,
+  CheckCircle
 } from "lucide-react";
 
 interface Order {
@@ -67,11 +71,53 @@ interface Order {
 
 export default function ClientReservas() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch client's orders
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
     enabled: !!user,
+  });
+
+  // Start service mutation
+  const startServiceMutation = useMutation({
+    mutationFn: (orderId: number) =>
+      apiRequest("PUT", `/api/orders/${orderId}`, { status: "in_progress" }),
+    onSuccess: () => {
+      toast({
+        title: "Sucesso!",
+        description: "Serviço iniciado com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao iniciar serviço.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Complete service mutation
+  const completeServiceMutation = useMutation({
+    mutationFn: (orderId: number) =>
+      apiRequest("PUT", `/api/orders/${orderId}`, { status: "completed" }),
+    onSuccess: () => {
+      toast({
+        title: "Sucesso!",
+        description: "Serviço finalizado com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao finalizar serviço.",
+        variant: "destructive",
+      });
+    },
   });
 
   const getOrderStatusColor = (status: string) => {
@@ -123,6 +169,56 @@ export default function ClientReservas() {
       default:
         return "Não definido";
     }
+  };
+
+  const canStartService = (order: Order) => {
+    return order.status === "confirmed" || order.status === "pending";
+  };
+
+  const canCompleteService = (order: Order) => {
+    return order.status === "in_progress";
+  };
+
+  const getServiceActionButton = (order: Order) => {
+    if (canStartService(order)) {
+      return (
+        <Button
+          size="sm"
+          onClick={() => startServiceMutation.mutate(order.id)}
+          disabled={startServiceMutation.isPending}
+          className="bg-green-600 hover:bg-green-700 text-white"
+          data-testid={`button-start-${order.id}`}
+        >
+          {startServiceMutation.isPending ? (
+            <Play className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4 mr-2" />
+          )}
+          Iniciar Serviço
+        </Button>
+      );
+    }
+
+    if (canCompleteService(order)) {
+      return (
+        <Button
+          size="sm"
+          onClick={() => completeServiceMutation.mutate(order.id)}
+          disabled={completeServiceMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          data-testid={`button-complete-${order.id}`}
+        >
+          {completeServiceMutation.isPending ? (
+            <CheckCircle className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <CheckCircle className="h-4 w-4 mr-2" />
+          )}
+          Finalizar Serviço
+        </Button>
+      );
+    }
+
+    return null;
   };
 
   const renderOrdersList = () => {
@@ -253,9 +349,10 @@ export default function ClientReservas() {
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {getServiceActionButton(order)}
                 <Link href={`/client-order-details/${order.id}`}>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" data-testid={`button-view-details-${order.id}`}>
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Detalhes
                   </Button>
