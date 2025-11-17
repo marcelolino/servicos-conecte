@@ -108,7 +108,7 @@ const OrderSuccess = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => setLocation("/orders")}
+              onClick={() => setLocation("/client-reservas")}
               className="p-2"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -166,7 +166,7 @@ const OrderSuccess = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {order.orderItems?.map((item: any) => (
+                {order.items?.map((item: any) => (
                   <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
                     <img
                       src={`/api/placeholder/60/60`}
@@ -307,7 +307,7 @@ const OrderSuccess = () => {
                 <div className="space-y-2">
                   <Button
                     className="w-full"
-                    onClick={() => setLocation("/orders")}
+                    onClick={() => setLocation("/client-reservas")}
                   >
                     Ver Todos os Pedidos
                   </Button>
