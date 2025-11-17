@@ -347,7 +347,7 @@ export default function ClientOrderDetailsPage() {
             )}
 
             {/* Provider Information */}
-            {order.provider && (
+            {order.provider?.user && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

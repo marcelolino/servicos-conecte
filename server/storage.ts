@@ -2932,7 +2932,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrderById(id: number): Promise<(Order & { items: (OrderItem & { providerService: ProviderService & { category: ServiceCategory; provider: Provider } })[]; client: User; provider?: Provider }) | undefined> {
-    const [order] = await db
+    const clientAlias = alias(users, 'client');
+    const providerUserAlias = alias(users, 'provider_user');
+    
+    const [orderData] = await db
       .select({
         id: orders.id,
         clientId: orders.clientId,
@@ -2954,17 +2957,21 @@ export class DatabaseStorage implements IStorage {
         notes: orders.notes,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        client: users,
-        provider: providers,
+        client: clientAlias,
+        providerData: providers,
+        providerUser: providerUserAlias,
       })
       .from(orders)
-      .innerJoin(users, eq(orders.clientId, users.id))
+      .innerJoin(clientAlias, eq(orders.clientId, clientAlias.id))
       .leftJoin(providers, eq(orders.providerId, providers.id))
+      .leftJoin(providerUserAlias, eq(providers.userId, providerUserAlias.id))
       .where(eq(orders.id, id))
       .limit(1);
 
-    if (!order) return undefined;
+    if (!orderData) return undefined;
 
+    const itemUserAlias = alias(users, 'item_user');
+    
     const items = await db
       .select({
         id: orderItems.id,
@@ -2992,19 +2999,53 @@ export class DatabaseStorage implements IStorage {
           createdAt: providerServices.createdAt,
           updatedAt: providerServices.updatedAt,
           category: serviceCategories,
-          provider: providers,
+          provider: {
+            id: providers.id,
+            userId: providers.userId,
+            status: providers.status,
+            city: providers.city,
+            state: providers.state,
+            user: itemUserAlias,
+          },
         },
       })
       .from(orderItems)
       .innerJoin(providerServices, eq(orderItems.providerServiceId, providerServices.id))
       .innerJoin(serviceCategories, eq(providerServices.categoryId, serviceCategories.id))
       .innerJoin(providers, eq(providerServices.providerId, providers.id))
-      .where(eq(orderItems.orderId, order.id));
+      .innerJoin(itemUserAlias, eq(providers.userId, itemUserAlias.id))
+      .where(eq(orderItems.orderId, orderData.id));
+
+    // Build provider object if it exists
+    const provider = orderData.providerData && orderData.providerUser ? {
+      ...orderData.providerData,
+      user: orderData.providerUser
+    } : undefined;
 
     return { 
-      ...order, 
+      id: orderData.id,
+      clientId: orderData.clientId,
+      providerId: orderData.providerId,
+      status: orderData.status,
+      subtotal: orderData.subtotal,
+      discountAmount: orderData.discountAmount,
+      serviceAmount: orderData.serviceAmount,
+      totalAmount: orderData.totalAmount,
+      couponCode: orderData.couponCode,
+      paymentMethod: orderData.paymentMethod,
+      address: orderData.address,
+      cep: orderData.cep,
+      city: orderData.city,
+      state: orderData.state,
+      latitude: orderData.latitude,
+      longitude: orderData.longitude,
+      scheduledAt: orderData.scheduledAt,
+      notes: orderData.notes,
+      createdAt: orderData.createdAt,
+      updatedAt: orderData.updatedAt,
+      client: orderData.client,
+      provider,
       items,
-      provider: order.provider || undefined
     };
   }
 
