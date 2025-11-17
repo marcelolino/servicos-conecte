@@ -328,7 +328,7 @@ export interface IStorage {
   // Chat conversations
   getChatConversationsByUser(userId: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; lastMessage?: ChatMessage })[]>;
   getChatConversation(id: number): Promise<(ChatConversation & { participantOne: User; participantTwo: User; messages: (ChatMessage & { sender: User })[] }) | undefined>;
-  findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number): Promise<ChatConversation>;
+  findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number, orderId?: number): Promise<ChatConversation>;
   createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
   updateChatConversation(id: number, conversation: Partial<InsertChatConversation>): Promise<ChatConversation>;
 
@@ -4037,12 +4037,38 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number): Promise<ChatConversation> {
-    // Try to find existing conversation
-    const [existingConversation] = await db
-      .select()
-      .from(chatConversations)
-      .where(or(
+  async findOrCreateConversation(participantOneId: number, participantTwoId: number, serviceRequestId?: number, orderId?: number): Promise<ChatConversation> {
+    // Try to find existing conversation for the same participants and service/order
+    let whereCondition;
+    
+    if (serviceRequestId) {
+      whereCondition = or(
+        and(
+          eq(chatConversations.participantOneId, participantOneId),
+          eq(chatConversations.participantTwoId, participantTwoId),
+          eq(chatConversations.serviceRequestId, serviceRequestId)
+        ),
+        and(
+          eq(chatConversations.participantOneId, participantTwoId),
+          eq(chatConversations.participantTwoId, participantOneId),
+          eq(chatConversations.serviceRequestId, serviceRequestId)
+        )
+      );
+    } else if (orderId) {
+      whereCondition = or(
+        and(
+          eq(chatConversations.participantOneId, participantOneId),
+          eq(chatConversations.participantTwoId, participantTwoId),
+          eq(chatConversations.orderId, orderId)
+        ),
+        and(
+          eq(chatConversations.participantOneId, participantTwoId),
+          eq(chatConversations.participantTwoId, participantOneId),
+          eq(chatConversations.orderId, orderId)
+        )
+      );
+    } else {
+      whereCondition = or(
         and(
           eq(chatConversations.participantOneId, participantOneId),
           eq(chatConversations.participantTwoId, participantTwoId)
@@ -4051,7 +4077,13 @@ export class DatabaseStorage implements IStorage {
           eq(chatConversations.participantOneId, participantTwoId),
           eq(chatConversations.participantTwoId, participantOneId)
         )
-      ));
+      );
+    }
+
+    const [existingConversation] = await db
+      .select()
+      .from(chatConversations)
+      .where(whereCondition);
 
     if (existingConversation) {
       return existingConversation;
@@ -4064,6 +4096,7 @@ export class DatabaseStorage implements IStorage {
         participantOneId,
         participantTwoId,
         serviceRequestId,
+        orderId,
         status: "active",
         lastMessageAt: new Date(),
       })

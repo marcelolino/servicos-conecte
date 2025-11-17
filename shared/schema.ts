@@ -481,7 +481,8 @@ export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   participantOneId: integer("participant_one_id").references(() => users.id).notNull(),
   participantTwoId: integer("participant_two_id").references(() => users.id).notNull(),
-  serviceRequestId: integer("service_request_id").references(() => serviceRequests.id), // Optional link to service
+  serviceRequestId: integer("service_request_id").references(() => serviceRequests.id), // Optional link to service request
+  orderId: integer("order_id").references(() => orders.id), // Optional link to order
   title: varchar("title", { length: 255 }),
   status: chatStatusEnum("status").default("active"),
   lastMessageAt: timestamp("last_message_at"),
@@ -809,6 +810,10 @@ export const chatConversationsRelations = relations(chatConversations, ({ one, m
   serviceRequest: one(serviceRequests, {
     fields: [chatConversations.serviceRequestId],
     references: [serviceRequests.id],
+  }),
+  order: one(orders, {
+    fields: [chatConversations.orderId],
+    references: [orders.id],
   }),
   messages: many(chatMessages),
 }));

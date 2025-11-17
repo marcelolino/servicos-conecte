@@ -4835,7 +4835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/chat/conversations', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const { participantId, serviceRequestId, title } = req.body;
+      const { participantId, serviceRequestId, orderId, title } = req.body;
 
       if (!participantId) {
         return res.status(400).json({ message: "Participant ID is required" });
@@ -4852,7 +4852,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversation = await storage.findOrCreateConversation(
         req.user!.id,
         participantId,
-        serviceRequestId
+        serviceRequestId,
+        orderId
       );
 
       if (title && !conversation.title) {
