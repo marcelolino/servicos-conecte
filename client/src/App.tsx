@@ -176,7 +176,7 @@ function Router() {
                 <Route path="/client-offers" component={ClientOffers} />
                 <Route path="/client-orders" component={ClientOrders} />
                 <Route path="/client-order-details/:id" component={ClientOrderDetails} />
-                <Route path="/client-chat" component={ClientChat} />
+                <Route path="/client-chat/:id?" component={ClientChat} />
                 <Route path="/service-management" component={ServiceManagement} />
                 <Route path="/media-management" component={MediaManagement} />
                 <Route path="/upload-test" component={UploadTest} />

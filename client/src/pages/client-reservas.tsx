@@ -15,7 +15,8 @@ import {
   Calendar,
   MapPin,
   Play,
-  CheckCircle
+  CheckCircle,
+  MessageCircle
 } from "lucide-react";
 
 interface Order {
@@ -73,6 +74,28 @@ export default function ClientReservas() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Create chat conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async ({ providerId, orderId }: { providerId: number; orderId: number }) => {
+      const response = await apiRequest("POST", "/api/chat/conversations", {
+        participantId: providerId,
+        orderId,
+        title: `Pedido #${orderId}`
+      });
+      return response;
+    },
+    onSuccess: (conversation) => {
+      window.location.href = `/client-chat/${conversation.id}`;
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao iniciar conversa.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch client's orders
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -351,6 +374,21 @@ export default function ClientReservas() {
 
               <div className="flex justify-end gap-2">
                 {getServiceActionButton(order)}
+                {order.providerId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => createConversationMutation.mutate({ 
+                      providerId: order.providerId!, 
+                      orderId: order.id 
+                    })}
+                    disabled={createConversationMutation.isPending}
+                    data-testid={`button-chat-${order.id}`}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                )}
                 <Link href={`/client-order-details/${order.id}`}>
                   <Button variant="outline" size="sm" data-testid={`button-view-details-${order.id}`}>
                     <Eye className="h-4 w-4 mr-2" />
