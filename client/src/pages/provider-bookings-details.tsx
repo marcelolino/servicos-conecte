@@ -46,8 +46,8 @@ import { apiRequest } from "@/lib/queryClient";
 interface BookingDetailsData {
   id: number;
   clientId: number;
-  categoryId: number;
-  providerId: number;
+  categoryId?: number;
+  providerId?: number;
   status: string;
   totalAmount: string;
   paymentMethod: string;
@@ -59,22 +59,40 @@ interface BookingDetailsData {
   scheduledAt: string;
   notes?: string;
   createdAt: string;
+  type?: 'order' | 'service_request';
   client: {
     id: number;
     name: string;
     email: string;
     phone?: string;
   };
-  category: {
+  category?: {
     id: number;
     name: string;
     description?: string;
   };
-  provider: {
+  provider?: {
     id: number;
     rating: string;
     totalReviews: number;
   };
+  items?: Array<{
+    id: number;
+    catalogServiceId?: number;
+    providerServiceId?: number;
+    quantity: number;
+    price: string;
+    catalogService?: {
+      id: number;
+      name: string;
+      description?: string;
+    };
+    providerService?: {
+      id: number;
+      name: string;
+      price: string;
+    };
+  }>;
 }
 
 export default function ProviderBookingDetailsPage() {
@@ -279,7 +297,12 @@ export default function ProviderBookingDetailsPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Serviço</Label>
-                    <p className="text-base font-medium">{booking.category.name}</p>
+                    <p className="text-base font-medium">
+                      {booking.category?.name || 
+                       booking.items?.[0]?.catalogService?.name || 
+                       booking.items?.[0]?.providerService?.name || 
+                       'Serviço'}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Preço</Label>
