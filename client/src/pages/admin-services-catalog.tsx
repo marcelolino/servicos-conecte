@@ -110,7 +110,7 @@ export default function AdminServicesCatalog() {
   const uniqueStates = useMemo(() => {
     const statesMap = new Map<string, { state: string; stateCode: string }>();
     allCities.forEach(city => {
-      if (!statesMap.has(city.stateCode)) {
+      if (city.stateCode && city.state && !statesMap.has(city.stateCode)) {
         statesMap.set(city.stateCode, { state: city.state, stateCode: city.stateCode });
       }
     });
@@ -121,7 +121,7 @@ export default function AdminServicesCatalog() {
   const filteredCities = useMemo(() => {
     if (!selectedState) return [];
     return allCities
-      .filter(city => city.stateCode === selectedState && city.isActive)
+      .filter(city => city.id && city.name && city.stateCode === selectedState && city.isActive)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allCities, selectedState]);
 
