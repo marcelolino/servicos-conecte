@@ -94,7 +94,7 @@ export function ProviderNotifications() {
 
   const handleMarkAsRead = async (notificationId: number) => {
     try {
-      await apiRequest(`/api/notifications/${notificationId}/read`, 'PUT');
+      await apiRequest('PUT', `/api/notifications/${notificationId}/read`);
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
     } catch (error) {
@@ -102,9 +102,24 @@ export function ProviderNotifications() {
     }
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
+
+    // Navigate to booking details if there's a related ID
+    if (notification.relatedId) {
+      window.location.href = `/provider-bookings/details/${notification.relatedId}`;
+    } else {
+      // If no related ID, go to general bookings page
+      window.location.href = `/provider-bookings`;
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
-      await apiRequest('/api/notifications/mark-all-read', 'PUT');
+      await apiRequest('PUT', '/api/notifications/mark-all-read');
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
     } catch (error) {
@@ -181,7 +196,7 @@ export function ProviderNotifications() {
                 className={`p-3 cursor-pointer flex flex-col items-start gap-1 ${
                   !notification.isRead ? 'bg-muted/50' : ''
                 }`}
-                onClick={() => handleMarkAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-center gap-2 w-full">
                   <span className="text-lg">{getNotificationIcon(notification.type)}</span>
