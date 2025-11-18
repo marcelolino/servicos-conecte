@@ -646,12 +646,11 @@ export default function AdminServicesCatalog() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium">Estado Específico</label>
-                        <Select value={selectedState} onValueChange={setSelectedState}>
+                        <Select value={selectedState || undefined} onValueChange={(value) => setSelectedState(value)}>
                           <SelectTrigger className="mt-1.5">
-                            <SelectValue placeholder="Selecione um estado" />
+                            <SelectValue placeholder="Todos os estados" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Todos os estados</SelectItem>
                             {uniqueStates.map((st) => (
                               <SelectItem key={st.stateCode} value={st.stateCode}>
                                 {st.state} ({st.stateCode})
@@ -659,6 +658,20 @@ export default function AdminServicesCatalog() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedState && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedState("");
+                              setSelectedCities([]);
+                            }}
+                            className="mt-1.5 h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Limpar seleção
+                          </Button>
+                        )}
                         <p className="text-sm text-muted-foreground mt-1.5">
                           Deixe vazio se o serviço estiver disponível em todos os estados.
                         </p>
@@ -1043,12 +1056,11 @@ export default function AdminServicesCatalog() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium">Estado Específico</label>
-                        <Select value={selectedState} onValueChange={setSelectedState}>
+                        <Select value={selectedState || undefined} onValueChange={(value) => setSelectedState(value)}>
                           <SelectTrigger className="mt-1.5">
-                            <SelectValue placeholder="Selecione um estado" />
+                            <SelectValue placeholder="Todos os estados" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Todos os estados</SelectItem>
                             {uniqueStates.map((st) => (
                               <SelectItem key={st.stateCode} value={st.stateCode}>
                                 {st.state} ({st.stateCode})
@@ -1056,6 +1068,20 @@ export default function AdminServicesCatalog() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {selectedState && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedState("");
+                              setSelectedCities([]);
+                            }}
+                            className="mt-1.5 h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Limpar seleção
+                          </Button>
+                        )}
                         <p className="text-sm text-muted-foreground mt-1.5">
                           Deixe vazio se o serviço estiver disponível em todos os estados.
                         </p>
