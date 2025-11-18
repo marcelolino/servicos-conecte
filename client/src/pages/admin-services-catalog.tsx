@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ModernAdminLayout } from '@/components/layout/modern-admin-layout';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 import { 
   Plus, 
@@ -29,6 +30,14 @@ import {
   X
 } from 'lucide-react';
 import type { Service, ServiceCategory, CustomChargingType } from '@shared/schema';
+
+interface City {
+  id: number;
+  name: string;
+  state: string;
+  stateCode: string;
+  isActive: boolean;
+}
 
 const serviceSchema = z.object({
   categoryId: z.coerce.number().min(1, "Categoria é obrigatória"),
@@ -69,6 +78,10 @@ export default function AdminServicesCatalog() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedChargingType, setSelectedChargingType] = useState("all");
+  
+  // Location states
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
 
   const { data: services = [], isLoading: servicesLoading } = useQuery<(Service & { category: ServiceCategory })[]>({
     queryKey: ['/api/admin/services-catalog'],
@@ -88,6 +101,34 @@ export default function AdminServicesCatalog() {
       file.category === 'service' && file.type.startsWith('image/')
     ),
   });
+
+  const { data: allCities = [] } = useQuery<City[]>({
+    queryKey: ['/api/admin/cities'],
+  });
+
+  // Get unique states from cities
+  const uniqueStates = useMemo(() => {
+    const statesMap = new Map<string, { state: string; stateCode: string }>();
+    allCities.forEach(city => {
+      if (!statesMap.has(city.stateCode)) {
+        statesMap.set(city.stateCode, { state: city.state, stateCode: city.stateCode });
+      }
+    });
+    return Array.from(statesMap.values()).sort((a, b) => a.state.localeCompare(b.state));
+  }, [allCities]);
+
+  // Filter cities by selected state
+  const filteredCities = useMemo(() => {
+    if (!selectedState) return [];
+    return allCities
+      .filter(city => city.stateCode === selectedState && city.isActive)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allCities, selectedState]);
+
+  // Reset selected cities when state changes
+  useEffect(() => {
+    setSelectedCities([]);
+  }, [selectedState]);
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -188,6 +229,8 @@ export default function AdminServicesCatalog() {
       ...data,
       categoryId: typeof data.categoryId === 'string' ? parseInt(data.categoryId) : data.categoryId,
       subcategoryId: data.subcategoryId ? (typeof data.subcategoryId === 'string' ? parseInt(data.subcategoryId) : data.subcategoryId) : undefined,
+      state: selectedState || '',
+      city: selectedCities.join(', '),
     };
     
     if (editingService) {
@@ -201,6 +244,14 @@ export default function AdminServicesCatalog() {
 
   const handleEdit = (service: Service & { category: ServiceCategory }) => {
     setEditingService(service);
+    
+    // Load location data
+    const serviceState = (service as any).state || '';
+    const serviceCities = (service as any).city ? (service as any).city.split(', ').filter(Boolean) : [];
+    
+    setSelectedState(serviceState);
+    setSelectedCities(serviceCities);
+    
     form.reset({
       categoryId: service.categoryId,
       subcategoryId: service.subcategoryId || undefined,
@@ -229,6 +280,8 @@ export default function AdminServicesCatalog() {
 
   const handleCreateNew = () => {
     setEditingService(null);
+    setSelectedState('');
+    setSelectedCities([]);
     form.reset({
       categoryId: 0,
       name: '',
@@ -590,61 +643,101 @@ export default function AdminServicesCatalog() {
                   <div className="space-y-4 border-t pt-4">
                     <h4 className="font-medium text-sm text-muted-foreground">Localização e Disponibilidade</h4>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cidade Específica</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: São Paulo (deixe vazio para todas)" {...field} />
-                            </FormControl>
-                            <p className="text-sm text-muted-foreground">
-                              Deixe vazio se o serviço estiver disponível em todas as cidades.
-                            </p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Estado Específico</label>
+                        <Select value={selectedState} onValueChange={setSelectedState}>
+                          <SelectTrigger className="mt-1.5">
+                            <SelectValue placeholder="Selecione um estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Todos os estados</SelectItem>
+                            {uniqueStates.map((st) => (
+                              <SelectItem key={st.stateCode} value={st.stateCode}>
+                                {st.state} ({st.stateCode})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-1.5">
+                          Deixe vazio se o serviço estiver disponível em todos os estados.
+                        </p>
+                      </div>
+
+                      {selectedState && (
+                        <div>
+                          <label className="text-sm font-medium">Cidades Específicas</label>
+                          <div className="mt-1.5 border rounded-md p-3 max-h-60 overflow-y-auto">
+                            {filteredCities.length > 0 ? (
+                              <div className="space-y-2">
+                                {filteredCities.map((city) => (
+                                  <div key={city.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`city-${city.id}`}
+                                      checked={selectedCities.includes(city.name)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedCities([...selectedCities, city.name]);
+                                        } else {
+                                          setSelectedCities(selectedCities.filter(c => c !== city.name));
+                                        }
+                                      }}
+                                    />
+                                    <label
+                                      htmlFor={`city-${city.id}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                    >
+                                      {city.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Nenhuma cidade cadastrada para este estado.</p>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1.5">
+                            Selecione as cidades onde o serviço está disponível. Deixe vazio para todas as cidades do estado.
+                          </p>
+                          {selectedCities.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedCities.map((cityName) => (
+                                <Badge key={cityName} variant="secondary" className="text-xs">
+                                  {cityName}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCities(selectedCities.filter(c => c !== cityName))}
+                                    className="ml-1 hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <FormField
                         control={form.control}
-                        name="state"
+                        name="availableLocations"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Estado Específico</FormLabel>
+                            <FormLabel>Regiões/Bairros Específicos</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ex: SP (deixe vazio para todos)" {...field} />
+                              <Textarea 
+                                placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
+                                {...field}
+                              />
                             </FormControl>
                             <p className="text-sm text-muted-foreground">
-                              Deixe vazio se o serviço estiver disponível em todos os estados.
+                              Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
                             </p>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="availableLocations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Regiões/Bairros Específicos</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
-                              {...field}
-                            />
-                          </FormControl>
-                          <p className="text-sm text-muted-foreground">
-                            Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <Button 
@@ -947,61 +1040,101 @@ export default function AdminServicesCatalog() {
                   <div className="space-y-4 border-t pt-4">
                     <h4 className="font-medium text-sm text-muted-foreground">Localização e Disponibilidade</h4>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cidade Específica</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: São Paulo (deixe vazio para todas)" {...field} />
-                            </FormControl>
-                            <p className="text-sm text-muted-foreground">
-                              Deixe vazio se o serviço estiver disponível em todas as cidades.
-                            </p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Estado Específico</label>
+                        <Select value={selectedState} onValueChange={setSelectedState}>
+                          <SelectTrigger className="mt-1.5">
+                            <SelectValue placeholder="Selecione um estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Todos os estados</SelectItem>
+                            {uniqueStates.map((st) => (
+                              <SelectItem key={st.stateCode} value={st.stateCode}>
+                                {st.state} ({st.stateCode})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-1.5">
+                          Deixe vazio se o serviço estiver disponível em todos os estados.
+                        </p>
+                      </div>
+
+                      {selectedState && (
+                        <div>
+                          <label className="text-sm font-medium">Cidades Específicas</label>
+                          <div className="mt-1.5 border rounded-md p-3 max-h-60 overflow-y-auto">
+                            {filteredCities.length > 0 ? (
+                              <div className="space-y-2">
+                                {filteredCities.map((city) => (
+                                  <div key={city.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`city-${city.id}`}
+                                      checked={selectedCities.includes(city.name)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedCities([...selectedCities, city.name]);
+                                        } else {
+                                          setSelectedCities(selectedCities.filter(c => c !== city.name));
+                                        }
+                                      }}
+                                    />
+                                    <label
+                                      htmlFor={`city-${city.id}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                    >
+                                      {city.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Nenhuma cidade cadastrada para este estado.</p>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1.5">
+                            Selecione as cidades onde o serviço está disponível. Deixe vazio para todas as cidades do estado.
+                          </p>
+                          {selectedCities.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedCities.map((cityName) => (
+                                <Badge key={cityName} variant="secondary" className="text-xs">
+                                  {cityName}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCities(selectedCities.filter(c => c !== cityName))}
+                                    className="ml-1 hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <FormField
                         control={form.control}
-                        name="state"
+                        name="availableLocations"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Estado Específico</FormLabel>
+                            <FormLabel>Regiões/Bairros Específicos</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ex: SP (deixe vazio para todos)" {...field} />
+                              <Textarea 
+                                placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
+                                {...field}
+                              />
                             </FormControl>
                             <p className="text-sm text-muted-foreground">
-                              Deixe vazio se o serviço estiver disponível em todos os estados.
+                              Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
                             </p>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="availableLocations"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Regiões/Bairros Específicos</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Ex: Centro, Vila Madalena, Jardins (separados por vírgula)"
-                              {...field}
-                            />
-                          </FormControl>
-                          <p className="text-sm text-muted-foreground">
-                            Liste regiões ou bairros específicos onde o serviço está disponível. Deixe vazio para todas as regiões.
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <Button 
