@@ -39,14 +39,14 @@ export const users = pgTable("users", {
 });
 
 // Service categories table with subcategories support
-export const serviceCategories = pgTable("service_categories", {
+export const serviceCategories: ReturnType<typeof pgTable> = pgTable("service_categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   icon: varchar("icon", { length: 50 }),
   imageUrl: text("image_url"), // Category image
   color: varchar("color", { length: 20 }),
-  parentId: integer("parent_id").references(() => serviceCategories.id), // For subcategories
+  parentId: integer("parent_id").references((): any => serviceCategories.id), // For subcategories
   level: integer("level").default(0), // 0 = main category, 1 = subcategory
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
