@@ -20,7 +20,8 @@ import {
   X,
   Folder,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  MapPin
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -67,6 +68,7 @@ const menuItems: MenuSection[] = [
       { icon: Package, label: "Todos os Serviços", href: "/admin-services" },
       { icon: FileText, label: "Solicitações de Serviço", href: "/admin-provider-service-requests" },
       { icon: Folder, label: "Categorias", href: "/admin-categories" },
+      { icon: MapPin, label: "Cidades e Serviços", href: "/admin-cities-enhanced" },
     ]
   },
   {

@@ -41,6 +41,11 @@ interface CityWithStats {
   updatedAt: Date;
 }
 
+interface CityStats {
+  servicesCount: number;
+  providersCount: number;
+}
+
 export default function AdminCitiesEnhanced() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -51,6 +56,18 @@ export default function AdminCitiesEnhanced() {
   const [isEditCityOpen, setIsEditCityOpen] = useState(false);
   const [editingCity, setEditingCity] = useState<CityWithStats | null>(null);
   const [expandedCityId, setExpandedCityId] = useState<number | null>(null);
+
+  // Query for individual city stats when expanded
+  const { data: cityStats, isLoading: cityStatsLoading } = useQuery<CityStats>({
+    queryKey: ['/api/admin/cities', expandedCityId, 'stats'],
+    queryFn: async () => {
+      if (!expandedCityId) return { servicesCount: 0, providersCount: 0 };
+      const response = await apiRequest("GET", `/api/admin/cities/${expandedCityId}/stats`);
+      if (!response.ok) throw new Error('Erro ao buscar estatísticas');
+      return response.json();
+    },
+    enabled: expandedCityId !== null,
+  });
 
   // Forms
   const cityForm = useForm<CityForm>({
@@ -114,7 +131,7 @@ export default function AdminCitiesEnhanced() {
       if (!response.ok) throw new Error("Erro ao atualizar cidade");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Cidade atualizada com sucesso!",
         description: "As alterações foram salvas.",
@@ -124,6 +141,7 @@ export default function AdminCitiesEnhanced() {
       editCityForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cities-with-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cities", variables.id, "stats"] });
     },
     onError: (error: any) => {
       toast({
@@ -139,15 +157,19 @@ export default function AdminCitiesEnhanced() {
     mutationFn: async (cityId: number) => {
       const response = await apiRequest("DELETE", `/api/admin/cities/${cityId}`, {});
       if (!response.ok) throw new Error("Erro ao deletar cidade");
-      return response.json();
+      return { cityId };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Cidade deletada com sucesso!",
         description: "A cidade foi removida do sistema.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cities-with-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cities", data.cityId, "stats"] });
+      if (expandedCityId === data.cityId) {
+        setExpandedCityId(null);
+      }
     },
     onError: (error: any) => {
       toast({
@@ -440,7 +462,11 @@ export default function AdminCitiesEnhanced() {
           ) : (
             <div className="space-y-2">
               {filteredCities.map((city) => (
-                <Collapsible key={city.id}>
+                <Collapsible 
+                  key={city.id} 
+                  open={expandedCityId === city.id}
+                  onOpenChange={(open) => setExpandedCityId(open ? city.id : null)}
+                >
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1">
@@ -451,7 +477,7 @@ export default function AdminCitiesEnhanced() {
                             className="p-0 h-8 w-8"
                             data-testid={`button-expand-city-${city.id}`}
                           >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className={`h-4 w-4 transition-transform ${expandedCityId === city.id ? 'rotate-90' : ''}`} />
                           </Button>
                         </CollapsibleTrigger>
                         
@@ -519,45 +545,76 @@ export default function AdminCitiesEnhanced() {
 
                     <CollapsibleContent>
                       <div className="mt-4 pt-4 border-t">
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-sm">Serviços Disponíveis</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-sm text-muted-foreground">
-                                {city.servicesCount} serviço(s) disponível(is) nesta cidade.
-                              </p>
-                              <Button
-                                variant="link"
-                                className="p-0 h-auto mt-2"
-                                onClick={() => window.location.href = `/admin-services?city=${city.name}`}
-                                data-testid={`button-view-services-${city.id}`}
-                              >
-                                Ver todos os serviços →
-                              </Button>
-                            </CardContent>
-                          </Card>
+                        {expandedCityId === city.id && cityStatsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <span className="ml-2 text-sm text-muted-foreground">Carregando estatísticas...</span>
+                          </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="text-sm">Serviços Disponíveis</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Total de serviços:</span>
+                                    <span className="text-lg font-bold" data-testid={`text-city-services-detail-${city.id}`}>
+                                      {expandedCityId === city.id && cityStatsLoading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin inline" />
+                                      ) : (
+                                        cityStats?.servicesCount ?? city.servicesCount
+                                      )}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    Serviços globais e específicos disponíveis nesta cidade.
+                                  </p>
+                                  <Button
+                                    variant="link"
+                                    className="p-0 h-auto mt-2"
+                                    onClick={() => window.location.href = `/admin-services?city=${city.name}`}
+                                    data-testid={`button-view-services-${city.id}`}
+                                  >
+                                    Ver todos os serviços →
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
 
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-sm">Prestadores Ativos</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="text-sm text-muted-foreground">
-                                {city.providersCount} prestador(es) ativo(s) nesta cidade.
-                              </p>
-                              <Button
-                                variant="link"
-                                className="p-0 h-auto mt-2"
-                                onClick={() => window.location.href = `/admin-providers?city=${city.name}`}
-                                data-testid={`button-view-providers-${city.id}`}
-                              >
-                                Ver todos os prestadores →
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        </div>
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="text-sm">Prestadores Ativos</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Total de prestadores:</span>
+                                    <span className="text-lg font-bold" data-testid={`text-city-providers-detail-${city.id}`}>
+                                      {expandedCityId === city.id && cityStatsLoading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin inline" />
+                                      ) : (
+                                        cityStats?.providersCount ?? city.providersCount
+                                      )}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    Prestadores aprovados e ativos nesta cidade.
+                                  </p>
+                                  <Button
+                                    variant="link"
+                                    className="p-0 h-auto mt-2"
+                                    onClick={() => window.location.href = `/admin-providers?city=${city.name}`}
+                                    data-testid={`button-view-providers-${city.id}`}
+                                  >
+                                    Ver todos os prestadores →
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        )}
                       </div>
                     </CollapsibleContent>
                   </div>
