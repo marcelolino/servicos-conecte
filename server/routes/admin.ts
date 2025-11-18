@@ -4,8 +4,8 @@ import multer from 'multer';
 import path from 'path';
 import { storage } from '../storage';
 import { db } from '../db';
-import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
-import { users, providers, serviceRequests, serviceCategories, providerServices, payments, cities, insertCitySchema } from '../../shared/schema';
+import { eq, and, gte, lte, sql, desc, or, isNull } from 'drizzle-orm';
+import { users, providers, serviceRequests, serviceCategories, providerServices, payments, cities, insertCitySchema, services } from '../../shared/schema';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -416,6 +416,147 @@ router.delete('/cities/:id', authenticateToken, requireAdmin, async (req, res) =
   } catch (error) {
     console.error('Erro ao deletar cidade:', error);
     res.status(500).json({ error: 'Erro ao deletar cidade' });
+  }
+});
+
+// GET /api/admin/cities/:id/stats - Obter estatísticas de uma cidade
+/**
+ * @swagger
+ * /api/admin/cities/{id}/stats:
+ *   get:
+ *     tags: [Admin - Cidades]
+ *     summary: Obter estatísticas de uma cidade
+ *     description: Retorna estatísticas de serviços e prestadores disponíveis em uma cidade
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da cidade
+ *     responses:
+ *       200:
+ *         description: Estatísticas da cidade
+ *       404:
+ *         description: Cidade não encontrada
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.get('/cities/:id/stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const cityId = parseInt(req.params.id);
+    
+    // Verificar se a cidade existe
+    const [city] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.id, cityId))
+      .limit(1);
+    
+    if (!city) {
+      return res.status(404).json({ error: 'Cidade não encontrada' });
+    }
+
+    // Contar serviços disponíveis nesta cidade
+    const servicesResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(services)
+      .where(
+        or(
+          eq(services.city, city.name),
+          isNull(services.city)
+        )
+      );
+
+    // Contar prestadores ativos nesta cidade
+    const providersResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(providers)
+      .where(
+        and(
+          eq(providers.city, city.name),
+          eq(providers.status, 'approved' as any)
+        )
+      );
+
+    const stats = {
+      servicesCount: servicesResult[0]?.count || 0,
+      providersCount: providersResult[0]?.count || 0,
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas da cidade:', error);
+    res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+  }
+});
+
+// GET /api/admin/cities-with-stats - Listar todas as cidades com estatísticas
+/**
+ * @swagger
+ * /api/admin/cities-with-stats:
+ *   get:
+ *     tags: [Admin - Cidades]
+ *     summary: Listar cidades com estatísticas
+ *     description: Retorna lista de cidades com contagem de serviços e prestadores
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de cidades com estatísticas
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.get('/cities-with-stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const allCities = await db
+      .select()
+      .from(cities)
+      .orderBy(cities.name);
+
+    // Para cada cidade, buscar estatísticas
+    const citiesWithStats = await Promise.all(
+      allCities.map(async (city) => {
+        // Contar serviços
+        const servicesResult = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(services)
+          .where(
+            or(
+              eq(services.city, city.name),
+              isNull(services.city)
+            )
+          );
+
+        // Contar prestadores aprovados
+        const providersResult = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(providers)
+          .where(
+            and(
+              eq(providers.city, city.name),
+              eq(providers.status, 'approved' as any)
+            )
+          );
+
+        return {
+          ...city,
+          servicesCount: servicesResult[0]?.count || 0,
+          providersCount: providersResult[0]?.count || 0,
+        };
+      })
+    );
+
+    res.json(citiesWithStats);
+  } catch (error) {
+    console.error('Erro ao buscar cidades com estatísticas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 

@@ -39,7 +39,7 @@ export const users = pgTable("users", {
 });
 
 // Service categories table with subcategories support
-export const serviceCategories: ReturnType<typeof pgTable> = pgTable("service_categories", {
+export const serviceCategories = pgTable("service_categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
