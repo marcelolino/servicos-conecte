@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ModernAdminLayout } from "@/components/layout/modern-admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -221,23 +222,26 @@ export default function AdminCitiesEnhanced() {
 
   if (user?.userType !== "admin") {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Você não tem permissão para acessar esta página.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ModernAdminLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Acesso Negado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Você não tem permissão para acessar esta página.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </ModernAdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <ModernAdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -749,6 +753,7 @@ export default function AdminCitiesEnhanced() {
           </Form>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ModernAdminLayout>
   );
 }

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   BarChart3,
+  MapPin,
 } from "lucide-react";
 
 import {
@@ -80,6 +81,7 @@ const menuData: MenuItem[] = [
       { title: "Tipos de Cobrança", href: "/admin-charging-types" },
       { title: "Solicitações de Serviço", href: "/admin-provider-service-requests" },
       { title: "Categorias de Serviços", href: "/admin-categories" },
+      { title: "Cidades e Serviços", href: "/admin-cities-enhanced" },
       { title: "Gerenciamento de Mídia", href: "/admin-media" },
     ]
   },
