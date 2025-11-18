@@ -12,6 +12,7 @@ import {
   notifications,
   employees,
   serviceZones,
+  cities,
   promotionalBanners,
   payments,
   coupons,
@@ -48,6 +49,7 @@ import {
   type InsertEmployee,
   type ServiceZone,
   type InsertServiceZone,
+  type City,
   type PromotionalBanner,
   type InsertPromotionalBanner,
   type Payment as PaymentRecord,
@@ -349,6 +351,9 @@ export interface IStorage {
   // Page settings
   getPageSettings(): Promise<PageSettings | undefined>;
   updatePageSettings(settings: Partial<InsertPageSettings>): Promise<PageSettings>;
+
+  // Cities management
+  getActiveCities(): Promise<City[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4611,6 +4616,17 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return newSettings;
     }
+  }
+
+  // Cities methods
+  async getActiveCities(): Promise<City[]> {
+    const activeCities = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.isActive, true))
+      .orderBy(asc(cities.name));
+    
+    return activeCities;
   }
 }
 

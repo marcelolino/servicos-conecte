@@ -423,6 +423,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public route to get active cities
+  app.get("/api/cities", async (req, res) => {
+    try {
+      const activeCities = await storage.getActiveCities();
+      res.json(activeCities);
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      res.status(500).json({ message: "Failed to get cities", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   app.post("/api/categories", authenticateToken, requireAdmin, async (req, res) => {
     try {
       const category = await storage.createServiceCategory(req.body);
