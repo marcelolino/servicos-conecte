@@ -642,18 +642,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/services-catalog/:id", async (req, res) => {
+  // Get all services (across all categories) with available providers by region
+  // IMPORTANT: This must be before /api/services-catalog/:id to avoid route matching conflicts
+  app.get("/api/services-catalog/all-with-providers", async (req, res) => {
     try {
-      const serviceId = parseInt(req.params.id);
-      const service = await storage.getService(serviceId);
+      const { city, state } = req.query;
       
-      if (!service) {
-        return res.status(404).json({ message: "Service not found" });
-      }
+      const services = await storage.getAllServicesWithProviders(
+        city as string | undefined,
+        state as string | undefined
+      );
       
-      res.json(service);
+      res.json(services);
     } catch (error) {
-      res.status(500).json({ message: "Failed to get service", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Failed to get all services with providers", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -730,19 +732,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all services (across all categories) with available providers by region
-  app.get("/api/services-catalog/all-with-providers", async (req, res) => {
+  // Get service by ID - IMPORTANT: This must be AFTER specific routes to avoid matching conflicts
+  app.get("/api/services-catalog/:id", async (req, res) => {
     try {
-      const { city, state } = req.query;
+      const serviceId = parseInt(req.params.id);
+      const service = await storage.getService(serviceId);
       
-      const services = await storage.getAllServicesWithProviders(
-        city as string | undefined,
-        state as string | undefined
-      );
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
       
-      res.json(services);
+      res.json(service);
     } catch (error) {
-      res.status(500).json({ message: "Failed to get all services with providers", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Failed to get service", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
