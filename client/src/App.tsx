@@ -25,6 +25,7 @@ import AdminProvidersPage from "@/pages/admin-providers";
 import AdminUsersPage from "@/pages/admin-users";
 import AdminCategories from "@/pages/admin-categories";
 import AdminCities from "@/pages/admin-cities";
+import AdminCitiesEnhanced from "@/pages/admin-cities-enhanced";
 import AdminServicesCatalog from "@/pages/admin-services-catalog";
 import AdminServices from "@/pages/admin/services";
 import AdminChargingTypes from "@/pages/admin-charging-types";
@@ -122,6 +123,7 @@ function Router() {
       <Route path="/admin-page-configurations" component={AdminPageConfigurations} />
       <Route path="/admin-categories" component={AdminCategories} />
       <Route path="/admin-cities" component={AdminCities} />
+      <Route path="/admin-cities-enhanced" component={AdminCitiesEnhanced} />
       <Route path="/admin-charging-types" component={AdminChargingTypes} />
       <Route path="/admin-media" component={AdminMedia} />
       <Route path="/admin-chat" component={AdminChat} />
