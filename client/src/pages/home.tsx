@@ -125,15 +125,22 @@ export default function Home() {
   // Query for services by category with providers (new system)
   const { data: categoryServices, isLoading: categoryServicesLoading } = useQuery<any[]>({
     queryKey: ['/api/services-catalog/category', selectedCategory, selectedCity, selectedState],
-    queryFn: () => {
-      if (selectedCategory === "all") return Promise.resolve([]);
+    queryFn: async () => {
+      if (selectedCategory === "all") return [];
       
       const params = new URLSearchParams();
       if (selectedCity) params.append('city', selectedCity);
       if (selectedState && selectedState !== "all") params.append('state', selectedState);
       const queryString = params.toString();
-      return fetch(`/api/services-catalog/category/${selectedCategory}/with-providers${queryString ? '?' + queryString : ''}`)
-        .then(res => res.json());
+      const response = await fetch(`/api/services-catalog/category/${selectedCategory}/with-providers${queryString ? '?' + queryString : ''}`);
+      
+      if (!response.ok) {
+        console.error('Failed to fetch category services:', await response.text());
+        return [];
+      }
+      
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: selectedCategory !== "all",
   });
@@ -141,13 +148,20 @@ export default function Home() {
   // Query for all services with providers when category is "all" but location filters are active
   const { data: allServicesWithProviders, isLoading: allServicesLoading } = useQuery<any[]>({
     queryKey: ['/api/services-catalog/all-with-providers', selectedCity, selectedState],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedCity) params.append('city', selectedCity);
       if (selectedState && selectedState !== "all") params.append('state', selectedState);
       const queryString = params.toString();
-      return fetch(`/api/services-catalog/all-with-providers${queryString ? '?' + queryString : ''}`)
-        .then(res => res.json());
+      const response = await fetch(`/api/services-catalog/all-with-providers${queryString ? '?' + queryString : ''}`);
+      
+      if (!response.ok) {
+        console.error('Failed to fetch all services with providers:', await response.text());
+        return [];
+      }
+      
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: selectedCategory === "all" && (!!selectedCity || (!!selectedState && selectedState !== "all")),
   });
