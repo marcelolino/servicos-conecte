@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { getAuthToken } from '@/lib/auth';
+import { useAuth } from '@/hooks/use-auth';
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -35,6 +36,7 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
   const wsRef = useRef<WebSocket | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch notifications
   const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
@@ -180,6 +182,55 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
     markAllAsReadMutation.mutate();
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read if not already
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
+
+    // Navigate based on notification type and user role
+    if (notification.relatedId) {
+      const isProvider = user?.userType === 'provider';
+      const isClient = user?.userType === 'client';
+      const isAdmin = user?.userType === 'admin';
+
+      // Service request notifications
+      if (notification.type === 'service_request' || 
+          notification.type === 'new_service_request' ||
+          notification.type === 'service_accepted' ||
+          notification.type === 'service_started' ||
+          notification.type === 'service_completed') {
+        if (isProvider) {
+          window.location.href = `/provider-bookings/details/${notification.relatedId}`;
+        } else if (isClient) {
+          window.location.href = `/client-reservas`;
+        } else if (isAdmin) {
+          window.location.href = `/admin-dashboard`;
+        }
+      }
+      // Order notifications
+      else if (notification.type === 'order_created' ||
+               notification.type === 'order_confirmed' ||
+               notification.type === 'order_completed') {
+        if (isProvider) {
+          window.location.href = `/provider-bookings/details/${notification.relatedId}`;
+        } else if (isClient) {
+          window.location.href = `/client-reservas`;
+        }
+      }
+      // Provider registration notifications
+      else if (notification.type === 'provider_approved' ||
+               notification.type === 'provider_rejected') {
+        if (isProvider) {
+          window.location.href = `/provider-dashboard`;
+        }
+      }
+    }
+
+    // Close dropdown after navigation
+    setIsOpen(false);
+  };
+
   const getNotificationIcon = (type: string) => {
     // Return appropriate icon based on notification type
     return '🔔';
@@ -232,14 +283,11 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-3 hover:bg-muted/50 cursor-pointer ${
+                      className={`p-3 hover:bg-muted/50 cursor-pointer transition-colors ${
                         !notification.isRead ? 'bg-muted/30' : ''
                       }`}
-                      onClick={() => {
-                        if (!notification.isRead) {
-                          handleMarkAsRead(notification.id);
-                        }
-                      }}
+                      onClick={() => handleNotificationClick(notification)}
+                      data-testid={`notification-${notification.id}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-0.5">
