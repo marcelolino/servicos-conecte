@@ -183,6 +183,8 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
   };
 
   const handleNotificationClick = (notification: Notification) => {
+    console.log('Notification clicked:', notification);
+    
     // Mark as read if not already
     if (!notification.isRead) {
       handleMarkAsRead(notification.id);
@@ -194,6 +196,8 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
       const isClient = user?.userType === 'client';
       const isAdmin = user?.userType === 'admin';
 
+      console.log('User type:', user?.userType, 'Related ID:', notification.relatedId, 'Notification type:', notification.type);
+
       // Service request notifications
       if (notification.type === 'service_request' || 
           notification.type === 'new_service_request' ||
@@ -201,10 +205,13 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
           notification.type === 'service_started' ||
           notification.type === 'service_completed') {
         if (isProvider) {
+          console.log('Navigating to:', `/provider-bookings/details/${notification.relatedId}`);
           window.location.href = `/provider-bookings/details/${notification.relatedId}`;
         } else if (isClient) {
+          console.log('Navigating to: /client-reservas');
           window.location.href = `/client-reservas`;
         } else if (isAdmin) {
+          console.log('Navigating to: /admin-dashboard');
           window.location.href = `/admin-dashboard`;
         }
       }
@@ -213,8 +220,10 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
                notification.type === 'order_confirmed' ||
                notification.type === 'order_completed') {
         if (isProvider) {
+          console.log('Navigating to:', `/provider-bookings/details/${notification.relatedId}`);
           window.location.href = `/provider-bookings/details/${notification.relatedId}`;
         } else if (isClient) {
+          console.log('Navigating to: /client-reservas');
           window.location.href = `/client-reservas`;
         }
       }
@@ -222,9 +231,20 @@ export default function NotificationsDropdown({ className = '' }: NotificationsD
       else if (notification.type === 'provider_approved' ||
                notification.type === 'provider_rejected') {
         if (isProvider) {
+          console.log('Navigating to: /provider-dashboard');
           window.location.href = `/provider-dashboard`;
         }
+      } else {
+        console.log('Unknown notification type, navigating to bookings');
+        // Default: navigate to bookings page
+        if (isProvider) {
+          window.location.href = `/provider-bookings`;
+        } else if (isClient) {
+          window.location.href = `/client-reservas`;
+        }
       }
+    } else {
+      console.log('No related ID found');
     }
 
     // Close dropdown after navigation
