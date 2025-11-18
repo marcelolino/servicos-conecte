@@ -86,7 +86,7 @@ export default function ProviderBookingDetailsPage() {
   const queryClient = useQueryClient();
 
   const { data: booking, isLoading } = useQuery<BookingDetailsData>({
-    queryKey: [`/api/service-requests/${bookingId}`],
+    queryKey: [`/api/bookings/${bookingId}`],
     enabled: !!bookingId,
   });
 
@@ -95,6 +95,7 @@ export default function ProviderBookingDetailsPage() {
       return apiRequest("PUT", `/api/service-requests/${bookingId}`, { status, notes });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/bookings/${bookingId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/service-requests/${bookingId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/service-requests/provider"] });
       toast({

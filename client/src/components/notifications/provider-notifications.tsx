@@ -108,13 +108,8 @@ export function ProviderNotifications() {
       handleMarkAsRead(notification.id);
     }
 
-    // Navigate to booking details if there's a related ID
-    if (notification.relatedId) {
-      window.location.href = `/provider-bookings/details/${notification.relatedId}`;
-    } else {
-      // If no related ID, go to general bookings page
-      window.location.href = `/provider-bookings`;
-    }
+    // Always navigate to bookings list
+    window.location.href = `/provider-bookings`;
   };
 
   const handleMarkAllAsRead = async () => {

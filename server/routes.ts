@@ -1666,6 +1666,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified endpoint to get booking details (tries both orders and service requests)
+  app.get("/api/bookings/:id", authenticateToken, async (req, res) => {
+    try {
+      const bookingId = parseInt(req.params.id);
+      
+      // First, try to get as order
+      let booking = await storage.getOrderById(bookingId);
+      let bookingType = 'order';
+      
+      // If not found, try as service request
+      if (!booking) {
+        booking = await storage.getServiceRequest(bookingId);
+        bookingType = 'service_request';
+      }
+      
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+      
+      // Check if user has access to this booking
+      const hasAccess = booking.clientId === req.user!.id ||
+                       (booking.provider && booking.provider.userId === req.user!.id) ||
+                       (booking.providerId && booking.provider && booking.provider.userId === req.user!.id) ||
+                       req.user!.userType === "admin";
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Add type to response
+      res.json({ ...booking, type: bookingType });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get booking", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
   // Service request control endpoints for clients
   app.put("/api/service-requests/:id/start", authenticateToken, async (req, res) => {
     try {
