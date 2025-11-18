@@ -208,11 +208,11 @@ export default function AdminCities() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2" data-testid="heading-admin-cities">
             <MapPin className="h-8 w-8" />
             Gerenciar Cidades
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1" data-testid="text-admin-cities-description">
             Gerencie as cidades disponíveis no sistema
           </p>
         </div>
@@ -363,8 +363,8 @@ export default function AdminCities() {
       {/* Cities Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Lista de Cidades ({filteredCities.length})
+          <CardTitle data-testid="heading-cities-list">
+            Lista de Cidades (<span data-testid="text-cities-count">{filteredCities.length}</span>)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -396,21 +396,21 @@ export default function AdminCities() {
               <TableBody>
                 {filteredCities.map((city) => (
                   <TableRow key={city.id} data-testid={`row-city-${city.id}`}>
-                    <TableCell className="font-medium">{city.name}</TableCell>
-                    <TableCell>{city.state}</TableCell>
+                    <TableCell className="font-medium" data-testid={`text-city-name-${city.id}`}>{city.name}</TableCell>
+                    <TableCell data-testid={`text-city-state-${city.id}`}>{city.state}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{city.stateCode}</Badge>
+                      <Badge variant="outline" data-testid={`badge-city-state-code-${city.id}`}>{city.stateCode}</Badge>
                     </TableCell>
                     <TableCell>
                       {city.isActive ? (
-                        <Badge variant="default">Ativa</Badge>
+                        <Badge variant="default" data-testid={`badge-city-status-${city.id}`}>Ativa</Badge>
                       ) : (
-                        <Badge variant="secondary">Inativa</Badge>
+                        <Badge variant="secondary" data-testid={`badge-city-status-${city.id}`}>Inativa</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {city.isHighlighted && (
-                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" data-testid={`icon-city-highlighted-${city.id}`} />
                       )}
                     </TableCell>
                     <TableCell className="text-right">

@@ -4765,6 +4765,9 @@ export default function AdminDashboard() {
                           ? prev.filter(id => id !== item.id)
                           : [...prev, item.id]
                       );
+                    } else if (item.id === 'cities') {
+                      // Navigate to dedicated cities page
+                      setLocation('/admin-cities');
                     } else if (item.id === 'settings') {
                       // Stay in admin dashboard and show settings section
                       window.history.replaceState({}, '', '/admin-dashboard?section=settings');
