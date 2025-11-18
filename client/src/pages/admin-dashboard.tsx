@@ -77,6 +77,14 @@ const categorySchema = z.object({
   color: z.string().optional(),
 });
 
+const citySchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  state: z.string().min(2, "Estado deve ter pelo menos 2 caracteres"),
+  stateCode: z.string().length(2, "Código UF deve ter 2 caracteres"),
+  isHighlighted: z.boolean().optional().default(false),
+  isActive: z.boolean().optional().default(true),
+});
+
 const serviceSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
@@ -96,6 +104,7 @@ const serviceSchema = z.object({
 });
 
 type CategoryForm = z.infer<typeof categorySchema>;
+type CityForm = z.infer<typeof citySchema>;
 type ServiceForm = z.infer<typeof serviceSchema>;
 
 export default function AdminDashboard() {
@@ -148,12 +157,16 @@ export default function AdminDashboard() {
   }, [window.location.pathname]);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [isNewCityOpen, setIsNewCityOpen] = useState(false);
+  const [isEditCityOpen, setIsEditCityOpen] = useState(false);
   const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
   const [isEditServiceOpen, setIsEditServiceOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<(Provider & { user: User }) | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [editingService, setEditingService] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingCity, setEditingCity] = useState<any>(null);
+  const [citySearchTerm, setCitySearchTerm] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [userSearchTerm, setUserSearchTerm] = useState("");
@@ -306,6 +319,28 @@ export default function AdminDashboard() {
     },
   });
 
+  const cityForm = useForm<CityForm>({
+    resolver: zodResolver(citySchema),
+    defaultValues: {
+      name: "",
+      state: "",
+      stateCode: "",
+      isHighlighted: false,
+      isActive: true,
+    },
+  });
+
+  const editCityForm = useForm<CityForm>({
+    resolver: zodResolver(citySchema),
+    defaultValues: {
+      name: "",
+      state: "",
+      stateCode: "",
+      isHighlighted: false,
+      isActive: true,
+    },
+  });
+
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats/admin"],
@@ -315,6 +350,12 @@ export default function AdminDashboard() {
   // Fetch service categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["/api/categories"],
+  });
+
+  // Fetch cities
+  const { data: cities, isLoading: citiesLoading } = useQuery({
+    queryKey: ["/api/admin/cities"],
+    enabled: user?.userType === "admin",
   });
 
   // Fetch providers (this would need to be implemented in the backend)
@@ -1051,6 +1092,12 @@ export default function AdminDashboard() {
       label: "Categorias",
       icon: FileText,
       description: "Categorias de serviços"
+    },
+    {
+      id: "cities",
+      label: "Cidades",
+      icon: MapPin,
+      description: "Gerenciar cidades"
     },
     {
       id: "media",

@@ -300,6 +300,18 @@ export const serviceZones = pgTable("service_zones", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Cities table
+export const cities = pgTable("cities", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  state: varchar("state", { length: 50 }).notNull(),
+  stateCode: varchar("state_code", { length: 2 }).notNull(), // UF code (e.g., "GO")
+  isActive: boolean("is_active").default(true),
+  isHighlighted: boolean("is_highlighted").default(false), // Principais cidades
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Promotional banners table
 export const promotionalBanners = pgTable("promotional_banners", {
   id: serial("id").primaryKey(),
@@ -933,6 +945,12 @@ export const insertServiceZoneSchema = createInsertSchema(serviceZones).omit({
   createdAt: true,
 });
 
+export const insertCitySchema = createInsertSchema(cities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertPromotionalBannerSchema = createInsertSchema(promotionalBanners).omit({
   id: true,
   createdAt: true,
@@ -1073,6 +1091,8 @@ export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type ServiceZone = typeof serviceZones.$inferSelect;
 export type InsertServiceZone = z.infer<typeof insertServiceZoneSchema>;
+export type City = typeof cities.$inferSelect;
+export type InsertCity = z.infer<typeof insertCitySchema>;
 export type PromotionalBanner = typeof promotionalBanners.$inferSelect;
 export type InsertPromotionalBanner = z.infer<typeof insertPromotionalBannerSchema>;
 export type Payment = typeof payments.$inferSelect;

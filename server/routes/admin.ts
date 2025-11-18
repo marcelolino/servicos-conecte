@@ -5,7 +5,7 @@ import path from 'path';
 import { storage } from '../storage';
 import { db } from '../db';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
-import { users, providers, serviceRequests, serviceCategories, providerServices, payments } from '../../shared/schema';
+import { users, providers, serviceRequests, serviceCategories, providerServices, payments, cities, insertCitySchema } from '../../shared/schema';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -219,24 +219,203 @@ router.get('/metrics', authenticateToken, requireAdmin, async (req, res) => {
  */
 router.get('/cities', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Get providers and extract unique cities
-    const allProviders = await storage.getAllProviders();
-    const citySet = new Set();
-    
-    allProviders.forEach(provider => {
-      if (provider.city && provider.state) {
-        citySet.add(JSON.stringify({ city: provider.city, state: provider.state }));
-      }
-    });
-    
-    const cities = Array.from(citySet)
-      .map(cityStr => JSON.parse(cityStr))
-      .sort((a, b) => a.city.localeCompare(b.city));
+    const allCities = await db
+      .select()
+      .from(cities)
+      .orderBy(cities.name);
 
-    res.json(cities);
+    res.json(allCities);
   } catch (error) {
     console.error('Erro ao buscar cidades:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/admin/cities - Criar nova cidade
+/**
+ * @swagger
+ * /api/admin/cities:
+ *   post:
+ *     tags: [Admin - Cidades]
+ *     summary: Criar nova cidade
+ *     description: Adiciona uma nova cidade ao sistema
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: 'Goiânia'
+ *               state:
+ *                 type: string
+ *                 example: 'Goiás'
+ *               stateCode:
+ *                 type: string
+ *                 example: 'GO'
+ *               isHighlighted:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       201:
+ *         description: Cidade criada com sucesso
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.post('/cities', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const cityData = insertCitySchema.parse(req.body);
+    
+    const [newCity] = await db
+      .insert(cities)
+      .values(cityData)
+      .returning();
+
+    res.status(201).json(newCity);
+  } catch (error) {
+    console.error('Erro ao criar cidade:', error);
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+    }
+    res.status(500).json({ error: 'Erro ao criar cidade' });
+  }
+});
+
+// PUT /api/admin/cities/:id - Atualizar cidade
+/**
+ * @swagger
+ * /api/admin/cities/{id}:
+ *   put:
+ *     tags: [Admin - Cidades]
+ *     summary: Atualizar cidade
+ *     description: Atualiza os dados de uma cidade
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da cidade
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               stateCode:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               isHighlighted:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Cidade atualizada com sucesso
+ *       404:
+ *         description: Cidade não encontrada
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.put('/cities/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const cityId = parseInt(req.params.id);
+    
+    // Verificar se a cidade existe
+    const [existingCity] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.id, cityId))
+      .limit(1);
+    
+    if (!existingCity) {
+      return res.status(404).json({ error: 'Cidade não encontrada' });
+    }
+
+    // Validar dados de atualização
+    const cityData = insertCitySchema.partial().parse(req.body);
+    const updateData = { ...cityData, updatedAt: new Date() };
+
+    const [updatedCity] = await db
+      .update(cities)
+      .set(updateData)
+      .where(eq(cities.id, cityId))
+      .returning();
+
+    res.json(updatedCity);
+  } catch (error) {
+    console.error('Erro ao atualizar cidade:', error);
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+    }
+    res.status(500).json({ error: 'Erro ao atualizar cidade' });
+  }
+});
+
+// DELETE /api/admin/cities/:id - Deletar cidade
+/**
+ * @swagger
+ * /api/admin/cities/{id}:
+ *   delete:
+ *     tags: [Admin - Cidades]
+ *     summary: Deletar cidade
+ *     description: Remove uma cidade do sistema
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da cidade
+ *     responses:
+ *       200:
+ *         description: Cidade deletada com sucesso
+ *       404:
+ *         description: Cidade não encontrada
+ *       401:
+ *         description: Token não fornecido
+ *       403:
+ *         description: Acesso negado - Admin requerido
+ */
+router.delete('/cities/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const cityId = parseInt(req.params.id);
+    
+    // Verificar se a cidade existe
+    const [existingCity] = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.id, cityId))
+      .limit(1);
+    
+    if (!existingCity) {
+      return res.status(404).json({ error: 'Cidade não encontrada' });
+    }
+
+    await db
+      .delete(cities)
+      .where(eq(cities.id, cityId));
+
+    res.json({ success: true, message: 'Cidade deletada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao deletar cidade:', error);
+    res.status(500).json({ error: 'Erro ao deletar cidade' });
   }
 });
 
