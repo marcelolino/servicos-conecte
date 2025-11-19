@@ -527,14 +527,20 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                   )}
                 </Button>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!selectedLocation) {
+                      const defaultLat = -16.6869;
+                      const defaultLng = -49.2648;
+                      
+                      // Obter endereço real das coordenadas padrão
+                      const address = await reverseGeocode(defaultLat, defaultLng);
+                      
                       setSelectedLocation({
-                        lat: -16.6869,
-                        lng: -49.2648,
-                        address: 'Goiânia - GO, Brasil'
+                        lat: defaultLat,
+                        lng: defaultLng,
+                        address: address
                       });
-                      setMapPosition([-16.6869, -49.2648]);
+                      setMapPosition([defaultLat, defaultLng]);
                     }
                     setShowMap(true);
                   }}
