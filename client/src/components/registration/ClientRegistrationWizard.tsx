@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { RegistrationImageUpload } from './RegistrationImageUpload';
 import { ChevronRight, ChevronLeft, Upload, Wrench, Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +57,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [savedLocation, setSavedLocation] = useState<any>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [saveAddressToForm, setSaveAddressToForm] = useState(true);
   const { toast } = useToast();
 
   // Carregar endereço detectado na memória ao carregar o componente
@@ -82,12 +84,12 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
   }, [registrationData.address]);
 
   // Função para lidar com atualização de localização do mapa
-  const handleLocationUpdate = (location: { lat: number; lng: number; address: string }) => {
+  const handleLocationUpdate = (location: any) => {
     setSavedLocation(location);
     localStorage.setItem('userLocation', JSON.stringify(location));
     
     // Processar endereço mais inteligentemente
-    const addressParts = location.address.split(',').map(part => part.trim());
+    const addressParts = location.address.split(',').map((part: string) => part.trim());
     
     // Tentar extrair informações do endereço
     let street = '';
@@ -103,7 +105,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     }
     
     // Mapeamento de estados para suas siglas
-    const stateMapping = {
+    const stateMapping: Record<string, string> = {
       'goiás': 'GO', 'goias': 'GO',
       'são paulo': 'SP', 'sao paulo': 'SP',
       'rio de janeiro': 'RJ',
@@ -135,7 +137,7 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     
     // Encontrar o estado no endereço e converter para sigla
     for (const part of addressParts) {
-      const cleanPart = part.replace(/,?\s*Brasil$/, '').trim().toLowerCase();
+      const cleanPart = (part as string).replace(/,?\s*Brasil$/, '').trim().toLowerCase();
       
       for (const [stateName, stateCode] of Object.entries(stateMapping)) {
         if (cleanPart.includes(stateName)) {
@@ -203,12 +205,16 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     console.log('Debug ClientRegistrationWizard - Final street:', finalStreet);
     console.log('Debug ClientRegistrationWizard - Final city:', finalCity);
     console.log('Debug ClientRegistrationWizard - Final state:', finalState);
+    console.log('Debug ClientRegistrationWizard - Previous data:', registrationData);
     
+    // Atualizar registrationData preservando TODOS os valores existentes (especialmente CPF)
     setRegistrationData((prev: any) => ({
-      ...prev,
-      address: finalStreet,
-      city: finalCity,
-      state: finalState,
+      ...prev, // Preserva TUDO (CPF, nome, email, telefone, etc)
+      // Atualizar endereço apenas se o switch estiver ativo
+      ...(saveAddressToForm ? { address: finalStreet } : {}),
+      // Sempre atualizar cidade e estado da localização
+      city: finalCity || prev.city || '',
+      state: finalState || prev.state || '',
       cep: cep || prev.cep || ''
     }));
     
@@ -216,7 +222,9 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     
     toast({
       title: "Localização atualizada!",
-      description: "Seu endereço foi ajustado com sucesso.",
+      description: saveAddressToForm 
+        ? "Endereço, cidade e estado atualizados com sucesso."
+        : "Cidade e estado atualizados. Endereço não foi alterado.",
     });
   };
 
@@ -479,25 +487,43 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
 
           {/* Localização Detectada */}
           {savedLocation && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-4">
               <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
+                <MapPin className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                  <p className="text-sm font-medium text-foreground mb-1">
                     Localização Detectada
                   </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                  <p className="text-xs text-muted-foreground mb-3">
                     {typeof savedLocation.address === 'object' && savedLocation.address !== null 
                       ? JSON.stringify(savedLocation.address)
                       : String(savedLocation.address || 'Localização não detectada')
                     }
                   </p>
+                  
+                  {/* Switch para salvar endereço automaticamente */}
+                  <div className="flex items-center space-x-2 mb-3 p-2 bg-background/50 rounded-md">
+                    <Switch
+                      id="save-address"
+                      checked={saveAddressToForm}
+                      onCheckedChange={setSaveAddressToForm}
+                      data-testid="switch-save-address"
+                    />
+                    <label
+                      htmlFor="save-address"
+                      className="text-xs font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Preencher campo endereço automaticamente
+                    </label>
+                  </div>
+                  
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setShowLocationPicker(true)}
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    className="text-primary border-primary/20 hover:bg-primary/5"
+                    data-testid="button-adjust-location"
                   >
                     <MapPin className="h-4 w-4 mr-2" />
                     Ajustar localização
