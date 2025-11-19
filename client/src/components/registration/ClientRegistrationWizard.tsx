@@ -486,52 +486,53 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
           </div>
 
           {/* Localização Detectada */}
-          {savedLocation && (
-            <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1">
-                    Localização Detectada
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {typeof savedLocation.address === 'object' && savedLocation.address !== null 
-                      ? JSON.stringify(savedLocation.address)
-                      : String(savedLocation.address || 'Localização não detectada')
-                    }
-                  </p>
-                  
-                  {/* Switch para salvar endereço automaticamente */}
-                  <div className="flex items-center space-x-2 mb-3 p-2 bg-background/50 rounded-md">
-                    <Switch
-                      id="save-address"
-                      checked={saveAddressToForm}
-                      onCheckedChange={setSaveAddressToForm}
-                      data-testid="switch-save-address"
-                    />
-                    <label
-                      htmlFor="save-address"
-                      className="text-xs font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Preencher campo endereço automaticamente
-                    </label>
-                  </div>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowLocationPicker(true)}
-                    className="text-primary border-primary/20 hover:bg-primary/5"
-                    data-testid="button-adjust-location"
+          <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <MapPin className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground mb-1">
+                  Localização Detectada
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {savedLocation 
+                    ? (typeof savedLocation.address === 'object' && savedLocation.address !== null 
+                        ? JSON.stringify(savedLocation.address)
+                        : String(savedLocation.address || 'Não detectada')
+                      )
+                    : 'Não detectada'
+                  }
+                </p>
+                
+                {/* Switch para salvar endereço automaticamente */}
+                <div className="flex items-center space-x-2 mb-3 p-2 bg-background/50 rounded-md">
+                  <Switch
+                    id="save-address"
+                    checked={saveAddressToForm}
+                    onCheckedChange={setSaveAddressToForm}
+                    data-testid="switch-save-address"
+                  />
+                  <label
+                    htmlFor="save-address"
+                    className="text-xs font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Ajustar localização
-                  </Button>
+                    Preencher campo endereço automaticamente
+                  </label>
                 </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLocationPicker(true)}
+                  className="text-primary border-primary/20 hover:bg-primary/5"
+                  data-testid="button-adjust-location"
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Ajustar localização
+                </Button>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
