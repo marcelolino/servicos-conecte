@@ -408,12 +408,10 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
 
     // Atualizar valores do formulário quando registrationData for carregado
     useEffect(() => {
-      const currentValues = form.getValues();
-      
-      // Preservar CPF atual antes de atualizar outros campos
-      const currentCpf = currentValues.cpf;
-      
-      // Sempre atualizar com novos dados do mapa
+      // Atualizar campos de endereço quando houver mudanças
+      if (registrationData.cpf !== undefined) {
+        form.setValue('cpf', registrationData.cpf);
+      }
       if (registrationData.address !== undefined) {
         form.setValue('address', registrationData.address);
       }
@@ -428,19 +426,6 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       }
       if (registrationData.cep !== undefined) {
         form.setValue('cep', registrationData.cep);
-      }
-      
-      // Restaurar CPF se foi limpo e tínhamos um valor
-      if (currentCpf && !form.getValues().cpf) {
-        form.setValue('cpf', currentCpf);
-      }
-      
-      // Atualizar CPF do registrationData se foi digitado
-      if (currentCpf && currentCpf !== registrationData.cpf) {
-        setRegistrationData((prev: any) => ({
-          ...prev,
-          cpf: currentCpf
-        }));
       }
     }, [registrationData, form]);
 
@@ -605,6 +590,11 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       onChange={(e) => {
                         const formatted = formatCPF(e.target.value);
                         field.onChange(formatted);
+                        // Atualizar registrationData em tempo real
+                        setRegistrationData((prev: any) => ({
+                          ...prev,
+                          cpf: formatted
+                        }));
                       }}
                     />
                   </FormControl>
