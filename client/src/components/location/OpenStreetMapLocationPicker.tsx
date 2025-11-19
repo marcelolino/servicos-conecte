@@ -31,6 +31,16 @@ interface NominatimResult {
   type: string;
   importance: number;
   icon?: string;
+  address?: {
+    road?: string;
+    house_number?: string;
+    suburb?: string;
+    city?: string;
+    municipality?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
 }
 
 interface AddressDetails {
@@ -229,9 +239,22 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   };
 
   // Função para selecionar uma localização da busca
-  const selectLocation = (result: NominatimResult) => {
-    const rawAddress = result.display_name;
-    const addressParts = rawAddress.split(',').map(part => part.trim());
+  const selectLocation = async (result: NominatimResult) => {
+    // Fazer nova chamada para obter dados estruturados com addressdetails
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/lookup?osm_ids=${result.osm_type.charAt(0).toUpperCase()}${result.osm_id}&format=json&addressdetails=1&accept-language=pt-BR`
+      );
+      
+      if (response.ok) {
+        const results: NominatimResult[] = await response.json();
+        if (results.length > 0) {
+          result = results[0]; // Atualizar com dados completos
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do endereço:', error);
+    }
     
     // Mapeamento de estados para suas siglas
     const stateMapping: Record<string, string> = {
@@ -264,66 +287,20 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
       'tocantins': 'TO'
     };
 
-    let street = '';
-    let city = '';
+    // Usar os campos estruturados do objeto address da API
+    const street = result.address?.road || result.display_name.split(',')[0] || '';
+    const city = result.address?.city || result.address?.municipality?.replace(/Região Geográfica (Imediata|Intermediária) de /gi, '') || '';
+    
     let state = '';
-    let stateIndex = -1;
-
-    // Extrair rua (primeira parte)
-    if (addressParts.length >= 1) {
-      street = addressParts[0] || '';
-    }
-
-    // Encontrar o estado
-    for (let i = addressParts.length - 1; i >= 0; i--) {
-      const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
-      
-      for (const [stateName, stateCode] of Object.entries(stateMapping)) {
-        if (part.includes(stateName)) {
-          state = stateCode;
-          stateIndex = i;
-          break;
-        }
-      }
-      
-      if (state) break;
-    }
-    
-    // Procurar cidade antes do estado
-    if (stateIndex > 0) {
-      for (let i = stateIndex - 1; i >= 1; i--) {
-        const cityCandidate = addressParts[i].trim();
-        
-        // Verificar se não é uma região geográfica
-        const isNotRegion = !cityCandidate.toLowerCase().includes('região') && 
-                           !cityCandidate.toLowerCase().includes('imediata') &&
-                           !cityCandidate.toLowerCase().includes('intermediária') &&
-                           !cityCandidate.toLowerCase().includes('metropolitana');
-        
-        // Verificar se parece uma cidade
-        const seemsLikeCity = cityCandidate.length > 2 && 
-                             !/^\d+$/.test(cityCandidate) &&
-                             !cityCandidate.toLowerCase().includes('setor');
-        
-        if (isNotRegion && seemsLikeCity) {
-          city = cityCandidate;
-          break;
-        }
-      }
-    }
-    
-    // Fallback para cidade
-    if (!city && addressParts.length >= 3) {
-      const fallbackCity = addressParts[1].trim();
-      if (fallbackCity && fallbackCity.length > 2 && !fallbackCity.toLowerCase().includes('região')) {
-        city = fallbackCity;
-      }
+    if (result.address?.state) {
+      const stateLower = result.address.state.toLowerCase();
+      state = stateMapping[stateLower] || '';
     }
     
     const location = {
       lat: parseFloat(result.lat),
       lng: parseFloat(result.lon),
-      address: street || rawAddress,
+      address: street,
       parsedStreet: street,
       parsedCity: city,
       parsedState: state
@@ -336,152 +313,83 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
   // Função para atualizar localização no mapa
   const handleMapLocationChange = async (lat: number, lng: number) => {
-    const rawAddress = await reverseGeocode(lat, lng);
-    
-    // Processar endereço para extrair dados organizados com sigla do estado
-    const addressParts = rawAddress.split(',').map(part => part.trim());
-    
-    // Mapeamento de estados para suas siglas
-    const stateMapping = {
-      'goiás': 'GO', 'goias': 'GO',
-      'são paulo': 'SP', 'sao paulo': 'SP',
-      'rio de janeiro': 'RJ',
-      'minas gerais': 'MG',
-      'bahia': 'BA',
-      'paraná': 'PR', 'parana': 'PR',
-      'rio grande do sul': 'RS',
-      'pernambuco': 'PE',
-      'ceará': 'CE', 'ceara': 'CE',
-      'pará': 'PA', 'para': 'PA',
-      'santa catarina': 'SC',
-      'maranhão': 'MA', 'maranhao': 'MA',
-      'paraíba': 'PB', 'paraiba': 'PB',
-      'espírito santo': 'ES', 'espirito santo': 'ES',
-      'piauí': 'PI', 'piaui': 'PI',
-      'alagoas': 'AL',
-      'rio grande do norte': 'RN',
-      'mato grosso': 'MT',
-      'mato grosso do sul': 'MS',
-      'distrito federal': 'DF',
-      'sergipe': 'SE',
-      'rondônia': 'RO', 'rondonia': 'RO',
-      'acre': 'AC',
-      'amazonas': 'AM',
-      'roraima': 'RR',
-      'amapá': 'AP', 'amapa': 'AP',
-      'tocantins': 'TO'
-    };
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar endereço');
+      }
 
-    let street = '';
-    let city = '';
-    let state = '';
+      const result: NominatimResult = await response.json();
+      console.log('DEBUG - Reverse geocode result:', result);
+      
+      // Mapeamento de estados para suas siglas
+      const stateMapping: Record<string, string> = {
+        'goiás': 'GO', 'goias': 'GO',
+        'são paulo': 'SP', 'sao paulo': 'SP',
+        'rio de janeiro': 'RJ',
+        'minas gerais': 'MG',
+        'bahia': 'BA',
+        'paraná': 'PR', 'parana': 'PR',
+        'rio grande do sul': 'RS',
+        'pernambuco': 'PE',
+        'ceará': 'CE', 'ceara': 'CE',
+        'pará': 'PA', 'para': 'PA',
+        'santa catarina': 'SC',
+        'maranhão': 'MA', 'maranhao': 'MA',
+        'paraíba': 'PB', 'paraiba': 'PB',
+        'espírito santo': 'ES', 'espirito santo': 'ES',
+        'piauí': 'PI', 'piaui': 'PI',
+        'alagoas': 'AL',
+        'rio grande do norte': 'RN',
+        'mato grosso': 'MT',
+        'mato grosso do sul': 'MS',
+        'distrito federal': 'DF',
+        'sergipe': 'SE',
+        'rondônia': 'RO', 'rondonia': 'RO',
+        'acre': 'AC',
+        'amazonas': 'AM',
+        'roraima': 'RR',
+        'amapá': 'AP', 'amapa': 'AP',
+        'tocantins': 'TO'
+      };
 
-    // Extrair informações organizadas
-    if (addressParts.length >= 2) {
-      street = addressParts[0] || '';
+      // Usar os campos estruturados do objeto address da API
+      const street = result.address?.road || result.display_name.split(',')[0] || '';
+      const city = result.address?.city || result.address?.municipality?.replace(/Região Geográfica (Imediata|Intermediária) de /gi, '') || '';
       
-      let stateIndex = -1;
-      
-      // Primeiro, encontrar o índice do estado
-      for (let i = addressParts.length - 1; i >= 0; i--) {
-        const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
-        
-        for (const [stateName, stateCode] of Object.entries(stateMapping)) {
-          if (part.includes(stateName)) {
-            state = stateCode;
-            stateIndex = i;
-            break;
-          }
-        }
-        
-        if (state) break;
+      let state = '';
+      if (result.address?.state) {
+        const stateLower = result.address.state.toLowerCase();
+        state = stateMapping[stateLower] || '';
       }
       
-      // Agora procurar pela cidade antes do estado
-      if (stateIndex > 0) {
-        // Procurar cidade nas partes anteriores ao estado
-        for (let i = stateIndex - 1; i >= 1; i--) {
-          const cityCandidate = addressParts[i].trim();
-          
-          // Verificar se não é uma região geográfica ou outro tipo de divisão administrativa
-          const isNotRegion = !cityCandidate.toLowerCase().includes('região') && 
-                             !cityCandidate.toLowerCase().includes('imediata') &&
-                             !cityCandidate.toLowerCase().includes('intermediária') &&
-                             !cityCandidate.toLowerCase().includes('metropolitana') &&
-                             !cityCandidate.toLowerCase().includes('microrregião');
-          
-          // Verificar se tem características de cidade (não é só números ou muito genérico)
-          const seemsLikeCity = cityCandidate.length > 2 && 
-                               !/^\d+$/.test(cityCandidate) &&
-                               !cityCandidate.toLowerCase().includes('setor') &&
-                               !cityCandidate.toLowerCase().includes('quadra');
-          
-          if (isNotRegion && seemsLikeCity) {
-            city = cityCandidate;
-            break;
-          }
-        }
-      }
+      console.log('Debug - Extracted street:', street);
+      console.log('Debug - Extracted city:', city);
+      console.log('Debug - Extracted state:', state);
       
-      // Fallback: se não encontrou cidade e tem pelo menos 3 partes, usar a segunda parte
-      if (!city && addressParts.length >= 3) {
-        const fallbackCity = addressParts[1].trim();
-        if (fallbackCity && fallbackCity.length > 2 && !fallbackCity.toLowerCase().includes('região')) {
-          city = fallbackCity;
-        }
-      }
+      const location = { 
+        lat, 
+        lng, 
+        address: street,
+        parsedStreet: street,
+        parsedCity: city,
+        parsedState: state
+      };
       
-      // Se ainda não encontrou cidade, usar uma parte intermediária válida
-      if (!city && addressParts.length >= 3) {
-        for (let i = 1; i < addressParts.length - 1; i++) {
-          const candidate = addressParts[i].trim();
-          if (candidate && 
-              candidate.length > 2 && 
-              !candidate.toLowerCase().includes('região') &&
-              !candidate.toLowerCase().includes(state.toLowerCase()) &&
-              !/^\d+$/.test(candidate)) {
-            city = candidate;
-            break;
-          }
-        }
-      }
-      
-      // Se ainda não tem estado, tentar fallback
-      if (!state && addressParts.length >= 1) {
-        const lastPart = addressParts[addressParts.length - 1]?.replace(/,?\s*Brasil$/, '').trim().toLowerCase() || '';
-        for (const [stateName, stateCode] of Object.entries(stateMapping)) {
-          if (lastPart.includes(stateName)) {
-            state = stateCode;
-            break;
-          }
-        }
-      }
-    } else {
-      street = rawAddress;
+      setSelectedLocation(location);
+      setMapPosition([lat, lng]);
+    } catch (error) {
+      console.error('Erro ao processar localização:', error);
+      setSelectedLocation({ 
+        lat, 
+        lng, 
+        address: `${lat}, ${lng}` 
+      });
+      setMapPosition([lat, lng]);
     }
-
-    // Debug para verificar o que foi extraído
-    console.log('Debug - Raw address:', rawAddress);
-    console.log('Debug - Address parts:', addressParts);
-    console.log('Debug - Extracted street:', street);
-    console.log('Debug - Extracted city:', city);
-    console.log('Debug - Extracted state:', state);
-    
-    // Criar endereço organizado para retorno
-    const organizedAddress = street || rawAddress;
-    
-    const location = { 
-      lat, 
-      lng, 
-      address: organizedAddress,
-      // Adicionar dados estruturados para usar no registro
-      parsedStreet: street,
-      parsedCity: city,
-      parsedState: state
-    };
-    
-    setSelectedLocation(location);
-    setMapPosition([lat, lng]);
   };
 
   // Função para salvar localização no perfil do usuário

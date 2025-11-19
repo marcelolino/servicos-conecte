@@ -16,6 +16,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 35011
+externalPort = 4200
+
+[[ports]]
 localPort = 36163
 externalPort = 3001
 
@@ -30,10 +34,6 @@ externalPort = 3002
 [[ports]]
 localPort = 42965
 externalPort = 3000
-
-[[ports]]
-localPort = 44413
-externalPort = 4200
 
 [[ports]]
 localPort = 44595
@@ -61,3 +61,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
+integrations = ["javascript_database:1.0.0"]
