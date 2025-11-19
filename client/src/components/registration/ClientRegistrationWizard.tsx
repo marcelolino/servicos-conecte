@@ -322,13 +322,28 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 <FormControl>
                   <div className="relative">
                     <Input
-                      type={showPassword ? "text" : "password"}
+                      type="password"
                       placeholder="Sua senha"
                       {...field}
+                      style={{ display: showPassword ? 'none' : 'block' }}
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Sua senha"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      style={{ display: showPassword ? 'block' : 'none' }}
                     />
                     <button
                       type="button"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors z-10"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -358,13 +373,28 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                 <FormControl>
                   <div className="relative">
                     <Input
-                      type={showConfirmPassword ? "text" : "password"}
+                      type="password"
                       placeholder="Confirme sua senha"
                       {...field}
+                      style={{ display: showConfirmPassword ? 'none' : 'block' }}
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Confirme sua senha"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                      style={{ display: showConfirmPassword ? 'block' : 'none' }}
                     />
                     <button
                       type="button"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors z-10"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
