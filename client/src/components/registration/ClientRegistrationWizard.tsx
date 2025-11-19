@@ -410,6 +410,9 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
     useEffect(() => {
       const currentValues = form.getValues();
       
+      // Preservar CPF atual antes de atualizar outros campos
+      const currentCpf = currentValues.cpf;
+      
       // Sempre atualizar com novos dados do mapa
       if (registrationData.address !== undefined) {
         form.setValue('address', registrationData.address);
@@ -425,6 +428,19 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
       }
       if (registrationData.cep !== undefined) {
         form.setValue('cep', registrationData.cep);
+      }
+      
+      // Restaurar CPF se foi limpo e tínhamos um valor
+      if (currentCpf && !form.getValues().cpf) {
+        form.setValue('cpf', currentCpf);
+      }
+      
+      // Atualizar CPF do registrationData se foi digitado
+      if (currentCpf && currentCpf !== registrationData.cpf) {
+        setRegistrationData((prev: any) => ({
+          ...prev,
+          cpf: currentCpf
+        }));
       }
     }, [registrationData, form]);
 
