@@ -326,23 +326,22 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       placeholder="Sua senha"
                       {...field}
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setShowPassword(!showPassword);
                       }}
+                      tabIndex={-1}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className="h-4 w-4 text-gray-500" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-gray-500" />
                       )}
-                    </Button>
+                    </button>
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -363,23 +362,22 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       placeholder="Confirme sua senha"
                       {...field}
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-md transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setShowConfirmPassword(!showConfirmPassword);
                       }}
+                      tabIndex={-1}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className="h-4 w-4 text-gray-500" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-gray-500" />
                       )}
-                    </Button>
+                    </button>
                   </div>
                 </FormControl>
                 <FormMessage />
