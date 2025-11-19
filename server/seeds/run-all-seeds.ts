@@ -8,27 +8,34 @@
 
 import { seedServicesCatalog } from './seed-services';
 import { seedUsers } from './seed-users';
+import { seedChargingTypes } from './seed-charging-types';
 
 export async function runAllSeeds(reset = false) {
   console.log('🚀 Iniciando seed completo do Qserviços...');
   console.log('==========================================\n');
 
   try {
-    // 1. Seed do catálogo de serviços
-    console.log('1️⃣ CATÁLOGO DE SERVIÇOS');
+    // 1. Seed dos tipos de cobrança
+    console.log('1️⃣ TIPOS DE COBRANÇA');
+    const chargingTypesStats = await seedChargingTypes(reset);
+    console.log('✅ Tipos de cobrança concluídos\n');
+
+    // 2. Seed do catálogo de serviços
+    console.log('2️⃣ CATÁLOGO DE SERVIÇOS');
     const servicesStats = await seedServicesCatalog(reset);
     console.log('✅ Catálogo concluído\n');
 
-    // 2. Seed das contas de teste
-    console.log('2️⃣ CONTAS DE TESTE');
+    // 3. Seed das contas de teste
+    console.log('3️⃣ CONTAS DE TESTE');
     const usersStats = await seedUsers(reset);
     console.log('✅ Contas concluídas\n');
 
-    // 3. Relatório final
+    // 4. Relatório final
     console.log('==========================================');
     console.log('🎉 SEED COMPLETO CONCLUÍDO COM SUCESSO!');
     console.log('==========================================');
     console.log('📊 RESUMO FINAL:');
+    console.log(`   • ${chargingTypesStats.total} tipos de cobrança`);
     console.log(`   • ${servicesStats.categoriesProcessed} categorias de serviços`);
     console.log(`   • ${servicesStats.servicesProcessed} serviços no catálogo`);
     console.log(`   • ${usersStats.mainAccountsProcessed} contas principais`);
@@ -46,6 +53,7 @@ export async function runAllSeeds(reset = false) {
 
     return {
       success: true,
+      chargingTypes: chargingTypesStats,
       services: servicesStats,
       users: usersStats,
     };
