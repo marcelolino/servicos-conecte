@@ -230,10 +230,103 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
 
   // Função para selecionar uma localização da busca
   const selectLocation = (result: NominatimResult) => {
+    const rawAddress = result.display_name;
+    const addressParts = rawAddress.split(',').map(part => part.trim());
+    
+    // Mapeamento de estados para suas siglas
+    const stateMapping: Record<string, string> = {
+      'goiás': 'GO', 'goias': 'GO',
+      'são paulo': 'SP', 'sao paulo': 'SP',
+      'rio de janeiro': 'RJ',
+      'minas gerais': 'MG',
+      'bahia': 'BA',
+      'paraná': 'PR', 'parana': 'PR',
+      'rio grande do sul': 'RS',
+      'pernambuco': 'PE',
+      'ceará': 'CE', 'ceara': 'CE',
+      'pará': 'PA', 'para': 'PA',
+      'santa catarina': 'SC',
+      'maranhão': 'MA', 'maranhao': 'MA',
+      'paraíba': 'PB', 'paraiba': 'PB',
+      'espírito santo': 'ES', 'espirito santo': 'ES',
+      'piauí': 'PI', 'piaui': 'PI',
+      'alagoas': 'AL',
+      'rio grande do norte': 'RN',
+      'mato grosso': 'MT',
+      'mato grosso do sul': 'MS',
+      'distrito federal': 'DF',
+      'sergipe': 'SE',
+      'rondônia': 'RO', 'rondonia': 'RO',
+      'acre': 'AC',
+      'amazonas': 'AM',
+      'roraima': 'RR',
+      'amapá': 'AP', 'amapa': 'AP',
+      'tocantins': 'TO'
+    };
+
+    let street = '';
+    let city = '';
+    let state = '';
+    let stateIndex = -1;
+
+    // Extrair rua (primeira parte)
+    if (addressParts.length >= 1) {
+      street = addressParts[0] || '';
+    }
+
+    // Encontrar o estado
+    for (let i = addressParts.length - 1; i >= 0; i--) {
+      const part = addressParts[i].replace(/,?\s*Brasil$/, '').trim().toLowerCase();
+      
+      for (const [stateName, stateCode] of Object.entries(stateMapping)) {
+        if (part.includes(stateName)) {
+          state = stateCode;
+          stateIndex = i;
+          break;
+        }
+      }
+      
+      if (state) break;
+    }
+    
+    // Procurar cidade antes do estado
+    if (stateIndex > 0) {
+      for (let i = stateIndex - 1; i >= 1; i--) {
+        const cityCandidate = addressParts[i].trim();
+        
+        // Verificar se não é uma região geográfica
+        const isNotRegion = !cityCandidate.toLowerCase().includes('região') && 
+                           !cityCandidate.toLowerCase().includes('imediata') &&
+                           !cityCandidate.toLowerCase().includes('intermediária') &&
+                           !cityCandidate.toLowerCase().includes('metropolitana');
+        
+        // Verificar se parece uma cidade
+        const seemsLikeCity = cityCandidate.length > 2 && 
+                             !/^\d+$/.test(cityCandidate) &&
+                             !cityCandidate.toLowerCase().includes('setor');
+        
+        if (isNotRegion && seemsLikeCity) {
+          city = cityCandidate;
+          break;
+        }
+      }
+    }
+    
+    // Fallback para cidade
+    if (!city && addressParts.length >= 3) {
+      const fallbackCity = addressParts[1].trim();
+      if (fallbackCity && fallbackCity.length > 2 && !fallbackCity.toLowerCase().includes('região')) {
+        city = fallbackCity;
+      }
+    }
+    
     const location = {
       lat: parseFloat(result.lat),
       lng: parseFloat(result.lon),
-      address: result.display_name
+      address: street || rawAddress,
+      parsedStreet: street,
+      parsedCity: city,
+      parsedState: state
     };
     
     setSelectedLocation(location);
