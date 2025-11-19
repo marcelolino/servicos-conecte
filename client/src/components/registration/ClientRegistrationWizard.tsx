@@ -331,7 +331,11 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowPassword(!showPassword);
+                      }}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -364,7 +368,11 @@ export function ClientRegistrationWizard({ onComplete }: ClientRegistrationWizar
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowConfirmPassword(!showConfirmPassword);
+                      }}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
