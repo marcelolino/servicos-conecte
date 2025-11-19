@@ -75,14 +75,13 @@ function MapCenterUpdater({ center }: { center: [number, number] }) {
 }
 
 export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect }: LocationPickerProps) {
-  const [currentStep, setCurrentStep] = useState<'detect' | 'search' | 'map' | 'confirm'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [mapPosition, setMapPosition] = useState<[number, number]>([-16.6869, -49.2648]); // Goiânia como padrão
-  const [isSavingToProfile, setIsSavingToProfile] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -90,11 +89,11 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   // Limpar estado quando fechar modal
   useEffect(() => {
     if (!isOpen) {
-      setCurrentStep('search');
       setSearchQuery('');
       setSuggestions([]);
       setSelectedLocation(null);
       setMapPosition([-16.6869, -49.2648]);
+      setShowMap(false);
     }
   }, [isOpen]);
 
@@ -187,7 +186,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
           
           setSelectedLocation(location);
           setMapPosition([latitude, longitude]);
-          setCurrentStep('confirm');
+          setShowMap(true);
         } catch (error) {
           console.error('Erro ao obter endereço:', error);
           toast({
@@ -239,7 +238,7 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
     
     setSelectedLocation(location);
     setMapPosition([location.lat, location.lng]);
-    setCurrentStep('map');
+    setShowMap(true);
   };
 
   // Função para atualizar localização no mapa
@@ -396,7 +395,6 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
   const saveLocationToProfile = async () => {
     if (!selectedLocation || !user) return;
 
-    setIsSavingToProfile(true);
     try {
       const addressComponents = extractAddressComponents(selectedLocation.address);
       console.log('DEBUG - Address:', selectedLocation.address);
@@ -424,8 +422,6 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
         description: "Não foi possível salvar a localização no seu perfil.",
         variant: "destructive"
       });
-    } finally {
-      setIsSavingToProfile(false);
     }
   };
 
@@ -467,83 +463,41 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
         </DialogHeader>
 
         <div className="p-4">
-          {currentStep === 'detect' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-4">
-                  Você está aqui?
-                </div>
-                <div className="text-sm font-medium mb-6">
-                  Rua 205 - Setor Coimbra, Goiânia - GO, Brasil
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={detectCurrentLocation}
-                  disabled={isDetecting}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white h-12"
-                >
-                  {isDetecting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Detectando localização...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Navigation className="h-4 w-4" />
-                      Confirmar localização
-                    </div>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={() => setCurrentStep('search')}
-                  variant="outline"
-                  className="w-full h-12"
-                >
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Ajustar a localização
-                  </div>
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 'search' && (
+          {!showMap ? (
             <div className="space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Digite seu endereço"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
+                  data-testid="input-search-address"
                 />
               </div>
 
               {isLoading && (
                 <div className="text-center py-4">
-                  <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
 
               {suggestions.length > 0 && (
-                <div className="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-lg">
                   {suggestions.map((result) => (
                     <div
                       key={result.place_id}
-                      className="cursor-pointer hover:bg-gray-50 transition-colors p-3 border-b border-gray-100 last:border-b-0"
+                      className="cursor-pointer hover:bg-accent/50 transition-colors p-3 border-b border-border last:border-b-0"
                       onClick={() => selectLocation(result)}
+                      data-testid={`suggestion-${result.place_id}`}
                     >
                       <div className="flex items-start gap-3">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 mb-1">
+                          <div className="text-sm font-medium text-foreground mb-1">
                             {result.display_name.split(',')[0]}
                           </div>
-                          <div className="text-xs text-gray-500 line-clamp-2">
+                          <div className="text-xs text-muted-foreground line-clamp-2">
                             {result.display_name}
                           </div>
                         </div>
@@ -554,44 +508,26 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
               )}
 
               <div className="space-y-2 mt-4">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={onClose}
-                    variant="outline"
-                    className="flex-1 h-10"
-                  >
-                    Voltar
-                  </Button>
-                  <Button
-                    onClick={detectCurrentLocation}
-                    disabled={isDetecting}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10 disabled:bg-blue-400"
-                  >
-                    <div className="flex items-center gap-2">
-                      {isDetecting ? (
-                        <div className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Navigation className="h-3 w-3" />
-                      )}
-                      {isDetecting ? 'Detectando...' : 'Detectar localização'}
-                    </div>
-                  </Button>
-                </div>
                 <Button
-                  onClick={() => {
-                    // Simular confirmação sem localização específica
-                    confirmLocation();
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white h-11"
+                  onClick={detectCurrentLocation}
+                  disabled={isDetecting}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
+                  data-testid="button-detect-location"
                 >
-                  <div className="flex items-center gap-2">
-                    <Navigation className="h-4 w-4" />
-                    Confirmar localização
-                  </div>
+                  {isDetecting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Detectando...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      Usar minha localização
+                    </div>
+                  )}
                 </Button>
                 <Button
                   onClick={() => {
-                    // Definir localização padrão para mostrar o mapa
                     if (!selectedLocation) {
                       setSelectedLocation({
                         lat: -16.6869,
@@ -600,30 +536,29 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                       });
                       setMapPosition([-16.6869, -49.2648]);
                     }
-                    setCurrentStep('map');
+                    setShowMap(true);
                   }}
                   variant="outline"
                   className="w-full h-11"
+                  data-testid="button-show-map"
                 >
                   <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Ajustar no Mapa
+                    <MapPin className="h-4 w-4" />
+                    Escolher no mapa
                   </div>
                 </Button>
               </div>
             </div>
-          )}
-
-          {currentStep === 'map' && selectedLocation && (
+          ) : (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold mb-2">Você está aqui?</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Arraste o marcador para ajustar sua localização exata
+                <h3 className="text-lg font-semibold mb-2">Ajuste sua localização</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Clique no mapa para ajustar sua localização exata
                 </p>
               </div>
 
-              <div className="h-64 rounded-lg overflow-hidden border border-gray-200">
+              <div className="h-64 rounded-lg overflow-hidden border border-border">
                 <MapContainer
                   center={mapPosition}
                   zoom={16}
@@ -651,90 +586,38 @@ export function OpenStreetMapLocationPicker({ isOpen, onClose, onLocationSelect 
                 </MapContainer>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+              <div className="bg-accent/20 dark:bg-accent/10 border border-accent/30 dark:border-accent/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm text-foreground dark:text-foreground">
                   <Move className="h-4 w-4" />
-                  <span>Clique no mapa ou arraste o marcador para ajustar a localização</span>
+                  <span>Clique no mapa ou arraste o marcador</span>
                 </div>
               </div>
 
               {selectedLocation && (
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Endereço selecionado:</div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100">{selectedLocation.address}</div>
+                <div className="bg-muted dark:bg-muted rounded-lg p-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Endereço selecionado:</div>
+                  <div className="text-sm text-foreground">{selectedLocation.address}</div>
                 </div>
               )}
 
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setCurrentStep('search')}
+                  onClick={() => setShowMap(false)}
                   variant="outline"
                   className="flex-1"
+                  data-testid="button-back-search"
                 >
                   Voltar
                 </Button>
                 <Button
-                  onClick={() => setCurrentStep('confirm')}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Confirmar localização
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 'confirm' && selectedLocation && (
-            <div className="space-y-4">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-green-800 dark:text-green-200">
-                      Localização confirmada
-                    </div>
-                    <div className="text-xs text-green-700 dark:text-green-300 mt-1">
-                      {selectedLocation.address}
-                    </div>
-                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {user && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
-                    <Home className="h-4 w-4" />
-                    <span>Esta localização será salva no seu perfil</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setCurrentStep('map')}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Ajustar no Mapa
-                </Button>
-                <Button
                   onClick={confirmLocation}
-                  disabled={isSavingToProfile}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  data-testid="button-confirm-location"
                 >
-                  {isSavingToProfile ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Salvando...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4" />
-                      Confirmar
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    Confirmar
+                  </div>
                 </Button>
               </div>
             </div>

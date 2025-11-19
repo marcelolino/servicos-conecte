@@ -251,11 +251,11 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   // Se já temos localização e o card não deve aparecer, mostrar versão compacta
   if (currentLocation && !shouldShow) {
     return (
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+      <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-lg p-3 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground dark:text-primary-foreground/80 truncate">
               {formatLocationDisplay(currentLocation.address)}
             </span>
           </div>
@@ -264,7 +264,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
               variant="ghost"
               size="sm"
               onClick={() => setIsLocationModalOpen(true)}
-              className="text-green-600 hover:text-green-700 h-6 px-2"
+              className="text-primary hover:text-primary/80 h-6 px-2"
             >
               Alterar
             </Button>
@@ -272,7 +272,7 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleClearLocation}
-              className="text-gray-500 hover:text-gray-700 h-6 w-6 p-0"
+              className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -298,24 +298,24 @@ export function LocationCard({ onLocationChange }: LocationCardProps) {
   if (!currentLocation && shouldShow) {
     return (
       <>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 shadow-sm">
+        <div className="bg-card dark:bg-card border border-border dark:border-border rounded-lg p-4 mb-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-green-600" />
+              <div className="h-10 w-10 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">
+                <h3 className="font-semibold text-foreground dark:text-white">
                   Saiba sua localização
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                   Para encontrar os melhores serviços perto de você
                 </p>
               </div>
             </div>
             <Button
               onClick={() => setIsLocationModalOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               Permitir
             </Button>
