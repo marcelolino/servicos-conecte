@@ -25,7 +25,8 @@ import {
   FileText,
   Eye,
   Edit,
-  Plus
+  Plus,
+  Briefcase
 } from "lucide-react";
 
 interface ProviderService {
@@ -61,10 +62,18 @@ interface ProviderService {
   chargingTypes: ServiceChargingType[];
 }
 
+interface CustomChargingType {
+  id: number;
+  name: string;
+  key: string;
+  description?: string;
+  isActive: boolean;
+}
+
 interface ServiceChargingType {
   id: number;
   providerServiceId: number;
-  chargingType: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+  chargingType: string;
   price: string;
   description: string | null;
   isActive: boolean;
@@ -73,28 +82,35 @@ interface ServiceChargingType {
 }
 
 interface ChargingTypeForm {
-  chargingType: 'visit' | 'hour' | 'daily' | 'package' | 'quote';
+  chargingType: string;
   price: string | null;
   description: string;
 }
 
-const chargingTypeLabels = {
-  visit: 'Por Visita/Consultoria',
-  hour: 'Por Hora',
-  daily: 'Por Diária',
-  package: 'Pacote/Projeto',
-  quote: 'Orçamento Personalizado'
-};
-
-const chargingTypeIcons = {
+const chargingTypeIcons: Record<string, any> = {
   visit: Eye,
   hour: Clock, 
   daily: Calendar,
   package: Package,
-  quote: FileText
+  quote: FileText,
+  servico: Briefcase,
+  project: Briefcase
 };
 
-function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService; onEdit: (service: ProviderService) => void }) {
+function ServiceChargingTypeCard({ 
+  service, 
+  onEdit, 
+  chargingTypes 
+}: { 
+  service: ProviderService; 
+  onEdit: (service: ProviderService) => void;
+  chargingTypes: CustomChargingType[];
+}) {
+  const getChargingTypeName = (key: string) => {
+    const type = chargingTypes.find(ct => ct.key === key);
+    return type?.name || key;
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -140,14 +156,14 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
           ) : (
             <div className="grid gap-2">
               {service.chargingTypes.map((chargingType) => {
-                const Icon = chargingTypeIcons[chargingType.chargingType];
+                const Icon = chargingTypeIcons[chargingType.chargingType] || Briefcase;
                 return (
                   <div key={chargingType.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4 text-primary" />
                       <div>
                         <span className="text-sm font-medium">
-                          {chargingTypeLabels[chargingType.chargingType]}
+                          {getChargingTypeName(chargingType.chargingType)}
                         </span>
                         {chargingType.description && (
                           <p className="text-xs text-muted-foreground">{chargingType.description}</p>
@@ -173,15 +189,28 @@ function ServiceChargingTypeCard({ service, onEdit }: { service: ProviderService
   );
 }
 
-function ChargingTypeManager({ service, onClose }: { service: ProviderService; onClose: () => void }) {
+function ChargingTypeManager({ 
+  service, 
+  onClose, 
+  chargingTypes 
+}: { 
+  service: ProviderService; 
+  onClose: () => void;
+  chargingTypes: CustomChargingType[];
+}) {
   const [form, setForm] = useState<ChargingTypeForm>({
-    chargingType: 'visit',
+    chargingType: chargingTypes[0]?.key || 'visit',
     price: '',
     description: ''
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  const getChargingTypeName = (key: string) => {
+    const type = chargingTypes.find(ct => ct.key === key);
+    return type?.name || key;
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: ChargingTypeForm) => 
@@ -228,7 +257,7 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
   });
 
   const resetForm = () => {
-    setForm({ chargingType: 'visit', price: '', description: '' });
+    setForm({ chargingType: chargingTypes[0]?.key || 'visit', price: '', description: '' });
     setEditingId(null);
   };
 
@@ -297,9 +326,9 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(chargingTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
+                      {chargingTypes.map((type) => (
+                        <SelectItem key={type.key} value={type.key}>
+                          {type.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -361,14 +390,14 @@ function ChargingTypeManager({ service, onClose }: { service: ProviderService; o
             ) : (
               <div className="space-y-2">
                 {service.chargingTypes.map((chargingType) => {
-                  const Icon = chargingTypeIcons[chargingType.chargingType];
+                  const Icon = chargingTypeIcons[chargingType.chargingType] || Briefcase;
                   return (
                     <div key={chargingType.id} className="flex items-center justify-between p-3 border rounded-md">
                       <div className="flex items-center gap-3">
                         <Icon className="h-5 w-5 text-primary" />
                         <div>
                           <div className="font-medium">
-                            {chargingTypeLabels[chargingType.chargingType]}
+                            {getChargingTypeName(chargingType.chargingType)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {chargingType.chargingType === 'quote' ? 'Sob consulta' : `R$ ${chargingType.price}`}
@@ -418,6 +447,11 @@ export default function MeusServicos() {
     enabled: user?.userType === "provider",
   });
 
+  // Buscar tipos de cobrança disponíveis
+  const { data: chargingTypes = [], isLoading: chargingTypesLoading } = useQuery<CustomChargingType[]>({
+    queryKey: ["/api/charging-types"],
+  });
+
   if (!user || user.userType !== "provider") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -435,7 +469,8 @@ export default function MeusServicos() {
         <div className="p-6">
           <ChargingTypeManager 
             service={selectedService} 
-            onClose={() => setSelectedService(null)} 
+            onClose={() => setSelectedService(null)}
+            chargingTypes={chargingTypes}
           />
         </div>
       </ModernProviderLayout>
@@ -491,6 +526,7 @@ export default function MeusServicos() {
                 key={service.id}
                 service={service}
                 onEdit={setSelectedService}
+                chargingTypes={chargingTypes}
               />
             ))}
           </div>
