@@ -1,7 +1,7 @@
 /**
  * QSERVIÇOS - SEED DE TIPOS DE COBRANÇA
  * Data: 19/11/2025
- * 
+ *
  * Script para popular a tabela de tipos de cobrança
  */
 
@@ -13,36 +13,46 @@ const chargingTypesData = [
   {
     name: "Por Diária",
     key: "daily",
-    description: "Cobrança por dia de trabalho. Ideal para serviços que demoram um ou mais dias para serem concluídos.",
+    description:
+      "Cobrança por dia de trabalho. Ideal para serviços que demoram um ou mais dias para serem concluídos.",
     isActive: true,
   },
   {
     name: "Por Serviço",
     key: "servico",
-    description: "Cobrança por serviço completo. Preço fixo independente do tempo ou complexidade.",
+    description:
+      "Cobrança por serviço completo. Preço fixo independente do tempo ou complexidade.",
     isActive: true,
   },
   {
-    name: "Por Visita",
+    name: "Por Visita/Consultoria",
     key: "visit",
-    description: "Cobrança por visita técnica ou atendimento. Cada ida ao local é cobrada separadamente.",
+    description:
+      "Cobrança por visita técnica ou atendimento. Cada ida ao local é cobrada separadamente.",
     isActive: true,
   },
   {
     name: "Por Projeto",
     key: "project",
-    description: "Cobrança por projeto completo. Valor acordado para todo o escopo do trabalho.",
+    description:
+      "Cobrança por projeto completo. Valor acordado para todo o escopo do trabalho.",
+    isActive: true,
+  },
+  {
+    name: "Por Hora",
+    key: "hour",
+    description: "Cobrança por hora. Valor acordado para o escopo do trabalho.",
     isActive: true,
   },
 ];
 
 export async function seedChargingTypes(reset = false) {
-  console.log('📦 Iniciando seed de tipos de cobrança...');
-  
+  console.log("📦 Iniciando seed de tipos de cobrança...");
+
   try {
     // Se reset, limpar dados existentes
     if (reset) {
-      console.log('🗑️  Limpando tipos de cobrança existentes...');
+      console.log("🗑️  Limpando tipos de cobrança existentes...");
       await db.delete(customChargingTypes);
     }
 
@@ -84,7 +94,7 @@ export async function seedChargingTypes(reset = false) {
       }
     }
 
-    console.log('\n📊 Resumo do seed de tipos de cobrança:');
+    console.log("\n📊 Resumo do seed de tipos de cobrança:");
     console.log(`   • Criados: ${created}`);
     console.log(`   • Atualizados: ${updated}`);
     console.log(`   • Ignorados: ${skipped}`);
@@ -96,22 +106,21 @@ export async function seedChargingTypes(reset = false) {
       skipped,
       total: chargingTypesData.length,
     };
-
   } catch (error) {
-    console.error('❌ Erro ao fazer seed de tipos de cobrança:', error);
+    console.error("❌ Erro ao fazer seed de tipos de cobrança:", error);
     throw error;
   }
 }
 
 // Executar apenas se chamado diretamente
 if (import.meta.url === `file://${process.argv[1]}`) {
-  seedChargingTypes(process.argv.includes('--reset'))
+  seedChargingTypes(process.argv.includes("--reset"))
     .then((stats) => {
-      console.log('\n✨ Seed de tipos de cobrança concluído com sucesso!');
+      console.log("\n✨ Seed de tipos de cobrança concluído com sucesso!");
       process.exit(0);
     })
     .catch((error) => {
-      console.error('💥 Erro fatal no seed:', error);
+      console.error("💥 Erro fatal no seed:", error);
       process.exit(1);
     });
 }
